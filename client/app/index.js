@@ -24,7 +24,7 @@ export default function App() {
             console.log('Connected to Server!');
         });
         // Else, updates status to show error
-        newSocket.on('connect_error', () => {
+        newSocket.on('connect_error', (err) => {
             setStatus('Connection Failed: ' + err.message);
             console.log('Connection Error: ', err);
         });
@@ -58,7 +58,7 @@ export default function App() {
             onChangeText={setTeamName} 
             />
 
-            <Text>Bet Amount: </Text>
+            <Text>Bet Amounttttttttttttttttt: </Text>
             <TextInput 
             style={styles.input} 
             value={betAmount} 
