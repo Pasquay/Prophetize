@@ -1,5 +1,6 @@
 // Imports
 import express from "express";
+import userRoutes from "../src/routes/userRoutes";
 import marketRoutes from "../src/routes/marketRoutes";
 
 // Server
@@ -9,10 +10,10 @@ app.use(express.json());
 // Root Route
 app.get("/", (req, res) => {
     res.send("Prophetize is online!");
-    res.redirect("/markets");
 });
 
 // Routes - connect routes to server
+app.use("/auth", userRoutes);
 app.use("/markets", marketRoutes);
 
 // Starting server

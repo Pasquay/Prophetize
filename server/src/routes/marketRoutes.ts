@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { getAllMarkets, getMarketById } from "../controllers/marketController";
+import * as marketController from "../controllers/marketController";
 
 const router = Router();
 
-router.get("/", getAllMarkets);
-router.get("/:id", getMarketById);
+router.get("/", marketController.getAllMarkets);
+router.get("/:id", marketController.getMarketById);
 
-export default router;
+export default router; 

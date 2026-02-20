@@ -18,4 +18,4 @@ export const getMarketById = async (req:Request, res:Response) => {
     if(error) return res.status(404).json({ error: error.message });
 
     res.json(data);
-};
+}; 
