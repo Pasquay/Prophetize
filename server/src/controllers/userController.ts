@@ -37,7 +37,47 @@ export const register = async(req:Request, res:Response) => {
     });
 };
 
-// GET /login - login account
+// POST /login - login account
 export const login = async(req:Request, res:Response) => {
+    // Extracts login details
+    const { email, password } = req.body;
+
+    // Authenticates user in Supabase Auth table
+    const { data:signInData, error:signInError } = await supabase.
+    auth.signInWithPassword({
+        email,
+        password
+    });
+
+    // User authentication error checks
+    if(signInError) return res.status(401).json({ error: signInError.message });
+
+    const user = signInData.user;
+    if(!user) return res.status(401).json({ error: "Invalid credentials." });
+
+    // Get profile info
+    const { data:profile, error:profileError } = await supabase
+        .from('profiles')
+        .select('username, avatar_url, balance, created_at')
+        .eq("id", user.id)
+        .single();
+
+    // Profile info error checks
+    if(profileError) return res.status(500).json({ error:profileError.message });
     
+    // Success!
+    return res.json({
+        message: "Login successful",
+        user: {
+            id: user.id,
+            email: user.email,
+            ...profile,
+        },
+        session: signInData.session,
+    });
+};
+
+// POST /logout - logout account
+export const logout = async(req:Request, res:Response) => {
+
 };
