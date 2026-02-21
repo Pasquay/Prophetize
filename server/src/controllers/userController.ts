@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { supabase, supabaseAdmin } from '../config/supabaseClient';
+import { AuthRequest } from '../middleware/authMiddleware';
 
 // POST /register - register account
 export const register = async(req:Request, res:Response) => {
@@ -77,7 +78,17 @@ export const login = async(req:Request, res:Response) => {
     });
 };
 
-// POST /logout - logout account
-export const logout = async(req:Request, res:Response) => {
+// GET /profile - fetch account details
+export const getMyProfile = async(req:AuthRequest, res:Response) => {
+    const userId = req.user.id;
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
+    if(error) return res.status(500).json({ error: "Failed to load profile" });
+
+    res.json(data);
 };
+
