@@ -78,6 +78,21 @@ export const login = async(req:Request, res:Response) => {
     });
 };
 
+// POST /logout - logout account
+export const logout = async(req:AuthRequest, res:Response) => {
+    try {
+        const token = req.token as string;
+        if(!token) return res.status(401).json({ error: "Unauthorized: No token provided" });
+
+        const { error } = await supabase.auth.admin.signOut(token);
+        if(error) throw error;
+
+        return res.status(200).json({ message: "Successfully logged out and session terminated"}); 
+    } catch(err:any){
+        return res.status(500).json({ message: err.message || "Failed to log out" });
+    }
+};
+
 // GET /profile - fetch account details
 export const getMyProfile = async(req:AuthRequest, res:Response) => {
     const userId = req.user.id;
