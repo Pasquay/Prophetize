@@ -63,7 +63,7 @@ export default function App() {
             onChangeText={setTeamName} 
             />
 
-            <Text>Bet Amount: </Text>
+            <Text>Bet Amounttttttttttttttttt: </Text>
             <TextInput 
             style={styles.input} 
             value={betAmount} 
