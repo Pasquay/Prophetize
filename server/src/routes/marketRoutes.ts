@@ -3,7 +3,7 @@ import * as marketController from "../controllers/marketController";
 
 const router = Router();
 
-router.get("/", marketController.getAllMarkets);
-router.get("/:id", marketController.getMarketById);
+router.get("/trending", marketController.getTrendingMarkets);
+// router.get("/:id", marketController.getMarketById);
 
 export default router; 
