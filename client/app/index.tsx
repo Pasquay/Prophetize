@@ -1,17 +1,20 @@
-import { Text, View, Pressable, TextInput, Image, useWindowDimensions } from "react-native";
+import { Text, View, Pressable, Image, useWindowDimensions } from "react-native";
 import { useRouter } from 'expo-router';
-import LSBtn from "../components/LS-Btn"
 import Logo from "../components/logo-hint"
 import Fontisto from '@expo/vector-icons/Fontisto';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 export default function welcomeScreen(){
     const { width, height } = useWindowDimensions();
     const router = useRouter();
 
+    
+
 
     return (
-        <View className="bg-[#F1F5F9]    flex-1">
+        <SafeAreaView className="bg-[#F1F5F9] flex-1">
             <View className="flex-1 p-6">
             
                 <View className="mt-[40px]">
@@ -51,7 +54,6 @@ export default function welcomeScreen(){
                 </Text>
 
             </View>
-        </View>
-
+        </SafeAreaView>
     )
 }
