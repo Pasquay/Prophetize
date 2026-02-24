@@ -2,10 +2,12 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, Button, Alert, TextInput } from 'react-native';
 import io from 'socket.io-client';
+import WalkingAnim from "../components/walking_anim";
+import LogoAnim from "../components/logo-anim";
 
 // REPLACE THIS WITH YOUR DEVICE'S IP ADDRESS
 // const SOCKET_URL = 'http://192.168.x.x:3000';
-const SOCKET_URL = 'http://192.168.5.31:3000';
+const SOCKET_URL = 'http://192.168.1.13:3000';
 
 export default function App() {
     const [socket, setSocket] = useState(null);
@@ -24,7 +26,7 @@ export default function App() {
             console.log('Connected to Server!');
         });
         // Else, updates status to show error
-        newSocket.on('connect_error', () => {
+        newSocket.on('connect_error', (err) => {
             setStatus('Connection Failed: ' + err.message);
             console.log('Connection Error: ', err);
         });
@@ -45,7 +47,10 @@ export default function App() {
     };
 
     return (
+        
         <View style={styles.container}>
+            <WalkingAnim />
+            <LogoAnim />
         <Text style={styles.title}>Prophetize Beta</Text>
         
         <Text style={styles.status}>Status: {status}</Text>
@@ -66,7 +71,7 @@ export default function App() {
             onChangeText={setBetAmount} 
             />
         </View>
-
+            
         <Button title="Place Bet" onPress={placeBet} />
         <StatusBar style="auto" />
         </View>
