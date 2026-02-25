@@ -3,49 +3,39 @@ import { StyleSheet, Text, View, Button, Alert, TextInput, Pressable } from 'rea
 import TempAnim from "../components/temp";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import WideButton from '../components/wide-button'
 import * as api from '../utils/api';
+import  { useAuth }  from '../context/AuthContext';
 
 export default function App() {
 
     const router = useRouter();
+    const {logout, isLoading} = useAuth();
 
     const handleLogout = async () => {
-        // const token = await SecureStore.getItemAsync('access_token');
-        // const backendUrl = 'http://192.168.254.187:3001/auth/logout'
         const endpoint = '/auth/logout';
-
-        const { ok, data} = await api.post(endpoint, {});
-
-        // const response = await fetch(backendUrl, {
-        //     method: 'POST',
-        //     headers: {'Content-Type':'application/json', 'Authorization':`Bearer ${token}`}
-        // });
-
-
-
+        const ok = await api.post(endpoint, {});
         if (!ok){
             Alert.alert('Logout Failed');
             return;
         } 
-
-        await SecureStore.deleteItemAsync('access_token');
-        await SecureStore.deleteItemAsync('refresh_token');
+        await logout();
         router.replace('/');
     }
 
     return (
         <SafeAreaView className="flex-1 p-2">
             <View className="flex-1 w-max justify-center   self-center">
-                {/* <WalkingAnim />
-                <LogoAnim /> */}
                 <TempAnim />
             <Text >Prophetize Beta</Text>
             </View>
 
-            <Pressable onPress={handleLogout} className="bg-slate-300 flex-row items-center justify-center p-4 rounded-2xl gap-[8px] border border-[#E2E8F0]">
-                <Text className="font-grotesk-bold text-[16px]">Logout</Text>
-            </Pressable>
+            <WideButton
+                label='Logout'
+                onPress={handleLogout}
+                variant='primary'
+                disabled={isLoading}
+            />
 
         </SafeAreaView>
     );

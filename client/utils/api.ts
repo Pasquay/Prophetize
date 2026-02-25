@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-const baseUrl = 'http://192.168.254.187:3001'
+const baseUrl = 'http://169.254.83.107:3001'
 
 
 // Helper function for getting the token

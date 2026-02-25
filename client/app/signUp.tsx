@@ -4,14 +4,16 @@ import { useRouter } from 'expo-router';
 import Logo from "../components/logo-hint"
 import BackBtn from "../components/backbtn"
 import AntDesign from '@expo/vector-icons/AntDesign';
+import WideButton from '../components/wide-button';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as api from '../utils/api';
+
 
 
 export default function signUpScreen() {
     const { width, height } = useWindowDimensions();
     const router = useRouter();
-
+    const [loading, setLoading] = useState(false);
 
     // For signup inputs
     const [username, setUsername] = useState('');
@@ -27,6 +29,7 @@ export default function signUpScreen() {
     
     
     const handleSignUp = async () => {
+
         if(!email || !password || !username){
             Alert.alert('Please fill out all fields!');
             return;
@@ -42,29 +45,20 @@ export default function signUpScreen() {
 
 
         try{
-
-            // const backendUrl = 'http://192.168.254.187:3001/auth/register'
+            setLoading(true);
             const endpoint = '/auth/register';
-
-            const { ok, data} = await api.post(endpoint, {username, email, password});
-
-            // const response = await fetch(backendUrl, {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json'},
-            //     body: JSON.stringify({username, email, password})
-            // });
-
-            // const data = await response.json();
-
+            const { ok, data } = await api.post(endpoint, {username, email, password});
             if(ok){
                 Alert.alert('Success');
                 router.push('/login');
             } else {
-                Alert.alert('Signup failed', data.message);
+                Alert.alert('Signup failed', data.error);
             }
         } catch (error) {
             console.error('Signup error:', error);
             Alert.alert('Network Error', 'Could not connect to the server.');
+        } finally {
+            setLoading(false);
         }
         
     }
@@ -135,10 +129,15 @@ export default function signUpScreen() {
                         secureTextEntry
                     />
                 </View>
+                
+                <WideButton 
+                    onPress={handleSignUp} 
+                    label={ loading ? "Creating Account..." : "Create Account"}
+                    variant="primary"
+                    disabled={loading}
+                />
 
-                <Pressable onPress={handleSignUp} className="bg-[#87CEEB] flex-row items-center justify-center gap-2 p-4 rounded-2xl mt-4">
-                    <Text className="text-white font-grotesk-bold text-[18px]">Create Account</Text>
-                </Pressable>
+
 
                 <View className="flex-row items-center gap-3">
                     <View className="flex-1 h-[1px] bg-slate-300" />
@@ -146,10 +145,12 @@ export default function signUpScreen() {
                     <View className="flex-1 h-[1px] bg-slate-300" />
                 </View>
 
-                <Pressable className="flex-row items-center justify-center gap-3 p-4 rounded-2xl bg-white border border-slate-200">
-                    <AntDesign name="google" size={22} color="black" />
-                    <Text className="font-grotesk-bold text-[16px] text-[#0F172A]">Google</Text>
-                </Pressable>
+                <WideButton 
+                    onPress={() => null}
+                    label="Continue with Google"
+                    variant="secondary"
+                    icon={<AntDesign name="google" size={24} color="black" />}
+                />
 
                 <View className="flex-row items-center justify-center gap-1 mt-2">
                     <Text className="text-slate-400 font-grotesk-bold text-[14px]">Already have an account?</Text>

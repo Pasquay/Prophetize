@@ -3,24 +3,31 @@ import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { SpaceGrotesk_700Bold, SpaceGrotesk_400Regular } from '@expo-google-fonts/space-grotesk';
 import { InterTight_400Regular, InterTight_700Bold } from '@expo-google-fonts/inter-tight';
-import * as SecureStore from 'expo-secure-store';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-
+import { AuthProvider, useAuth } from '../context/AuthContext';
+import LoadingScreen from '../components/loading-screen'
 
 export default function Layout() {
+    return (
+        <AuthProvider>
+            <RootLayout />
+        </AuthProvider>
+    );
+}
 
+function RootLayout() {
   const router = useRouter();
+  const { token, isLoading } = useAuth();
+
+  
 
   useEffect(() => {
-    const checkToken = async () => {
-        const token = await SecureStore.getItemAsync('access_token');
-        if (token) {
-            router.replace('/home');
-        }
-    };
-    checkToken();
-}, []); 
+    if(isLoading) return;
+    if(token){
+      router.replace('/home');
+    } 
+  }, [isLoading]);
 
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_400Regular,
@@ -28,6 +35,10 @@ export default function Layout() {
     InterTight_400Regular,
     InterTight_700Bold,
   });
+
+  if(isLoading){
+    return <LoadingScreen />
+  }
 
   return (
     <Stack>
