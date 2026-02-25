@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { supabase, supabaseAdmin } from '../config/supabaseClient';
-import { AuthRequest } from '../middleware/authMiddleware';
+import { AuthRequest } from '../types/authRequest';
 
 // POST /register - register account
 export const register = async(req:Request, res:Response) => {
