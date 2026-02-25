@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabaseClient';
 
-// GET /markets - Get all markets
+// GET /trending - Get all markets
 export const getTrendingMarkets = async(req:Request, res:Response) => {
     try {
         const { data, error } = await supabase
@@ -56,6 +56,24 @@ export const getTrendingMarkets = async(req:Request, res:Response) => {
         return res.status(200).json(marketData);
     
     } catch(error: any){
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// GET  /:id - Get market by ID
+export const getMarketById = async(req:Request, res:Response) => {
+    try {
+        const { id } = req.params;
+        const { data, error } = await supabase
+            .from('markets')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if(error) throw error;
+
+        return res.status(200).json({data});
+    } catch(error:any){
         res.status(500).json({ error: error.message });
     }
 };
