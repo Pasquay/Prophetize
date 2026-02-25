@@ -6,7 +6,8 @@ import { requireAuth } from "../middleware/authMiddleware";
 const router = Router();
 
 router.get("/trending", marketController.getTrendingMarkets);
-router.get("/:id", marketController.getMarketById);
 router.post("/create", requireAuth, marketController.createMarket);
+router.post("/review/:id", requireAuth, requireAdmin, marketController.reviewMarket);
+router.get("/:id", marketController.getMarketById);
 
 export default router; 

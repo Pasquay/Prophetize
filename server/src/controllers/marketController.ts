@@ -151,6 +151,36 @@ export const createMarket = async(req:AuthRequest, res:Response) => {
     }
 }
 
-// POST /approve - Admin approves market for posting
+// POST /review - Admin approves/rejects market for posting
+export const reviewMarket = async(req:AuthRequest, res:Response) => {
+    console.log("BODY RECEIVED:", req.body); // Check your terminal!
+    console.log("PARAMS RECEIVED:", req.params);
+    try {
+        const { id } = req.params;
+        const { action } = req.body || {}; // 'approve', 'reject'
 
-// POST /reject - Admin rejects market for posting
+        if(!action) return res.status(400).json({ error: "Missing \'action\' in request body." });
+
+        const validActions = ['approve', 'reject'];
+        if(!validActions.includes(action)) return res.status(400).json({ error: "Invalid action. Use \"approve\" or \"reject\"."});
+
+        const newStatus = action === 'approve' ? 'active' : 'rejected';
+        
+        const { data, error } = await supabase
+            .from('markets')
+            .update({ status: newStatus })
+            .eq('id', id)
+            .select()
+            .single();
+            
+        if(error) throw error;
+
+        const messageStatus = action === 'approve' ? 'approved' : 'rejected';    
+        return res.status(200).json({
+            message: `Market has been ${messageStatus}`,
+            market: data
+        });
+    } catch(error:any){
+        return res.status(500).json({ error: error.message });
+    }
+}
