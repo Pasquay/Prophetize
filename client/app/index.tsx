@@ -12,8 +12,8 @@ export default function welcomeScreen(){
     const router = useRouter();
 
     return (
-        <SafeAreaView className="bg-[#F1F5F9] flex-1">
-            <View className="flex-1 p-6">
+        <SafeAreaView className="bg-[#F1F5F9] flex-1 ">
+            <View className="flex-1 p-6 ">
             
                 <View className="mt-[40px]">
                     <Logo />
@@ -21,18 +21,18 @@ export default function welcomeScreen(){
 
                 <Image resizeMode="contain" className= "absolute right-0 top-40" source={require("../assets/app-icons/ledger.png")} style={{width: width * 0.3, height: height * 0.3}}></Image>
 
-                <View className="flex-1 justify-end  gap-[12px]">
+                <View className="flex-1 justify-center gap-[12px]">
                     <Text className="text-[42px] font-grotesk-bold tracking-[-1.05px] text-[#0F172A] ">
                         Predict{"\n"}the future.
                     </Text>
                     <Text className="text-[18px] text-[#94A3B8] font-inter">
-                        Trade virtual currency on real-world outcomes without the risk.
+                        Trade virtual currency on real-world {'\n'} outcomes without the risk.
                     </Text>
                 </View>
 
             </View>
 
-            <View className="bg-[#F1F5F9] p-6 pb-40  gap-[12px]">
+            <View className="bg-[#F1F5F9] p-6  gap-[12px]">
 
                 <WideButton
                     onPress={() => router.push('/signUp')}
@@ -48,7 +48,7 @@ export default function welcomeScreen(){
                     icon={<AntDesign name="google" size={24} color="black" />}
                 />
 
-                <Text className="top-36 text-center text-[12px] text-[#94A3B8] font-inter">
+                <Text className=" text-center text-[12px] text-[#94A3B8] font-inter">
                     By continuing, you agree to our{" "}
                     <Text className="underline">Terms of Service</Text>
                     {" & "} 

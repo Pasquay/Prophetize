@@ -7,6 +7,7 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import WideButton from '../components/wide-button';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as api from '../utils/api';
+import InputField from '../components/input-field';
 
 
 
@@ -96,48 +97,37 @@ export default function signUpScreen() {
             </View>
 
             <View className="bg-[#F1F5F9] px-6 pt-6 pb-2 gap-3">
-                <View className="gap-1">
-                    <Text className="font-grotesk-bold text-base text-[#0F172A]">Username</Text> 
-                    <TextInput
-                        className="text-slate-400 font-inter text-[16px] p-4 rounded-2xl bg-white outline-none border-slate-300 border-2"
-                        placeholder="Username"
-                        placeholderTextColor="#94A3B8"
-                        onChangeText={setUsername}
-                        autoCapitalize="none"
-    
-                    />
-                </View>
-                <View className="gap-1">
-                    <Text className="font-grotesk-bold text-base text-[#0F172A]">Email</Text>
-                    <TextInput
-                        className="text-slate-400 font-inter text-[16px] p-4 rounded-2xl bg-white outline-none border-slate-300 border-2"
-                        placeholder="Email address"
-                        placeholderTextColor="#94A3B8"
-                        keyboardType="email-address"
-                        onChangeText={setEmail}
-                        inputMode="email"
-                        autoCapitalize="none"
-                    />
-                </View>
-                <View className="gap-1">
-                    <Text className="font-grotesk-bold text-base text-[#0F172A]">Password</Text>
-                    <TextInput
-                        className="text-slate-400 font-inter text-[16px] p-4 rounded-2xl bg-white outline-none border-slate-300 border-2"
-                        placeholder="Password"
-                        placeholderTextColor="#94A3B8"
-                        onChangeText={setPassword}
-                        secureTextEntry
-                    />
-                </View>
-                
+                <InputField
+                    label="Username"
+                    placeholder="John Doe"
+                    placeholderTextColor="#94A3B8"
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                />
+
+                <InputField
+                    label="Email"
+                    placeholder="example@gmail.com"
+                    placeholderTextColor="#94A3B8"
+                    keyboardType="email-address"
+                    onChangeText={setEmail}
+                    inputMode="email"
+                    autoCapitalize="none"
+                />
+                <InputField
+                    label="Password"
+                    placeholder="••••••"
+                    placeholderTextColor="#94A3B8"
+                    onChangeText={setPassword}
+                    secureTextEntry
+                />
+                    
                 <WideButton 
                     onPress={handleSignUp} 
                     label={ loading ? "Creating Account..." : "Create Account"}
                     variant="primary"
                     disabled={loading}
                 />
-
-
 
                 <View className="flex-row items-center gap-3">
                     <View className="flex-1 h-[1px] bg-slate-300" />

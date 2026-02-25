@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import { Text, View, Pressable, useWindowDimensions, Image, TextInput, Alert, KeyboardAvoidingView, ScrollView } from 'react-native';
+import { Text, View, Pressable, useWindowDimensions, Image, TextInput, Alert} from 'react-native';
 import { useRouter } from 'expo-router';
 import Logo from "../components/logo-hint"
 import BackBtn from "../components/backbtn"
@@ -8,6 +8,7 @@ import WideButton from '../components/wide-button';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as api from '../utils/api';
 import  { useAuth }  from '../context/AuthContext';
+import InputField from '../components/input-field';
 
 export default function loginScreen() {
     const { width, height } = useWindowDimensions();
@@ -31,7 +32,7 @@ export default function loginScreen() {
             if(ok){
                 // Alert.alert('success');
                 await login(data.user, data.session.access_token, data.session.refresh_token);
-                router.push('/home');
+                router.push('./tabs/home');
             } else {
                 Alert.alert('Failed to log in', data.error);
             }
@@ -78,28 +79,22 @@ export default function loginScreen() {
 
             <View className="bg-[#F1F5F9] p-6 gap-4">
 
-                <View className="gap-2">
-                    <Text className="font-grotesk-bold text-base text-[#0F172A]">Email</Text>
-                    <TextInput
-                        className="text-slate-400 font-inter text-[16px] p-4 rounded-2xl bg-white outline-none border-slate-300 border-2"
-                        placeholder="name@example.com"
-                        keyboardType="email-address"
-                        placeholderTextColor="#94A3B8"
-                        onChangeText={setEmail}
-                        autoCapitalize="none"
-                    />
-                </View>
+                <InputField
+                    label="Email"
+                    placeholder="name@example.com"
+                    keyboardType="email-address"
+                    placeholderTextColor="#94A3B8"
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                />
 
-                <View className="gap-2">
-                    <Text className="font-grotesk-bold text-base text-[#0F172A]">Password</Text>
-                    <TextInput
-                        className="text-slate-400 font-inter text-[16px] p-4 rounded-2xl bg-white outline-none border-slate-300 border-2"
-                        placeholder="••••••"
-                        placeholderTextColor="#94A3B8"
-                        onChangeText={setPassword}
-                        secureTextEntry
-                    />
-                </View>
+                <InputField
+                    label="Password"
+                    placeholder="••••••"
+                    placeholderTextColor="#94A3B8"
+                    onChangeText={setPassword}
+                    secureTextEntry
+                />
 
                 <Pressable className="self-end">
                     <Text className="text-[#87CEEB] font-inter text-[14px]">Forgot Password?</Text>
