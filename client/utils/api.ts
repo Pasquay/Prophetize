@@ -1,7 +1,12 @@
 import * as SecureStore from 'expo-secure-store';
+import backendUrl from '../constants/backendUrl';
 
+<<<<<<< HEAD
 const baseUrl = 'http://169.254.83.107:3001'
 
+=======
+const baseUrl = backendUrl;
+>>>>>>> 20e5fb1ecfef042555d7ccf5c755fcaf8a299236
 
 // Helper function for getting the token
 const getToken = async (): Promise<string | null> => {
