@@ -18,7 +18,7 @@ export default function Button({label, onPress, variant="primary", icon, disable
                 onPress={onPress} 
                 onPressIn={()=>setPressed(true)}
                 onPressOut={()=>setPressed(false)}
-                className={`flex-row items-center justify-center p-4 rounded-2xl gap-[8px]`}
+                className={`flex-row items-center justify-center p-4 rounded-full gap-[8px]`}
                 style={{
                     opacity: pressed ? 0.7 : 1,
                     backgroundColor: pressed
@@ -31,8 +31,8 @@ export default function Button({label, onPress, variant="primary", icon, disable
                 {icon && icon} 
                 <Text
                     className={ variant === 'primary' 
-                        ? "text-white font-grotesk-bold text-[16px]"
-                        : "font-grotesk-bold text-[16px] text-[#0F172A]"
+                        ? "text-white font-grotesk-bold text-[18px]"
+                        : "text-[#0F172A] font-grotesk-bold text-[18px]"
                     }> 
                     {label}</Text>
             </Pressable>

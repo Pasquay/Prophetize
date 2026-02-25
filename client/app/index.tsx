@@ -12,7 +12,7 @@ export default function welcomeScreen(){
     const router = useRouter();
 
     return (
-        <SafeAreaView className="bg-[#F1F5F9] flex-1 ">
+        <SafeAreaView className="bg-[#F5F5F5] flex-1 ">
             <View className="flex-1 p-6 ">
             
                 <View className="mt-[40px]">
@@ -21,8 +21,8 @@ export default function welcomeScreen(){
 
                 <Image resizeMode="contain" className= "absolute right-0 top-40" source={require("../assets/app-icons/ledger.png")} style={{width: width * 0.3, height: height * 0.3}}></Image>
 
-                <View className="flex-1 justify-center gap-[12px]">
-                    <Text className="text-[42px] font-grotesk-bold tracking-[-1.05px] text-[#0F172A] ">
+                <View className="flex-1 justify-center gap-[12px] ">
+                    <Text className="text-[52px] font-grotesk-bold tracking-[-1.05px] text-[#0F172A] ">
                         Predict{"\n"}the future.
                     </Text>
                     <Text className="text-[18px] text-[#94A3B8] font-inter">
@@ -32,7 +32,7 @@ export default function welcomeScreen(){
 
             </View>
 
-            <View className="bg-[#F1F5F9] p-6  gap-[12px]">
+            <View className="bg-[#F5F5F5] p-6  gap-[12px]">
 
                 <WideButton
                     onPress={() => router.push('/signUp')}

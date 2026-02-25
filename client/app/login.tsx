@@ -46,20 +46,20 @@ export default function loginScreen() {
     }
 
     return (
-        <SafeAreaView className="bg-[#F1F5F9] flex-1" edges={['top']} >
+        <SafeAreaView className="bg-[#F5F5F5] flex-1" edges={['top']} >
         
             <View className="flex-1 p-6 ">
-                
-                <Pressable
-                    onPress={() => router.back()}
-                        className="mt-2 w-[44px] h-[44px] items-center justify-center rounded-full "
-                    >
-                        <BackBtn size={28} color="#0F172A" />
-                </Pressable>
-                
-                <View className="mt-4">
-                    <Logo />
+                <View className="flex flex-row gap-3 items-center">
+                    <Pressable onPress={() => router.back()}>
+                            <BackBtn size={24} color="#0F172A" />
+                    </Pressable>
+                    
+                    <View className="">
+                        <Logo />
+                    </View>
                 </View>
+
+
                 <View className="absolute right-0 top-40" pointerEvents="none">
                     <Image
                         resizeMode="contain"
@@ -68,7 +68,7 @@ export default function loginScreen() {
                     />
                 </View>
                 <View className="flex-1 justify-end">
-                    <Text className="text-[42px] font-grotesk-bold tracking-[-1.05px] text-[#0F172A]">
+                    <Text className="text-[42px] font-grotesk-bold tracking-[-2px] text-[#0F172A]">
                         Welcome {'\n'}back.
                     </Text>
                     <Text className="text-[18px] text-[#94A3B8] font-inter">
@@ -109,7 +109,7 @@ export default function loginScreen() {
 
                 <View className="flex-row items-center gap-3">
                     <View className="flex-1 h-[1px] bg-slate-300" />
-                    <Text className="text-slate-400 font-inter text-[13px]">OR</Text>
+                    <Text className="text-slate-400 font-inter text-[13px]">or</Text>
                     <View className="flex-1 h-[1px] bg-slate-300" />
                 </View>
 

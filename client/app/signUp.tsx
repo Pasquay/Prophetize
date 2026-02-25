@@ -65,18 +65,17 @@ export default function signUpScreen() {
     }
 
     return (
-        <SafeAreaView  className="bg-[#F1F5F9] flex-1">
+        <SafeAreaView  className="bg-[#F5F5F5] flex-1">
             <View className="flex-1 p-6">
 
-                <Pressable
-                    onPress={() => router.back()}
-                    className="mt-2 w-[44px] h-[44px] items-center justify-center rounded-full"
-                >
-                    <BackBtn size={28} color="#0F172A" />
-                </Pressable>
-
-                <View className="mt-4">
-                    <Logo />
+                <View className="flex flex-row gap-3 items-center">
+                    <Pressable onPress={() => router.back()}>
+                            <BackBtn size={24} color="#0F172A" />
+                    </Pressable>
+                    
+                    <View className="">
+                        <Logo />
+                    </View>
                 </View>
 
                 <Image
@@ -87,7 +86,7 @@ export default function signUpScreen() {
                 />
 
                 <View className="flex-1 justify-end gap-[12px] mt-4">
-                    <Text className="text-[42px] font-grotesk-bold tracking-[-1.05px] text-[#0F172A]">
+                    <Text className="text-[42px] font-grotesk-bold tracking-[-2px] text-[#0F172A]">
                         Create {'\n'}an account
                     </Text>
                     <Text className="text-[18px] text-[#94A3B8] font-inter">
@@ -114,24 +113,27 @@ export default function signUpScreen() {
                     inputMode="email"
                     autoCapitalize="none"
                 />
-                <InputField
-                    label="Password"
-                    placeholder="••••••"
-                    placeholderTextColor="#94A3B8"
-                    onChangeText={setPassword}
-                    secureTextEntry
-                />
-                    
-                <WideButton 
-                    onPress={handleSignUp} 
-                    label={ loading ? "Creating Account..." : "Create Account"}
-                    variant="primary"
-                    disabled={loading}
-                />
+
+                <View className="gap-6">
+                    <InputField
+                        label="Password"
+                        placeholder="••••••"
+                        placeholderTextColor="#94A3B8"
+                        onChangeText={setPassword}
+                        secureTextEntry
+                    />
+                        
+                    <WideButton 
+                        onPress={handleSignUp} 
+                        label={ loading ? "Creating Account..." : "Create Account"}
+                        variant="primary"
+                        disabled={loading}
+                    />
+                </View>
 
                 <View className="flex-row items-center gap-3">
                     <View className="flex-1 h-[1px] bg-slate-300" />
-                    <Text className="text-slate-400 font-grotesk-bold-[13px]">Or continue with</Text>
+                    <Text className="text-slate-400 font-grotesk-bold-[13px]">or continue with</Text>
                     <View className="flex-1 h-[1px] bg-slate-300" />
                 </View>
 
