@@ -1,16 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, Button, Alert, TextInput, Pressable } from 'react-native';
+import { Text, View, Alert } from 'react-native';
 import TempAnim from "../../components/temp";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import WideButton from '../../components/wide-button'
 import * as api from '../../utils/api';
 import  { useAuth }  from '../../context/AuthContext';
+import {Prediction} from "../../.expo/types/model";
+
 
 export default function App() {
 
     const router = useRouter();
     const {logout, isLoading} = useAuth();
+
+    const [predictions, setPrediction] = useState<Prediction[]>([]);
+
+    // useEffect(() => {
+    //     const getData = async () => {
+    //         const {ok, data} = await api.get("/auth/trending");
+    //         if(ok){
+    //             setPrediction(data);
+    //         } else {
+    //             Alert.alert('Something wrong happened when fetching for predictions!');
+    //         }
+    //     };
+    //     getData(); 
+    // }, []);
+
+
 
     const handleLogout = async () => {
         const endpoint = '/auth/logout';
@@ -22,6 +40,7 @@ export default function App() {
         await logout();
         router.replace('/');
     }
+
 
     return (
         <SafeAreaView className="flex-1 p-2">
