@@ -3,15 +3,18 @@ import { Text, View, Pressable, useWindowDimensions, Image, TextInput, Alert} fr
 import { useRouter } from 'expo-router';
 import Logo from "../components/logo-hint"
 import BackBtn from "../components/backbtn"
-import AntDesign from '@expo/vector-icons/AntDesign';
+import WideButton from '../components/wide-button';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as api from '../utils/api';
+import InputField from '../components/input-field';
+import GoogleLogin from "../components/google-login";
+
 
 
 export default function signUpScreen() {
     const { width, height } = useWindowDimensions();
     const router = useRouter();
-
+    const [loading, setLoading] = useState(false);
 
     // For signup inputs
     const [username, setUsername] = useState('');
@@ -27,6 +30,7 @@ export default function signUpScreen() {
     
     
     const handleSignUp = async () => {
+
         if(!email || !password || !username){
             Alert.alert('Please fill out all fields!');
             return;
@@ -42,46 +46,36 @@ export default function signUpScreen() {
 
 
         try{
-
-            // const backendUrl = 'http://192.168.254.187:3001/auth/register'
+            setLoading(true);
             const endpoint = '/auth/register';
-
-            const { ok, data} = await api.post(endpoint, {username, email, password});
-
-            // const response = await fetch(backendUrl, {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json'},
-            //     body: JSON.stringify({username, email, password})
-            // });
-
-            // const data = await response.json();
-
+            const { ok, data } = await api.post(endpoint, {username, email, password});
             if(ok){
                 Alert.alert('Success');
                 router.push('/login');
             } else {
-                Alert.alert('Signup failed', data.message);
+                Alert.alert('Signup failed', data.error);
             }
         } catch (error) {
             console.error('Signup error:', error);
             Alert.alert('Network Error', 'Could not connect to the server.');
+        } finally {
+            setLoading(false);
         }
         
     }
 
     return (
-        <SafeAreaView  className="bg-[#F1F5F9] flex-1">
+        <SafeAreaView  className="bg-[#F5F5F5] flex-1">
             <View className="flex-1 p-6">
 
-                <Pressable
-                    onPress={() => router.back()}
-                    className="mt-2 w-[44px] h-[44px] items-center justify-center rounded-full"
-                >
-                    <BackBtn size={28} color="#0F172A" />
-                </Pressable>
-
-                <View className="mt-4">
-                    <Logo />
+                <View className="flex flex-row gap-3 items-center">
+                    <Pressable onPress={() => router.back()}>
+                            <BackBtn size={24} color="#0F172A" />
+                    </Pressable>
+                    
+                    <View className="">
+                        <Logo />
+                    </View>
                 </View>
 
                 <Image
@@ -92,7 +86,7 @@ export default function signUpScreen() {
                 />
 
                 <View className="flex-1 justify-end gap-[12px] mt-4">
-                    <Text className="text-[42px] font-grotesk-bold tracking-[-1.05px] text-[#0F172A]">
+                    <Text className="text-[42px] font-grotesk-bold tracking-[-2px] text-[#0F172A]">
                         Create {'\n'}an account
                     </Text>
                     <Text className="text-[18px] text-[#94A3B8] font-inter">
@@ -102,54 +96,55 @@ export default function signUpScreen() {
             </View>
 
             <View className="bg-[#F1F5F9] px-6 pt-6 pb-2 gap-3">
-                <View className="gap-1">
-                    <Text className="font-grotesk-bold text-base text-[#0F172A]">Username</Text> 
-                    <TextInput
-                        className="text-slate-400 font-inter text-[16px] p-4 rounded-2xl bg-white outline-none border-slate-300 border-2"
-                        placeholder="Username"
-                        placeholderTextColor="#94A3B8"
-                        onChangeText={setUsername}
-                        autoCapitalize="none"
-    
-                    />
-                </View>
-                <View className="gap-1">
-                    <Text className="font-grotesk-bold text-base text-[#0F172A]">Email</Text>
-                    <TextInput
-                        className="text-slate-400 font-inter text-[16px] p-4 rounded-2xl bg-white outline-none border-slate-300 border-2"
-                        placeholder="Email address"
-                        placeholderTextColor="#94A3B8"
-                        keyboardType="email-address"
-                        onChangeText={setEmail}
-                        inputMode="email"
-                        autoCapitalize="none"
-                    />
-                </View>
-                <View className="gap-1">
-                    <Text className="font-grotesk-bold text-base text-[#0F172A]">Password</Text>
-                    <TextInput
-                        className="text-slate-400 font-inter text-[16px] p-4 rounded-2xl bg-white outline-none border-slate-300 border-2"
-                        placeholder="Password"
+                <InputField
+                    label="Username"
+                    placeholder="John Doe"
+                    placeholderTextColor="#94A3B8"
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                />
+
+                <InputField
+                    label="Email"
+                    placeholder="example@gmail.com"
+                    placeholderTextColor="#94A3B8"
+                    keyboardType="email-address"
+                    onChangeText={setEmail}
+                    inputMode="email"
+                    autoCapitalize="none"
+                />
+
+                <View className="gap-6">
+                    <InputField
+                        label="Password"
+                        placeholder="••••••"
                         placeholderTextColor="#94A3B8"
                         onChangeText={setPassword}
                         secureTextEntry
                     />
+                        
+                    <WideButton 
+                        onPress={handleSignUp} 
+                        label={ loading ? "Creating Account..." : "Create Account"}
+                        variant="primary"
+                        disabled={loading}
+                    />
                 </View>
-
-                <Pressable onPress={handleSignUp} className="bg-[#87CEEB] flex-row items-center justify-center gap-2 p-4 rounded-2xl mt-4">
-                    <Text className="text-white font-grotesk-bold text-[18px]">Create Account</Text>
-                </Pressable>
 
                 <View className="flex-row items-center gap-3">
                     <View className="flex-1 h-[1px] bg-slate-300" />
-                    <Text className="text-slate-400 font-grotesk-bold-[13px]">Or continue with</Text>
+                    <Text className="text-slate-400 font-grotesk-bold-[13px]">or continue with</Text>
                     <View className="flex-1 h-[1px] bg-slate-300" />
                 </View>
 
-                <Pressable className="flex-row items-center justify-center gap-3 p-4 rounded-2xl bg-white border border-slate-200">
-                    <AntDesign name="google" size={22} color="black" />
-                    <Text className="font-grotesk-bold text-[16px] text-[#0F172A]">Google</Text>
-                </Pressable>
+                {/* <WideButton 
+                    onPress={() => null}
+                    label="Continue with Google"
+                    variant="secondary"
+                    icon={<AntDesign name="google" size={24} color="black" />}
+                /> */}
+
+                <GoogleLogin></GoogleLogin>
 
                 <View className="flex-row items-center justify-center gap-1 mt-2">
                     <Text className="text-slate-400 font-grotesk-bold text-[14px]">Already have an account?</Text>

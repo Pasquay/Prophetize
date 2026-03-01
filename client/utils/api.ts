@@ -3,6 +3,7 @@ import backendUrl from '../constants/backendUrl';
 
 const baseUrl = backendUrl;
 
+
 // Helper function for getting the token
 const getToken = async (): Promise<string | null> => {
     const token = await SecureStore.getItemAsync('access_token');
