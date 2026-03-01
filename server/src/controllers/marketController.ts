@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { supabase } from '../config/supabaseClient';
 import { AuthRequest } from '../types/authRequest';
 
-// GET /trending - Get all markets
+// GET /trending - Get trending markets (home page)
 export const getTrendingMarkets = async(req:Request, res:Response) => {
     try {
         const { data, error } = await supabase
@@ -91,6 +91,11 @@ export const getMarketById = async(req:Request, res:Response) => {
     } catch(error:any){
         res.status(500).json({ error: error.message });
     }
+};
+
+// GET /search - Search markets with filters
+export const searchMarket = async(req:Request, res:Response) => {
+
 };
 
 // POST /create - Adds market to pending for admin's approval

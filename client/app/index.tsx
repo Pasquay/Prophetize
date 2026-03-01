@@ -2,9 +2,9 @@ import { Text, View, Pressable, Image, useWindowDimensions } from "react-native"
 import { useRouter } from 'expo-router';
 import Logo from "../components/logo-hint"
 import Fontisto from '@expo/vector-icons/Fontisto';
-import AntDesign from '@expo/vector-icons/AntDesign';
 import WideButton from '../components/wide-button';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import GoogleLogin from "../components/google-login";
 
 
 export default function welcomeScreen(){
@@ -41,12 +41,14 @@ export default function welcomeScreen(){
                     icon={<Fontisto  name="email" size={24} color="white" />}
                 />
 
-                <WideButton 
+                {/* <WideButton 
                     onPress={() => null}
                     label="Continue with Google"
                     variant="secondary"
                     icon={<AntDesign name="google" size={24} color="black" />}
-                />
+                /> */}
+
+                <GoogleLogin></GoogleLogin>
 
                 <Text className=" text-center text-[12px] text-[#94A3B8] font-inter">
                     By continuing, you agree to our{" "}

@@ -9,5 +9,6 @@ router.post("/register", userController.register);
 router.post("/login", userController.login);
 router.post("/logout", requireAuth, userController.logout);
 router.get("/profile", requireAuth, userController.getMyProfile);
+router.post("/claim-allowance", requireAuth, userController.claimAllowance);
 
 export default router;

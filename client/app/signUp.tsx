@@ -3,11 +3,11 @@ import { Text, View, Pressable, useWindowDimensions, Image, TextInput, Alert} fr
 import { useRouter } from 'expo-router';
 import Logo from "../components/logo-hint"
 import BackBtn from "../components/backbtn"
-import AntDesign from '@expo/vector-icons/AntDesign';
 import WideButton from '../components/wide-button';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as api from '../utils/api';
 import InputField from '../components/input-field';
+import GoogleLogin from "../components/google-login";
 
 
 
@@ -137,12 +137,14 @@ export default function signUpScreen() {
                     <View className="flex-1 h-[1px] bg-slate-300" />
                 </View>
 
-                <WideButton 
+                {/* <WideButton 
                     onPress={() => null}
                     label="Continue with Google"
                     variant="secondary"
                     icon={<AntDesign name="google" size={24} color="black" />}
-                />
+                /> */}
+
+                <GoogleLogin></GoogleLogin>
 
                 <View className="flex-row items-center justify-center gap-1 mt-2">
                     <Text className="text-slate-400 font-grotesk-bold text-[14px]">Already have an account?</Text>

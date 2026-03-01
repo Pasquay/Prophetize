@@ -51,7 +51,7 @@ function RootLayout() {
       <Stack.Screen name="index" options={{ title: 'Prophetize', headerShown: false }} />
       <Stack.Screen name="login" options={{ title: 'Login', headerShown: false }} />
       <Stack.Screen name="signUp" options={{ title: 'signUp', headerShown: false }} />
-      <Stack.Screen name="tabs" options={{ title: 'signUp', headerShown: false }}/>
+      <Stack.Screen name="tabs" options={{ title: 'tabs', headerShown: false }}/>
     </Stack>
   );
 }
