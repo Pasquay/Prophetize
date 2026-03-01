@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { supabase, supabaseAdmin } from '../config/supabaseClient';
 import { AuthRequest } from '../types/authRequest';
 
-// POST /register - register account
+// POST /register - Register account
 export const register = async(req:Request, res:Response) => {
     // Extracts registration details
     const { email, password, username } = req.body;
@@ -38,7 +38,7 @@ export const register = async(req:Request, res:Response) => {
     });
 };
 
-// POST /login - login account
+// POST /login - Login account
 export const login = async(req:Request, res:Response) => {
     // Extracts login details
     const { email, password } = req.body;
@@ -78,7 +78,7 @@ export const login = async(req:Request, res:Response) => {
     });
 };
 
-// POST /logout - logout account
+// POST /logout - Logout account
 export const logout = async(req:AuthRequest, res:Response) => {
     try {
         const token = req.token as string;
@@ -93,7 +93,7 @@ export const logout = async(req:AuthRequest, res:Response) => {
     }
 };
 
-// GET /profile - fetch account details
+// GET /profile - Fetch account details
 export const getMyProfile = async(req:AuthRequest, res:Response) => {
     const userId = req.user.id;
     const { data, error } = await supabase
@@ -107,3 +107,57 @@ export const getMyProfile = async(req:AuthRequest, res:Response) => {
     res.json(data);
 };
 
+// POST /claim-allowance - Claim daily income
+export const claimAllowance = async(req:AuthRequest, res:Response) => {
+    try {
+        const userId = req.user?.id;
+        if(!userId) return res.status(401).json({ error: "Unauthorized" });
+
+        const { data:profile, error:profileError } = await supabase
+            .from('profiles')
+            .select('balance, current_streak, last_claim_date')
+            .eq('id', userId)
+            .single();
+
+        if(profileError) return res.status(400).json({ error: profileError.message });
+        if(!profile) return res.status(404).json({ error: "Profile not found" });
+
+        const now = new Date();
+        const lastClaim = profile.last_claim_date ? new Date(profile.last_claim_date) : null;
+
+        let newStreak = 1;
+        if(lastClaim){
+            const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+            const lastClaimUTC = Date.UTC(lastClaim.getUTCFullYear(), lastClaim.getUTCMonth(), lastClaim.getUTCDate());
+
+            const diffTime = todayUTC - lastClaimUTC;
+            const diffDays = Math.floor(diffTime / (1000*60*60*24));
+
+            if(diffDays === 0) return res.status(400).json({ error: "You have already claimed your daily allowance" });
+            else if (diffDays === 1) newStreak = (profile.current_streak % 7) + 1;
+        }
+        const payouts = [10, 15, 20, 25, 35, 50, 100];
+        const rewardAmount = payouts[newStreak-1];
+        const newBalance = profile.balance + rewardAmount;
+
+        const { error:updateError } = await supabase
+            .from('profiles')
+            .update({
+                balance: newBalance,
+                current_streak: newStreak,
+                last_claim_date: now.toISOString()
+            })
+            .eq('id', userId);
+        
+        if(updateError) throw updateError;
+        
+        return res.status(200).json({
+            message: "Allowance claimed successfully!",
+            reward: rewardAmount,
+            newBalance: newBalance,
+            streakDay: newStreak
+        });
+    } catch(error:any){
+        return res.status(500).json({ error: error.message });
+    }
+};
