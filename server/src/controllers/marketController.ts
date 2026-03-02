@@ -2,6 +2,32 @@ import { Request, Response } from 'express';
 import { supabase } from '../config/supabaseClient';
 import { AuthRequest } from '../types/authRequest';
 
+export const getAllMarkets = async(req:Request, res:Response) => {
+    try {
+        const { data, error } = await supabase
+            .from('markets')
+            .select(`
+                *,
+                options: market_options!market_options_market_id_fkey(
+                    id,
+                    name,
+                    probability,
+                    current_price,
+                    total_shares_outstanding,
+                    volume
+                )
+            `)
+            .order('created_at', { ascending: false });
+
+        if(error) throw error;
+
+        return res.status(200).json({ count: data.length, markets: data });
+    } catch(error:any){
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+
 // GET /trending - Get trending markets (home page)
 export const getTrendingMarkets = async(req:Request, res:Response) => {
     try {

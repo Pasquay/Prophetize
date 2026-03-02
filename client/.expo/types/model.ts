@@ -12,5 +12,5 @@ export interface Prediction {
 	end_date: Date; 
 	status: string;
 	volume: number;
-	options: Options;	
+	options: Options[];	
 }
