@@ -2,6 +2,59 @@ import { Request, Response } from 'express';
 import { supabase } from '../config/supabaseClient';
 import { AuthRequest } from '../types/authRequest';
 
+// GET /get-all - Get all markets (Testing only)
+export const getAllMarkets = async(req:Request, res:Response) => {
+    try {
+        const { data, error } = await supabase
+            .from('markets')
+            .select(`
+                *,
+                option: market_options!market_options_market_id_fkey(
+                    id,
+                    name,
+                    probability
+                )
+            `)
+            .order('created_at', { ascending:false })
+            .limit(20);
+        
+        if(error) throw error;
+
+        const marketData = data.map((market:any) => {
+            const rawOptions = market.option || [];
+            const sortedOptions = rawOptions.sort((a:any, b:any) => b.probability - a.probability);
+            const topOptions = sortedOptions.slice(0, 2);
+
+            const otherOptions = sortedOptions.slice(2);
+            const otherProbability = otherOptions.reduce((sum:number, opt:any) => sum + opt.probability, 0);
+
+            const finalOptions = [...topOptions];
+            if(otherProbability > 0.01){
+                finalOptions.push({
+                    id: 'other',
+                    name: 'other',
+                    probability: otherProbability
+                });
+            }
+
+            return {
+                id:market.id,
+                title: market.title,
+                image: market.image_url,
+                category: market.category,
+                endDate: market.end_date,
+                status: market.status,
+                volume: market.volume || 0, 
+                options: finalOptions
+            }
+        });
+
+        return res.status(200).json({ marketData });
+    } catch(error:any){
+        res.status(500).json({ error: error.message });
+    }
+}
+
 // GET /trending - Get trending markets (home page)
 export const getTrendingMarkets = async(req:Request, res:Response) => {
     try {
@@ -95,7 +148,7 @@ export const getMarketById = async(req:Request, res:Response) => {
 
 // GET /search - Search markets with filters
 export const searchMarket = async(req:Request, res:Response) => {
-
+ 
 };
 
 // POST /create - Adds market to pending for admin's approval
