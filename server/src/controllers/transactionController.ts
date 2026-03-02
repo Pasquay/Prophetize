@@ -9,7 +9,7 @@ export const buyShare = async(req:AuthRequest, res:Response) => {
         const { optionId, shares } = req.body;
 
         if(!userId) return res.status(401).json({ error: "Unauthorized" });
-        if(!optionId) return res.status(400).json({ error: "Option not found" }); 
+        if(!optionId) return res.status(404).json({ error: "Option not found" }); 
         if(!shares || shares<=0) return res.status(400).json({ error: "Shares must be greater than 0" });
 
         const { data:option, error: optError } = await supabase
@@ -18,7 +18,7 @@ export const buyShare = async(req:AuthRequest, res:Response) => {
             .eq('id', optionId)
             .single();
 
-        if(optError || !option) throw new Error("Option not found");
+        if(optError || !option) return res.status(404).json({ error: "Option not found" });
 
         const totalCost = option.current_price * shares;
 
@@ -42,3 +42,40 @@ export const buyShare = async(req:AuthRequest, res:Response) => {
 };
 
 // POST /sell - Sell market option shares
+export const sellShare = async(req:AuthRequest, res:Response) => {
+    try {
+        const userId = req.user?.id;
+        const { optionId, shares } = req.body;
+
+        if(!userId) return res.status(401).json({ error: "Unauthorized" });
+        if(!optionId) return res.status(400).json({ error: "Option not found" });
+        if(!shares || shares<=0) return res.status(400).json({ error: "Shares must be greater than 0" });
+
+        const { data:option, error: optError } = await supabase
+            .from('market_options')
+            .select('current_price, market_id')
+            .eq('id', optionId)
+            .single();
+
+        if(optError || !option) throw new Error("Option not found");
+
+        const totalReturn = option.current_price * shares;
+
+        const { error:rpcError } = await supabase.rpc('handle_sell_shares', {
+            p_user_id: userId,
+            p_option_id: optionId,
+            p_shares: shares,
+            p_total_return: totalReturn
+        });
+
+        if(rpcError) return res.status(400).json({ error: rpcError.message });
+
+        return res.status(200).json({
+            message: "Sale successful",
+            sharesSold: shares,
+            totalReturn: totalReturn
+        });
+    } catch(error:any){
+        return res.status(500).json({ error: error.message });
+    }
+};
