@@ -1,6 +1,5 @@
 {
   "expo": {
-    "owner": "prophetize",
     "name": "Prophetize",
     "slug": "client",
     "version": "1.0.0",
@@ -62,7 +61,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "fcb3f6c9-e8f9-4ace-8c0f-e0b53b884203"
+        "projectId": "cd55c313-548e-42e4-8d1a-ecacce0ef2c6"
       }
     }
   }
