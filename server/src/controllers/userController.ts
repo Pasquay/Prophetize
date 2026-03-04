@@ -84,7 +84,7 @@ export const logout = async(req:AuthRequest, res:Response) => {
         const token = req.token as string;
         if(!token) return res.status(401).json({ error: "Unauthorized: No token provided" });
 
-        const { error } = await supabase.auth.admin.signOut(token);
+        const { error } = await supabaseAdmin.auth.admin.signOut(token);
         if(error) throw error;
 
         return res.status(200).json({ message: "Successfully logged out and session terminated"}); 
@@ -96,7 +96,7 @@ export const logout = async(req:AuthRequest, res:Response) => {
 // GET /profile - Fetch account details
 export const getMyProfile = async(req:AuthRequest, res:Response) => {
     const userId = req.user.id;
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
         .from('profiles')
         .select('*')
         .eq('id', userId)
@@ -105,6 +105,35 @@ export const getMyProfile = async(req:AuthRequest, res:Response) => {
     if(error) return res.status(500).json({ error: "Failed to load profile" });
 
     res.json(data);
+};
+
+// POST /google-sync - Create or sync profile for Google OAuth users
+export const googleSync = async(req:AuthRequest, res:Response) => {
+    const user = req.user;
+
+    // Check if profile already exists (use admin client to bypass RLS)
+    const { data: existingProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+    if (existingProfile) {
+        return res.json({ message: "Profile already exists", profile: existingProfile });
+    }
+
+    // Create profile with a default username derived from email
+    const defaultUsername = user.email?.split('@')[0] ?? 'user_' + user.id.slice(0, 8);
+
+    const { data: newProfile, error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .insert([{ id: user.id, username: defaultUsername }])
+        .select()
+        .single();
+
+    if (profileError) return res.status(500).json({ error: profileError.message });
+
+    return res.status(201).json({ message: "Profile created", profile: newProfile });
 };
 
 // POST /claim-allowance - Claim daily income

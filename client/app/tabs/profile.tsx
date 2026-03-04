@@ -14,7 +14,7 @@ export default function App() {
 
     const handleLogout = async () => {
         const endpoint = '/auth/logout';
-        const ok = await api.post(endpoint, {});
+        const { ok } = await api.post(endpoint, {});
         if (!ok){
             Alert.alert('Logout Failed');
             return;

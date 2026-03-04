@@ -9,6 +9,8 @@ import { useEffect, useState } from 'react';
 import { Pressable, View, Text } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useRouter } from 'expo-router';
+import { useAuth } from '../context/AuthContext';
+import * as api from '../utils/api';
 
 const googleID = process.env.EXPO_PUBLIC_GOOGLECLIENT_ID as string;
 
@@ -18,6 +20,7 @@ type Props = {
 
 
 export default function GoogleLogin({disabled}:Props) {
+  const { login } = useAuth();
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: googleID,
@@ -47,8 +50,17 @@ export default function GoogleLogin({disabled}:Props) {
                 provider: 'google',
                 token: response.data.idToken as string,
               })
-              router.replace('./tabs/home');
-              // console.log(error, data);
+              if (error || !data.session) {
+                Alert.alert('Error', error?.message ?? 'No session returned');
+                return;
+              }
+              await login(data.user, data.session.access_token, data.session.refresh_token);
+              const { ok, data: syncData } = await api.post('/auth/google-sync', {});
+              if (!ok) {
+                console.error('google-sync failed:', syncData);
+                Alert.alert('Error', 'Failed to sync profile with server');
+              }
+                          
             }
           } catch (error: any) {
             if (error.code === statusCodes.IN_PROGRESS) {

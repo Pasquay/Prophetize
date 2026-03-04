@@ -185,7 +185,9 @@ module.exports = {
         'space-mono': ['var(--font-space-mono)'],
         'grotesk-bold': ['SpaceGrotesk_700Bold'],
         'grotesk': ['SpaceGrotesk_400Regular'],
-        'inter': ['InterTight_400Regular']
+        'inter': ['InterTight_400Regular'],
+        'jetbrain': ['JetBrainsMono_400Regular'],
+        'jetbrain-bold': ['JetBrainsMono_700Bold']
       },
       fontWeight: {
         extrablack: '950',

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, Alert, ScrollView } from 'react-native';
+import { Text, View, Alert, ScrollView, Pressable } from 'react-native';
 import TempAnim from "../../components/temp";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -7,65 +7,106 @@ import WideButton from '../../components/wide-button'
 import * as api from '../../utils/api';
 import  { useAuth }  from '../../context/AuthContext';
 import {Prediction} from "../../.expo/types/model";
-import  SituationCard from "../../components/situation-card";
+import  PredictionCard from "../../components/prediction-card";
+import CategoryBtn from "../../components/category-btn";
+import LoadingScreen from '../../components/loading-screen';
+import HomeHeader from "../../components/home-header";
 
 export default function App() {
 
     const router = useRouter();
-    const {logout, isLoading} = useAuth();
+    const { token } = useAuth(); 
 
     const [predictions, setPrediction] = useState<Prediction[]>([]);
+    const [activeCategory, setActiveCategory] = useState("trending"); 
+    const [marketsLoading, setMarketsLoading] = useState(false);
+    const [userData, setUserData] = useState<{balance: number} | null>(null);
+
+    const categories = [
+        { label: "Trending", endpoint: "trending" },
+        { label: "Sports",   endpoint: "sports"   },
+        { label: "Politics", endpoint: "politics" },
+        { label: "Crypto",   endpoint: "crypto"   },
+        { label: "School",   endpoint: "school"   },
+    ];
 
     useEffect(() => {
-        const getData = async () => {
-            const {ok, data} = await api.get("/markets/all");
+        const getMarketData = async (endpoint:string) => {
+            setMarketsLoading(true);
+            const {ok, data} = await api.get("/markets/"+endpoint);
             console.log("Total predictions received:", data.length);
-            console.log("API Response:", JSON.stringify(data, null, 2)); // 👈 Add this
             if(ok){
-                setPrediction(data.markets);
+                setPrediction(data.markets ?? []);
             } else {
                 Alert.alert('Something wrong happened when fetching for predictions!');
             }
+            setMarketsLoading(false);
         };
-        getData(); 
-    }, []);
+        getMarketData(activeCategory); 
+    }, [activeCategory]);
 
+    useEffect(() => {
+        if (!token) return;
+        const getUserData = async () => {
+            const {ok, data} = await api.get("/auth/profile");
+            if(ok){
+                setUserData(data);
+                console.log("ok:", ok);
+                console.log("data:", JSON.stringify(data, null, 2));
+            } else {
+                console.log("Profile fetch failed:", data);
+            }
+        };
+        getUserData();
+    }, [token]);
 
-
-    const handleLogout = async () => {
-        const endpoint = '/auth/logout';
-        const ok = await api.post(endpoint, {});
-        if (!ok){
-            Alert.alert('Logout Failed');
-            return;
-        } 
-        await logout();
-        router.replace('/');
-    }
-
+    const goMarketDetails = (id:number) => {
+        router.push({
+            pathname: "../marketDetails",
+            params: { id: id }
+        });
+    };
 
     return (
-        <SafeAreaView className="flex-1 p-2 bg-white">
-            <View className="flex-1 w-max justify-center   self-center">
-                <TempAnim />
-            <Text >Prophetize Beta</Text>
+        <SafeAreaView className="flex-1 p-5 bg-[white]">
+            <View className="gap-4">
+                {/* <View className="flex-1 w-max justify-center   self-center">
+                    <TempAnim />
+                    <Text >Prophetize Beta</Text>
+                </View> */}
+
+                <HomeHeader balance={userData?.balance ?? 0}/>
+
+                
+                <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
+                    <View className="flex-row gap-2">
+                        {categories.map((cat) => (
+                            <CategoryBtn
+                                key={cat.endpoint}
+                                label={cat.label}
+                                isActive={activeCategory === cat.endpoint}
+                                onPress={() => setActiveCategory(cat.endpoint)}
+                        />
+                        ))}
+                    </View>
+                </ScrollView>
+
+                {marketsLoading ? (
+                    <LoadingScreen/>
+                ):(
+                    <ScrollView className="">
+                        <View className="gap-[16px]">
+                            {predictions.map((prediction) => (
+                                <PredictionCard 
+                                    key={prediction.id} 
+                                    prediction={prediction} 
+                                    onPress={() => goMarketDetails(prediction.id)}
+                                />
+                            ))}
+                        </View>
+                    </ScrollView>   
+                )}
             </View>
-
-             <ScrollView >
-                <View className="gap-[16px]">
-                    {predictions.map((prediction) => (
-                        <SituationCard key={prediction.id} prediction={prediction} />
-                    ))}
-                </View>
-            </ScrollView>   
-
-            <WideButton
-                label='Logout'
-                onPress={handleLogout}
-                variant='primary'
-                disabled={isLoading}
-            />
-
         </SafeAreaView>
     );
 }

@@ -11,6 +11,7 @@ export interface Prediction {
 	category: string;
 	end_date: Date; 
 	status: string;
-	volume: number;
+	total_volume: number;
 	options: Options[];	
+	description: string;
 }
