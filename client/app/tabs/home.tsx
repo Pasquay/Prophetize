@@ -18,12 +18,12 @@ export default function App() {
     const { token } = useAuth(); 
 
     const [predictions, setPrediction] = useState<Prediction[]>([]);
-    const [activeCategory, setActiveCategory] = useState("trending"); 
+    const [activeCategory, setActiveCategory] = useState("get-all"); 
     const [marketsLoading, setMarketsLoading] = useState(false);
     const [userData, setUserData] = useState<{balance: number} | null>(null);
 
     const categories = [
-        { label: "Trending", endpoint: "trending" },
+        { label: "Trending", endpoint: "get-all" },
         { label: "Sports",   endpoint: "sports"   },
         { label: "Politics", endpoint: "politics" },
         { label: "Crypto",   endpoint: "crypto"   },
@@ -68,7 +68,7 @@ export default function App() {
     };
 
     return (
-        <SafeAreaView className="flex-1 p-5 bg-[white]">
+        <SafeAreaView className="flex-1 p-5 bg-[#F5F5F5]">
             <View className="gap-4">
                 {/* <View className="flex-1 w-max justify-center   self-center">
                     <TempAnim />
@@ -76,7 +76,6 @@ export default function App() {
                 </View> */}
 
                 <HomeHeader balance={userData?.balance ?? 0}/>
-
                 
                 <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
                     <View className="flex-row gap-2">
