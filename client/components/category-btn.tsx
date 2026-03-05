@@ -18,7 +18,7 @@ export default function categoryBtn({label, isActive, onPress}:Props) {
             style={{
                     backgroundColor: (isActive ? '#0F172A' : '#F8FAFC'),
                     borderWidth: 1,
-                    borderColor: (isActive ? '#0F172A' : '#F1F5F9')
+                    borderColor: (isActive ? '#0F172A' : '#E2E8F0')
                 }}
             >
             <Text

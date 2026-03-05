@@ -15,8 +15,7 @@ export default function HomeHeader({ balance, hasNotification = true, onNotifica
     });
 
     return (
-        <View className="h-auto w-full border-b border-[#F1F5F9] flex-row items-center pb-4">
-            {/* Left: coin + balance */}
+        <View className="h-auto w-full border-b border-[#E2E8F0] flex-row items-center pb-4">
             <View className="flex-row items-center gap-3 flex-1 ">
                 <Image
                     source={require('../assets/app-icons/p-coin.png')}
@@ -32,7 +31,6 @@ export default function HomeHeader({ balance, hasNotification = true, onNotifica
                 </Text>
             </View>
 
-            {/* Right: notification bell */}
             <Pressable
                 onPress={onNotificationPress}
                 style={{ padding: 8 }}
