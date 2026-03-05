@@ -1,7 +1,12 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabaseClient';
 import { AuthRequest } from '../types/authRequest';
+import { MARKET_CATEGORIES } from '../types/marketCategories';
 
+// GET /markets/categories
+export const getCategories = (req: Request, res: Response) => {
+    res.status(200).json(MARKET_CATEGORIES);
+};
 // GET /get-all - Get all markets (Testing only)
 export const getAllMarkets = async(req:Request, res:Response) => {
     try {
@@ -140,9 +145,35 @@ export const getMarketById = async(req:Request, res:Response) => {
 
         if(!data) return res.status(404).json({ error: "Market not found or not visible." });
 
-        return res.status(200).json({data});
+        return res.status(200).json({ data });
     } catch(error:any){
-        res.status(500).json({ error: error.message });
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+// GET /category/:category - Get market by category
+export const getMarketByCategory = async(req:Request, res:Response) => {
+    const category = (req.params.category as string)?.toUpperCase();    
+    if(!category) return res.status(400).json({ error: "Please select a category" });
+
+    try {
+        const { data, error } = await supabase
+            .from('markets')
+            .select(`
+                *,
+                options: market_options!market_options_market_id_fkey(
+                    *
+                )
+            `)
+            .eq('category', category)
+            .in('category', MARKET_CATEGORIES);
+
+        if(error) throw error;
+        if(!data) return res.status(404).json({ error: "Category is empty" });
+
+        return res.status(200).json({ data });
+    } catch(error:any){
+        return res.status(500).json({ error: error.message });
     }
 };
 
