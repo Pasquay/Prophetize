@@ -33,6 +33,8 @@ function RootLayout() {
     if(isLoading) return;
     if(token){
       router.replace('/tabs/home');
+    } else {
+      router.replace('/');
     }
   }, [isLoading]);
 

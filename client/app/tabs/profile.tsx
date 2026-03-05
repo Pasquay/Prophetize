@@ -13,13 +13,13 @@ export default function App() {
     const {logout, isLoading} = useAuth();
 
     const handleLogout = async () => {
-        const endpoint = '/auth/logout';
-        const { ok } = await api.post(endpoint, {});
-        if (!ok){
-            Alert.alert('Logout Failed');
-            return;
-        } 
-        await logout();
+        // const endpoint = '/auth/logout';
+        // const { ok } = await api.post(endpoint, {});
+        // if (!ok){
+        //     Alert.alert('Logout Failed');
+        //     return;
+        // } 
+        // await logout();
         router.replace('/');
     }
 

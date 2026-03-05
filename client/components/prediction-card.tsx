@@ -55,7 +55,6 @@ export default function PredictionCard({prediction, onPress}:Props)  {
               {prediction.category}
             </Text>
             <View className="flex-1" />
-            {/* <View className="w-1 h-1 bg-gray-300 rounded-full" /> */}
             <View className="bg-[#F8FAFC] rounded-xl px-4 py-2 ">
               <Text className="text-[#94A3B8] text-[12px] font-jetbrain-bold">
                 Ends {mediumDate}

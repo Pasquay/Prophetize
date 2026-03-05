@@ -24,7 +24,7 @@ const safeJson = async (response: Response) => {
     }
 };
 
-export const post = async(endpoint:string, body:object) => {
+export const post = async(endpoint:string, body?:object) => {
     const token = await getToken();
     const response = await fetch(baseUrl+endpoint, {
         method: 'POST',

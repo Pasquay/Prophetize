@@ -25,8 +25,8 @@ export const getAllMarkets = async(req:Request, res:Response) => {
         
         if(error) throw error;
 
-        const marketData = data.map((market:any) => {
-            const rawOptions = market.option || [];
+        const marketData = data.map((item:any) => {
+            const rawOptions = item.option || [];
             const sortedOptions = rawOptions.sort((a:any, b:any) => b.probability - a.probability);
             const topOptions = sortedOptions.slice(0, 2);
 
@@ -43,18 +43,18 @@ export const getAllMarkets = async(req:Request, res:Response) => {
             }
 
             return {
-                id:market.id,
-                title: market.title,
-                image: market.image_url,
-                category: market.category,
-                endDate: market.end_date,
-                status: market.status,
-                volume: market.volume || 0, 
+                id: item.id,
+                title: item.title,
+                image: item.image_url,
+                category: item.category,
+                endDate: item.end_date,
+                status: item.status,
+                volume: item.volume || 0, 
                 options: finalOptions
             }
         });
 
-        return res.status(200).json({ marketData });
+        return res.status(200).json( marketData );
     } catch(error:any){
         res.status(500).json({ error: error.message });
     }
