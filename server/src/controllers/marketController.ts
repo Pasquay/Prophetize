@@ -162,7 +162,9 @@ export const getMarketByCategory = async(req:Request, res:Response) => {
             .select(`
                 *,
                 options: market_options!market_options_market_id_fkey(
-                    *
+                    id,
+                    name,
+                    probability
                 )
             `)
             .eq('category', category)
@@ -171,7 +173,37 @@ export const getMarketByCategory = async(req:Request, res:Response) => {
         if(error) throw error;
         if(!data) return res.status(404).json({ error: "Category is empty" });
 
-        return res.status(200).json({ data });
+        const marketData = data.map((market:any) => {
+            const rawOptions = market.options || [];
+
+            const sortedOptions = rawOptions.sort((a: any, b: any) => b.probability - a.probability);
+            const topOptions = sortedOptions.slice(0, 2);
+
+            const otherOptions = sortedOptions.slice(2);
+            const otherProbability = otherOptions.reduce((sum: number, opt: any) => sum + opt.probability, 0);
+
+            const finalOptions = [...topOptions];
+            if (otherProbability > 0.01) {
+                finalOptions.push({
+                    id: 'other',
+                    name: 'Other',
+                    probability: otherProbability
+                });
+            }
+
+            return {
+                id: market.id,
+                title: market.title,
+                image: market.image_url,
+                category: market.category,
+                endDate: market.end_date,
+                status: market.status,
+                volume: market.total_volume,
+                options: finalOptions
+            }
+        });
+
+        return res.status(200).json({ marketData });
     } catch(error:any){
         return res.status(500).json({ error: error.message });
     }
