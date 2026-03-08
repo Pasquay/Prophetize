@@ -1,20 +1,18 @@
 import "../global.css";
-import { Stack} from 'expo-router';
 import { useFonts } from 'expo-font';
 import { SpaceGrotesk_700Bold, SpaceGrotesk_400Regular } from '@expo-google-fonts/space-grotesk';
 import { InterTight_400Regular, InterTight_700Bold } from '@expo-google-fonts/inter-tight';
 import { JetBrainsMono_400Regular, JetBrainsMono_700Bold } from '@expo-google-fonts/jetbrains-mono';
-import { useRouter } from 'expo-router';
+import { useRouter, Stack } from 'expo-router';
 import React, { useEffect } from 'react';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import LoadingScreen from '../components/loading-screen';
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
-import '@/global.css';
 
 export default function Layout() {
     return (
         
-    <GluestackUIProvider mode="dark">
+    <GluestackUIProvider mode="light">
       <AuthProvider>
             <RootLayout />
         </AuthProvider>
@@ -27,8 +25,6 @@ function RootLayout() {
   const router = useRouter();
   const { token, isLoading } = useAuth();
 
-  
-
   useEffect(() => {
     if(isLoading) return;
     if(token){
@@ -36,7 +32,7 @@ function RootLayout() {
     } else {
       router.replace('/');
     }
-  }, [isLoading]);
+  }, [token, isLoading, router]);
 
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_400Regular,
@@ -47,7 +43,7 @@ function RootLayout() {
     JetBrainsMono_700Bold,
   });
 
-  if(isLoading){
+  if(isLoading || !fontsLoaded){
     return <LoadingScreen />
   }
 

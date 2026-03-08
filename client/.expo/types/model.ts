@@ -7,11 +7,11 @@ export interface Options {
 export interface Prediction { 
 	id: number; 
 	title: string;
-	image_url: string;
+	image: string;
 	category: string;
-	end_date: Date; 
+	endDate: string; 
 	status: string;
-	total_volume: number;
+	volume: number;
 	options: Options[];	
 	description: string;
 }

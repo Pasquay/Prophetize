@@ -1,5 +1,5 @@
 import {Prediction} from "../.expo/types/model";
-import React from 'react';
+import React, {useCallback} from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,30 +10,32 @@ type Props = {
 }
 
 const categoryIconMap: Record<string, { name: keyof typeof MaterialIcons.glyphMap; color: string }> = {
-    SPORT: { name: "sports-soccer", color: "#10B981" },
+    SPORTS: { name: "sports-basketball", color: "#10B981" },
     POLITICS: { name: "gavel", color: "#6366F1" },
     CRYPTO: { name: "attach-money", color: "#F59E0B" },
     CULTURE: { name: "movie", color: "#EC4899" },
     TECHNOLOGY: { name: "computer", color: "#3B82F6" },
 };  
 
+
+
 export default function PredictionCard({prediction, onPress}:Props)  {
-  const mediumDate = new Date(prediction.end_date).toLocaleDateString('en-US', { dateStyle: 'medium' }); 
-  const yesPercent = prediction.options[0].probability * 100;
-  const noPercent = prediction.options[1].probability * 100;
+  const mediumDate = prediction.endDate
+    ? new Date(prediction.endDate).toLocaleDateString('en-US', { dateStyle: 'medium' })
+    : 'TBD';
 
   const categoryIcon = categoryIconMap[prediction.category] ?? { name: "help-outline", color: "#94A3B8" };
   const OPTION_COLORS = ["#10B981", "#EF4444", "#3B82F6", "#F59E0B", "#EC4899", "#6366F1"];
 
     return (
-    <Pressable onPress={onPress} className="w-full h-auto rounded-[12px] border-[#F1F5F9] border-2">
+    <Pressable onPress={onPress} className="w-full h-auto rounded-[12px] border-[#E2E8F0] border-[1px]">
       <View className="bg-white rounded-2xl overflow-hidden shadow-sm">
 
         {/* Image with diagonal gradient fade: top-right visible → bottom-left hidden */}
-        {prediction.image_url ? (
+        {prediction.image ? (
           <View style={styles.imageContainer}>
             <Image
-              source={{ uri: prediction.image_url }}
+              source={{ uri: prediction.image }}
               style={styles.image}
               resizeMode="cover"
             />
@@ -70,7 +72,6 @@ export default function PredictionCard({prediction, onPress}:Props)  {
 
            {/* Option Labels */}
           {prediction.options.length === 2 ? (
-            // Yes/No layout: left and right
             <View className="flex-row justify-between mt-2">
               <Text style={{ color: OPTION_COLORS[0] }} className="font-jetbrain-bold text-[14px]">
                 {prediction.options[0].name} {(prediction.options[0].probability * 100).toFixed(0)}%
@@ -80,7 +81,6 @@ export default function PredictionCard({prediction, onPress}:Props)  {
               </Text>
             </View>
           ) : (
-            // Multi-option layout: each label sits above its bar segment
             <View className="flex-row w-full mt-2">
               {prediction.options.map((option, index) => {
                 const percent = option.probability * 100;
@@ -121,7 +121,7 @@ export default function PredictionCard({prediction, onPress}:Props)  {
           <View className="flex-row mt-4">
             <Text className="font-jetbrain text-[14px]">Sample</Text>
             <View className="flex-1"/>
-            <Text className="font-jetbrain text-[12px]">Vol: <Text className="font-jetbrain-bold">{prediction.total_volume}</Text></Text>
+            <Text className="font-jetbrain text-[12px]">Vol: <Text className="font-jetbrain-bold">{prediction.volume ?? '—'}</Text></Text>
           </View>
 
         </View>

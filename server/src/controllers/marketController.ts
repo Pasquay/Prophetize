@@ -203,7 +203,7 @@ export const getMarketByCategory = async(req:Request, res:Response) => {
             }
         });
 
-        return res.status(200).json({ marketData });
+        return res.status(200).json(marketData);
     } catch(error:any){
         return res.status(500).json({ error: error.message });
     }
