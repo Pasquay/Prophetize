@@ -6,6 +6,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from '../../context/AuthContext';
 import { useUserStore } from "../../context/useUserStore";
 
+
 export default function layout(){
   const { token, isLoading } = useAuth();
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function layout(){
   useEffect(() => {
     if (isLoading) return;
     if (!token) {
-      router.replace('/login');
+      router.replace('/');
     } else {
         fetchUserData();
     }

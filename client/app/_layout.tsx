@@ -12,11 +12,9 @@ import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 export default function Layout() {
     return (
         
-    <GluestackUIProvider mode="light">
       <AuthProvider>
-            <RootLayout />
-        </AuthProvider>
-    </GluestackUIProvider>
+        <RootLayout />
+      </AuthProvider>
   
     );
 }

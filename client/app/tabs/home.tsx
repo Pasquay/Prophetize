@@ -13,6 +13,7 @@ import LoadingScreen from '../../components/loading-screen';
 import HomeHeader from "../../components/home-header";
 import ClaimAllowance from "../../components/claim-allowance";
 import { useUserStore } from '../../context/useUserStore';
+import categories from "../../constants/categories";
 
 export default function App() {
 
@@ -35,15 +36,6 @@ export default function App() {
                Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate());
     })();
 
-    const categories = [
-        { label: "Trending", endpoint: "trending"           },
-        { label: "All",      endpoint: "get-all"          },
-        { label: "Sports",   endpoint: "category/sports"   },
-        { label: "Politics", endpoint: "category/politics" },
-        { label: "Crypto",   endpoint: "category/crypto"   },
-        { label: "School",   endpoint: "category/school"   },
-    ];
-
     useEffect(() => {
         const getMarketData = async (endpoint:string) => {
             setMarketsLoading(true);
@@ -63,16 +55,6 @@ export default function App() {
         };
         getMarketData(activeCategory); 
     }, [activeCategory]);
-
-    // const fetchUserData = async () => {
-    //     const {ok, data} = await api.get("/auth/profile");
-    //     if(ok){
-    //         setUserData(data);
-    //         console.log(data.id);
-    //     } else {
-    //         console.log("Profile fetch failed:", data);
-    //     }
-    // };
 
     const goMarketDetails = useCallback((id:number) => {
         router.push({ pathname: `/marketDetails`, params: {id} });
