@@ -37,7 +37,7 @@ export const register = async(req:Request, res:Response) => {
         message: "Registration successful", user: { id:user.id, email, username}
     });
 };
-
+ 
 // POST /login - Login account
 export const login = async(req:Request, res:Response) => {
     // Extracts login details
@@ -92,6 +92,24 @@ export const logout = async(req:AuthRequest, res:Response) => {
         return res.status(500).json({ message: err.message || "Failed to log out" });
     }
 };
+
+// POST /refresh-token - Refresh session token
+export const refreshUserToken = async(req:Request, res:Response) => {
+    const { refresh_token } = req.body;
+
+    if(!refresh_token) return res.status(400).json({ error: "No refresh token provided." });
+
+    const { data, error } = await supabase.auth.refreshSession({ refresh_token });
+
+    if(error) return res.status(401).json({ error: "Invalid or expired refresh token. Please log in again." });
+    if(!data.session) return res.status(500).json({ error: "Failed to generate new session." });
+
+    return res.status(200).json({
+        message: "Token refreshed successfully",
+        access_token: data.session.access_token,
+        session: data.session
+    });
+}
 
 // GET /profile - Fetch account details
 export const getMyProfile = async(req:AuthRequest, res:Response) => {
