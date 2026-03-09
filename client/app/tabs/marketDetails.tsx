@@ -29,7 +29,7 @@ export default function DetailsScreen() {
         setMarketLoading(false);
       };
       getMarketData(marketID); 
-    }, []);
+    }, [marketID]);
 
 
   return (

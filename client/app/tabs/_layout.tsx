@@ -4,15 +4,19 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from '../../context/AuthContext';
+import { useUserStore } from "../../context/useUserStore";
 
 export default function layout(){
   const { token, isLoading } = useAuth();
   const router = useRouter();
+  const { fetchUserData } = useUserStore();
 
   useEffect(() => {
     if (isLoading) return;
     if (!token) {
       router.replace('/login');
+    } else {
+        fetchUserData();
     }
   }, [token, isLoading]);
 

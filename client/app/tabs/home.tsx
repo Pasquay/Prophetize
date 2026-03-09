@@ -12,19 +12,20 @@ import CategoryBtn from "../../components/category-btn";
 import LoadingScreen from '../../components/loading-screen';
 import HomeHeader from "../../components/home-header";
 import ClaimAllowance from "../../components/claim-allowance";
+import { useUserStore } from '../../context/useUserStore';
 
 export default function App() {
 
     const router = useRouter();
-    const { token } = useAuth();
     const tabBarHeight = useBottomTabBarHeight();
+    const { userData, fetchUserData } = useUserStore();
 
     const [predictions, setPrediction] = useState<Prediction[]>([]);
     const [activeCategory, setActiveCategory] = useState("trending"); 
     const [marketsLoading, setMarketsLoading] = useState(false);
-    const [userData, setUserData] = useState<{balance: number, last_claim_date: string | null} | null>(null);
     const [noMarket, setNoMarket] = useState(true);
 
+    //to be memo
     const canClaimAllowance = (() => {
         if (!userData) return false;
         if (!userData.last_claim_date) return true;
@@ -63,24 +64,19 @@ export default function App() {
         getMarketData(activeCategory); 
     }, [activeCategory]);
 
-    const fetchUserData = async () => {
-        const {ok, data} = await api.get("/auth/profile");
-        if(ok){
-            setUserData(data);
-            console.log(data.id);
-        } else {
-            console.log("Profile fetch failed:", data);
-        }
-    };
-
-    useEffect(() => {
-        if (!token) return;
-        fetchUserData();
-    }, [token]);
+    // const fetchUserData = async () => {
+    //     const {ok, data} = await api.get("/auth/profile");
+    //     if(ok){
+    //         setUserData(data);
+    //         console.log(data.id);
+    //     } else {
+    //         console.log("Profile fetch failed:", data);
+    //     }
+    // };
 
     const goMarketDetails = useCallback((id:number) => {
         router.push({ pathname: `/marketDetails`, params: {id} });
-    }, []);
+    }, [router]);
 
 
     return (
