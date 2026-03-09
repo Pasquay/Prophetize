@@ -15,11 +15,11 @@ export default function HomeHeader({ balance, hasNotification = true, onNotifica
     });
 
     return (
-        <View className="h-auto w-full border-b border-[#E2E8F0] flex-row items-center pb-4">
-            <View className="flex-row items-center gap-3 flex-1 ">
+        <View className="h-auto w-full flex-row items-center pb-4 gap-2">
+            <View className="flex-row items-center gap-3 flex-1 p-2 inline-flex">
                 <Image
                     source={require('../assets/app-icons/p-coin.png')}
-                    style={{ width: 48, height: 48 }}
+                    style={{ width: 44, height: 44 }}
                     resizeMode="contain"
                 />
                 <Text
@@ -34,8 +34,9 @@ export default function HomeHeader({ balance, hasNotification = true, onNotifica
             <Pressable
                 onPress={onNotificationPress}
                 style={{ padding: 8 }}
+                className="rounded-full "
             >
-                <View>
+                <View >
                     <Ionicons name="notifications-outline" size={26} color="#0F172A" />
                     {hasNotification && (
                         <View
@@ -48,8 +49,7 @@ export default function HomeHeader({ balance, hasNotification = true, onNotifica
                                 borderRadius: 5,
                                 backgroundColor: '#38BDF8',
                                 borderWidth: 1.5,
-                                borderColor: '#ffffff',
-                            }}
+                                borderColor: '#ffffff',                           }}
                         />
                     )}
                 </View>

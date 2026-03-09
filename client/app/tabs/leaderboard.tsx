@@ -13,14 +13,14 @@ export default function App() {
     const {logout, isLoading} = useAuth();
 
     const handleLogout = async () => {
-        const endpoint = '/auth/logout';
-        const ok = await api.post(endpoint, {});
-        if (!ok){
-            Alert.alert('Logout Failed');
-            return;
-        } 
-        await logout();
-        router.replace('/');
+        // const endpoint = '/auth/logout';
+        // const ok = await api.post(endpoint, {});
+        // if (!ok){
+        //     Alert.alert('Logout Failed');
+        //     return;
+        // } 
+        // await logout();
+        router.replace('/login');
     }
 
     return (
@@ -31,7 +31,7 @@ export default function App() {
             </View>
 
             <WideButton
-                label='Logout'
+                label='Emergency Out'
                 onPress={handleLogout}
                 variant='primary'
                 disabled={isLoading}

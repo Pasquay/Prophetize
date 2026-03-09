@@ -65,7 +65,7 @@ export default function signUpScreen() {
     }
 
     return (
-        <SafeAreaView  className="bg-[#F5F5F5] flex-1">
+        <SafeAreaView  className="bg-[#F7F9FC] flex-1">
             <View className="flex-1 p-6">
 
                 <View className="flex flex-row gap-3 items-center">

@@ -1,10 +1,23 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { Tabs, useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Feather from '@expo/vector-icons/Feather';
+import { useAuth } from '../../context/AuthContext';
 
 export default function layout(){
+  const { token, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!token) {
+      router.replace('/login');
+    }
+  }, [token, isLoading]);
+
+  if (!token) return null;
+
   return (
     <Tabs screenOptions={{ tabBarActiveTintColor:"#90E0EF", animation:"shift" }}>
         <Tabs.Screen name="home" options={{ 

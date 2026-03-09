@@ -16,7 +16,7 @@ export default function categoryBtn({label, isActive, onPress}:Props) {
             onPressIn={()=>setPressed(true)}
             onPressOut={()=>setPressed(false)}
             style={{
-                    backgroundColor: (isActive ? '#0F172A' : '#F8FAFC'),
+                    backgroundColor: (isActive ? '#0F172A' : 'white'),
                     borderWidth: 1,
                     borderColor: (isActive ? '#0F172A' : '#E2E8F0')
                 }}

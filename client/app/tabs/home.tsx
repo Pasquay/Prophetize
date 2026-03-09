@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { Text, View, Alert, ScrollView, Pressable } from 'react-native';
-import TempAnim from "../../components/temp";
+import React, { useEffect, useState, useCallback } from 'react';
+import { Text, View, Alert, ScrollView, FlatList } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import WideButton from '../../components/wide-button'
+import NoMarkets from "../../components/no-markets";
 import * as api from '../../utils/api';
 import  { useAuth }  from '../../context/AuthContext';
 import {Prediction} from "../../.expo/types/model";
@@ -11,23 +11,36 @@ import  PredictionCard from "../../components/prediction-card";
 import CategoryBtn from "../../components/category-btn";
 import LoadingScreen from '../../components/loading-screen';
 import HomeHeader from "../../components/home-header";
+import ClaimAllowance from "../../components/claim-allowance";
 
 export default function App() {
 
     const router = useRouter();
-    const { token } = useAuth(); 
+    const { token } = useAuth();
+    const tabBarHeight = useBottomTabBarHeight();
 
     const [predictions, setPrediction] = useState<Prediction[]>([]);
-    const [activeCategory, setActiveCategory] = useState("get-all"); 
+    const [activeCategory, setActiveCategory] = useState("trending"); 
     const [marketsLoading, setMarketsLoading] = useState(false);
-    const [userData, setUserData] = useState<{balance: number} | null>(null);
+    const [userData, setUserData] = useState<{balance: number, last_claim_date: string | null} | null>(null);
+    const [noMarket, setNoMarket] = useState(true);
+
+    const canClaimAllowance = (() => {
+        if (!userData) return false;
+        if (!userData.last_claim_date) return true;
+        const now = new Date();
+        const last = new Date(userData.last_claim_date);
+        return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) >
+               Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate());
+    })();
 
     const categories = [
-        { label: "Trending", endpoint: "get-all" },
-        { label: "Sports",   endpoint: "sports"   },
-        { label: "Politics", endpoint: "politics" },
-        { label: "Crypto",   endpoint: "crypto"   },
-        { label: "School",   endpoint: "school"   },
+        { label: "Trending", endpoint: "trending"           },
+        { label: "All",      endpoint: "get-all"          },
+        { label: "Sports",   endpoint: "category/sports"   },
+        { label: "Politics", endpoint: "category/politics" },
+        { label: "Crypto",   endpoint: "category/crypto"   },
+        { label: "School",   endpoint: "category/school"   },
     ];
 
     useEffect(() => {
@@ -36,7 +49,12 @@ export default function App() {
             const {ok, data} = await api.get("/markets/"+endpoint);
             console.log("Total predictions received:", data.length);
             if(ok){
-                setPrediction(data.markets ?? []);
+                setPrediction(Array.isArray(data) ? data : (data.data ?? []));
+                if(data.length != 0){
+                    setNoMarket(false);
+                } else {
+                    setNoMarket(true);
+                }
             } else {
                 Alert.alert('Something wrong happened when fetching for predictions!');
             }
@@ -45,68 +63,75 @@ export default function App() {
         getMarketData(activeCategory); 
     }, [activeCategory]);
 
-    useEffect(() => {
-        if (!token) return;
-        const getUserData = async () => {
-            const {ok, data} = await api.get("/auth/profile");
-            if(ok){
-                setUserData(data);
-                console.log("ok:", ok);
-                console.log("data:", JSON.stringify(data, null, 2));
-            } else {
-                console.log("Profile fetch failed:", data);
-            }
-        };
-        getUserData();
-    }, [token]);
-
-    const goMarketDetails = (id:number) => {
-        router.push({
-            pathname: "../marketDetails",
-            params: { id: id }
-        });
+    const fetchUserData = async () => {
+        const {ok, data} = await api.get("/auth/profile");
+        if(ok){
+            setUserData(data);
+            console.log(data.id);
+        } else {
+            console.log("Profile fetch failed:", data);
+        }
     };
 
+    useEffect(() => {
+        if (!token) return;
+        fetchUserData();
+    }, [token]);
+
+    const goMarketDetails = useCallback((id:number) => {
+        router.push({ pathname: `/marketDetails`, params: {id} });
+    }, []);
+
+
     return (
-        <SafeAreaView className="flex-1 p-5 bg-[#F5F5F5]">
-            <View className="gap-4">
-                {/* <View className="flex-1 w-max justify-center   self-center">
-                    <TempAnim />
-                    <Text >Prophetize Beta</Text>
-                </View> */}
+        <View className="flex-1 bg-[#F7F9FC]">
+            {/* White header zone — includes status bar */}
+            <SafeAreaView edges={['top']} className="bg-white">
+                <View className="px-5 pt-3 bg-white" style={{ borderBottomWidth: 1, borderBottomColor: '#E8EDF5' }}>
+                    <HomeHeader balance={userData?.balance ?? 0}/>
+                 </View>   
+            </SafeAreaView>
 
-                <HomeHeader balance={userData?.balance ?? 0}/>
-                
+            <View className="px-5 pt-3 gap-3">
+                {canClaimAllowance && <ClaimAllowance onClaimed={fetchUserData}/>}
                 <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
-                    <View className="flex-row gap-2">
-                        {categories.map((cat) => (
-                            <CategoryBtn
-                                key={cat.endpoint}
-                                label={cat.label}
-                                isActive={activeCategory === cat.endpoint}
-                                onPress={() => setActiveCategory(cat.endpoint)}
-                        />
-                        ))}
-                    </View>
-                </ScrollView>
-
-                {marketsLoading ? (
-                    <LoadingScreen/>
-                ):(
-                    <ScrollView className="">
-                        <View className="gap-[16px]">
-                            {predictions.map((prediction) => (
-                                <PredictionCard 
-                                    key={prediction.id} 
-                                    prediction={prediction} 
-                                    onPress={() => goMarketDetails(prediction.id)}
+                        <View className="flex-row gap-2">
+                            {categories.map((cat) => (
+                                <CategoryBtn
+                                    key={cat.endpoint}
+                                    label={cat.label}
+                                    isActive={activeCategory === cat.endpoint}
+                                    onPress={() => setActiveCategory(cat.endpoint)}
                                 />
                             ))}
                         </View>
-                    </ScrollView>   
+                    </ScrollView>
+            </View>
+
+            {/* Scrollable content */}
+            <View className="flex-1 px-5 pt-3">
+                {marketsLoading ? (
+                    <LoadingScreen/>
+                ) : (
+                    noMarket ? (
+                        <NoMarkets/>
+                    ) : (
+                        <FlatList
+                            data={predictions}
+                            keyExtractor={(item) => item.id.toString()}
+                            renderItem={({ item }) => (
+                                <PredictionCard 
+                                    prediction={item} 
+                                    onPress={() => goMarketDetails(item.id)}
+                                />
+                            )}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ gap: 14, paddingBottom: tabBarHeight + 16 }}
+                        />       
+                    )
                 )}
             </View>
-        </SafeAreaView>
+        </View>
     );
 }
 

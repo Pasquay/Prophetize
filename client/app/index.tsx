@@ -12,7 +12,7 @@ export default function welcomeScreen(){
     const router = useRouter();
 
     return (
-        <SafeAreaView className="bg-[#F5F5F5] flex-1 ">
+        <SafeAreaView className="bg-[#F7F9FC] flex-1 ">
             <View className="flex-1 p-6 ">
             
                 <View className="mt-[40px]">
@@ -32,7 +32,7 @@ export default function welcomeScreen(){
 
             </View>
 
-            <View className="bg-[#F5F5F5] p-6  gap-[12px]">
+            <View className="bg-[#F7F9FC] p-6  gap-[12px]">
 
                 <WideButton
                     onPress={() => router.push('/signUp')}

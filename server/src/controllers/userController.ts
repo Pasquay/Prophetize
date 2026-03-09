@@ -160,7 +160,7 @@ export const claimAllowance = async(req:AuthRequest, res:Response) => {
         const userId = req.user?.id;
         if(!userId) return res.status(401).json({ error: "Unauthorized" });
 
-        const { data:profile, error:profileError } = await supabase
+        const { data:profile, error:profileError } = await supabaseAdmin
             .from('profiles')
             .select('balance, current_streak, last_claim_date')
             .eq('id', userId)
@@ -187,7 +187,7 @@ export const claimAllowance = async(req:AuthRequest, res:Response) => {
         const rewardAmount = payouts[newStreak-1];
         const newBalance = profile.balance + rewardAmount;
 
-        const { error:updateError } = await supabase
+        const { error:updateError } = await supabaseAdmin
             .from('profiles')
             .update({
                 balance: newBalance,

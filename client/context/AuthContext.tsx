@@ -1,5 +1,6 @@
 import React, {useState, useEffect, createContext, useContext} from 'react';
 import * as SecureStore from 'expo-secure-store';
+import { registerClearAuth } from '../utils/api';
 
 type AuthContextType = {
     user: any | null;
@@ -7,6 +8,7 @@ type AuthContextType = {
     isLoading: boolean;
     login: (userdata: any, token: string, refreshToken: string) => Promise<void>
     logout: () => Promise<void>
+    clearAuth: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -17,13 +19,13 @@ export function AuthProvider({children}:{children:React.ReactNode}) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        registerClearAuth(clearAuth);
         const loadAuth = async () => {
             try{
                 const storedToken = await SecureStore.getItemAsync('access_token');
                 const storedUser = await SecureStore.getItemAsync('user');
                 if(storedToken) setToken(storedToken);
                 if(storedUser) setUser(JSON.parse(storedUser));
-                await new Promise(resolve => setTimeout(resolve, 1000));
             } finally {
                 setIsLoading(false);
             }    
@@ -47,6 +49,15 @@ export function AuthProvider({children}:{children:React.ReactNode}) {
     const logout = async () => {
         setIsLoading(true);
         try{
+            await clearAuth();
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const clearAuth = async() => {
+        setIsLoading(true)
+        try{
             await SecureStore.deleteItemAsync('access_token');
             await SecureStore.deleteItemAsync('refresh_token');
             await SecureStore.deleteItemAsync('user');
@@ -58,7 +69,7 @@ export function AuthProvider({children}:{children:React.ReactNode}) {
     };
     
     return (
-        <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
+        <AuthContext.Provider value={{ user, token, isLoading, login, logout, clearAuth }}>
             {children}
         </AuthContext.Provider>
     );  
