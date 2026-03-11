@@ -15,7 +15,7 @@ export default function layout(){
   useEffect(() => {
     if (isLoading) return;
     if (!token) {
-      router.replace('/');
+      router.replace('../');
     } else {
         fetchUserData();
     }
@@ -53,6 +53,10 @@ export default function layout(){
                 return <Feather name="user" size={size} color={color} />
             }   
         }} />
+        {/* <Tabs.Screen name="marketDetails" options={{
+            href:null,
+            headerShown:false,
+        }} /> */}
     </Tabs>
   );
 }

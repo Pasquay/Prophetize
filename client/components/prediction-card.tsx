@@ -121,7 +121,7 @@ export default function PredictionCard({prediction, onPress}:Props)  {
           <View className="flex-row mt-4">
             <Text className="font-jetbrain text-[14px]">Sample</Text>
             <View className="flex-1"/>
-            <Text className="font-jetbrain text-[12px]">Vol: <Text className="font-jetbrain-bold">{prediction.volume ?? '—'}</Text></Text>
+            <Text className="font-jetbrain text-[12px]">Vol: <Text className="font-jetbrain-bold">{(prediction.total_volume ?? 0).toLocaleString()}</Text></Text>
           </View>
 
         </View>

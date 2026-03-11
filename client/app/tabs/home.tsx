@@ -57,7 +57,7 @@ export default function App() {
     }, [activeCategory]);
 
     const goMarketDetails = useCallback((id:number) => {
-        router.push({ pathname: `/marketDetails`, params: {id} });
+        router.push({ pathname: `../marketDetails`, params: {id} });
     }, [router]);
 
 
