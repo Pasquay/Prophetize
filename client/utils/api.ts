@@ -88,6 +88,6 @@ export const get = async(endpoint:string) => {
         }
     });
     const response = await doRequest();
-    return handleResponse(response);
+    return handleResponse(response, doRequest);
 }
 
