@@ -7,6 +7,7 @@ import { MARKET_CATEGORIES } from '../types/marketCategories';
 export const getCategories = (req: Request, res: Response) => {
     res.status(200).json(MARKET_CATEGORIES);
 };
+
 // GET /get-all - Get all markets (Testing only)
 export const getAllMarkets = async(req:Request, res:Response) => {
     try {
@@ -58,7 +59,7 @@ export const getAllMarkets = async(req:Request, res:Response) => {
     } catch(error:any){
         res.status(500).json({ error: error.message });
     }
-}
+};
 
 // GET /trending - Get trending markets (home page)
 export const getTrendingMarkets = async(req:Request, res:Response) => {
@@ -119,38 +120,6 @@ export const getTrendingMarkets = async(req:Request, res:Response) => {
     }
 };
 
-// GET /:id - Get market by ID
-export const getMarketById = async(req:Request, res:Response) => {
-    try {
-        const { id } = req.params;
-        const { data, error } = await supabase
-            .from('markets')
-            .select(`
-                *,
-                options: market_options!market_options_market_id_fkey(
-                    *
-                )
-            `)
-            .eq('id', id)
-            .in('status', [
-                'active',
-                'closed',
-                'resolving',
-                'disputed',
-                'finalized'
-            ])
-            .maybeSingle();
-
-        if(error) throw error;
-
-        if(!data) return res.status(404).json({ error: "Market not found or not visible." });
-
-        return res.status(200).json({ data });
-    } catch(error:any){
-        return res.status(500).json({ error: error.message });
-    }
-};
-
 // GET /category/:category - Get market by category
 export const getMarketByCategory = async(req:Request, res:Response) => {
     const category = (req.params.category as string)?.toUpperCase();    
@@ -204,6 +173,38 @@ export const getMarketByCategory = async(req:Request, res:Response) => {
         });
 
         return res.status(200).json(marketData);
+    } catch(error:any){
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+// GET /:id - Get market by ID
+export const getMarketById = async(req:Request, res:Response) => {
+    try {
+        const { id } = req.params;
+        const { data, error } = await supabase
+            .from('markets')
+            .select(`
+                *,
+                options: market_options!market_options_market_id_fkey(
+                    *
+                )
+            `)
+            .eq('id', id)
+            .in('status', [
+                'active',
+                'closed',
+                'resolving',
+                'disputed',
+                'finalized'
+            ])
+            .maybeSingle();
+
+        if(error) throw error;
+
+        if(!data) return res.status(404).json({ error: "Market not found or not visible." });
+
+        return res.status(200).json({ data });
     } catch(error:any){
         return res.status(500).json({ error: error.message });
     }
@@ -270,7 +271,7 @@ export const createMarket = async(req:AuthRequest, res:Response) => {
     } catch(error:any){
         return res.status(500).json({ error: error.message });
     }
-}
+};
 
 // POST /review - Admin approves/rejects market for posting
 export const reviewMarket = async(req:AuthRequest, res:Response) => {
@@ -304,4 +305,4 @@ export const reviewMarket = async(req:AuthRequest, res:Response) => {
     } catch(error:any){
         return res.status(500).json({ error: error.message });
     }
-}
+};
