@@ -5,3 +5,7 @@ dist/
 client/.expo/
 .idea/deviceManager.xml
 .agent/
+.agents/
+.claude/
+.serena/
+docs
