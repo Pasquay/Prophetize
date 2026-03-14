@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { supabase } from '../config/supabaseClient';
 import { AuthRequest } from '../types/authRequest';
 import { MARKET_CATEGORIES } from '../types/marketCategories';
+import { getPaginationRange } from '../utils/pagination';
 
 // GET /markets/categories
 export const getCategories = (req: Request, res: Response) => {
@@ -10,6 +11,11 @@ export const getCategories = (req: Request, res: Response) => {
 
 // GET /get-all - Get all markets (Testing only)
 export const getAllMarkets = async(req:Request, res:Response) => {
+    const page = parseInt(req.query.page as string) || 0;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const { from, to } = getPaginationRange(page, limit);
+
     try {
         const { data, error } = await supabase
             .from('markets')
@@ -22,9 +28,10 @@ export const getAllMarkets = async(req:Request, res:Response) => {
                 )
             `)
             .order('created_at', { ascending:false })
-            .limit(20);
+            .range(from, to);
         
         if(error) throw error;
+        if(!data || !data.length) return res.status(200).json([]);
 
         const marketData = data.map((item:any) => {
             const rawOptions = item.option || [];
@@ -63,6 +70,11 @@ export const getAllMarkets = async(req:Request, res:Response) => {
 
 // GET /trending - Get trending markets (home page)
 export const getTrendingMarkets = async(req:Request, res:Response) => {
+    const page = parseInt(req.query.page as string) || 0;
+    const limit = parseInt(req.query.limit as string) || 10;
+    
+    const { from, to } = getPaginationRange(page, limit);
+
     try {
         const { data, error } = await supabase
             .from('market_24h_stats')
@@ -78,9 +90,10 @@ export const getTrendingMarkets = async(req:Request, res:Response) => {
                 )
             `)
             .order('volume_24h', { ascending: false })
-            .limit(20);
+            .range(from, to);
         
         if(error) throw error;
+        if(!data || !data.length) return res.status(200).json([]);
 
         const marketData = data.map((item:any) => {
             const market = item.market;
@@ -125,6 +138,11 @@ export const getMarketByCategory = async(req:Request, res:Response) => {
     const category = (req.params.category as string)?.toUpperCase();    
     if(!category) return res.status(400).json({ error: "Please select a category" });
 
+    const page = parseInt(req.query.page as string) || 0;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const { from, to } = getPaginationRange(page, limit);
+
     try {
         const { data, error } = await supabase
             .from('markets')
@@ -137,10 +155,12 @@ export const getMarketByCategory = async(req:Request, res:Response) => {
                 )
             `)
             .eq('category', category)
-            .in('category', MARKET_CATEGORIES);
+            .in('category', MARKET_CATEGORIES)
+            .order('created_at', { ascending: false })
+            .range(from, to);
 
         if(error) throw error;
-        if(!data) return res.status(404).json({ error: "Category is empty" });
+        if(!data || !data.length) return res.status(404).json({ error: "Category is empty" });
 
         const marketData = data.map((market:any) => {
             const rawOptions = market.options || [];
