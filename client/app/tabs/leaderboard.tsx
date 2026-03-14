@@ -7,21 +7,16 @@ import WideButton from '../../components/wide-button'
 import * as api from '../../utils/api';
 import  { useAuth }  from '../../context/AuthContext';
 
-export default function App() {
+export default function LeaderboardScreen() {
 
     const router = useRouter();
     const {logout, isLoading} = useAuth();
 
     const handleLogout = async () => {
-        // const endpoint = '/auth/logout';
-        // const ok = await api.post(endpoint, {});
-        // if (!ok){
-        //     Alert.alert('Logout Failed');
-        //     return;
-        // } 
-        // await logout();
-        router.replace('/login');
+        logout();
+        router.replace('/');
     }
+
 
     return (
         <SafeAreaView className="flex-1 p-2">

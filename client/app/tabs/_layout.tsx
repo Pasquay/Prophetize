@@ -6,6 +6,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from '../../context/AuthContext';
 import { useUserStore } from "../../context/useUserStore";
 
+
 export default function layout(){
   const { token, isLoading } = useAuth();
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function layout(){
   useEffect(() => {
     if (isLoading) return;
     if (!token) {
-      router.replace('/login');
+      router.replace('../');
     } else {
         fetchUserData();
     }
@@ -23,7 +24,7 @@ export default function layout(){
   if (!token) return null;
 
   return (
-    <Tabs screenOptions={{ tabBarActiveTintColor:"#90E0EF", animation:"shift" }}>
+    <Tabs screenOptions={{ tabBarActiveTintColor:"#90E0EF" }}>
         <Tabs.Screen name="home" options={{ 
             title: 'Home', 
             headerShown: false, 
@@ -52,6 +53,10 @@ export default function layout(){
                 return <Feather name="user" size={size} color={color} />
             }   
         }} />
+        {/* <Tabs.Screen name="marketDetails" options={{
+            href:null,
+            headerShown:false,
+        }} /> */}
     </Tabs>
   );
 }

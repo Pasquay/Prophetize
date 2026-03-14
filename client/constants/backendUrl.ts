@@ -1,3 +1,3 @@
-const backendUrl = 'http://192.168.254.187:3001';
+const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://192.168.1.7:3001';
 
 export default backendUrl;
