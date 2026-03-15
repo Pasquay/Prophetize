@@ -3,6 +3,7 @@ import express from "express";
 import userRoutes from "../src/routes/userRoutes";
 import marketRoutes from "../src/routes/marketRoutes";
 import transactionRoutes from "../src/routes/transactionRoutes";
+import portfolioRoutes from '../src/routes/portfolioRoutes';
 
 // Server
 const app = express();
@@ -17,6 +18,7 @@ app.get("/", (req, res) => {
 app.use("/auth", userRoutes);
 app.use("/markets", marketRoutes);
 app.use("/transaction", transactionRoutes);
+app.use('/portfolio', portfolioRoutes);
 
 // Starting server
 const PORT = process.env.PORT || 3000;

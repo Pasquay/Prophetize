@@ -24,7 +24,7 @@ export default function layout(){
   if (!token) return null;
 
   return (
-    <Tabs screenOptions={{ tabBarActiveTintColor:"#90E0EF", animation:"shift" }}>
+    <Tabs screenOptions={{ tabBarActiveTintColor:"#90E0EF" }}>
         <Tabs.Screen name="home" options={{ 
             title: 'Home', 
             headerShown: false, 

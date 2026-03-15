@@ -1,43 +1,299 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, Button, Alert, TextInput, Pressable } from 'react-native';
-import TempAnim from "../../components/temp";
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { View, Text, ScrollView, Alert, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import WideButton from '../../components/wide-button'
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
+import { useUserStore } from '../../context/useUserStore';
+import { Prediction } from '../../.expo/types/model';
 import * as api from '../../utils/api';
-import  { useAuth }  from '../../context/AuthContext';
 
-export default function App() {
+import SearchHeader from '../../components/search-header';
+import CategoryCard from '../../components/category-card';
+import PredictionCard from '../../components/prediction-card';
+import { ExploreTheme } from '../../constants/explore-theme';
 
-    const router = useRouter();
-    const {logout, isLoading} = useAuth();
+// ─── Category display config ────────────────────────────────────────────────
+const GRID_CATEGORIES: { key: string; label: string }[] = [
+    { key: 'SPORTS', label: 'Sports' },
+    { key: 'POLITICS', label: 'Politics' },
+    { key: 'CRYPTO', label: 'Crypto' },
+    { key: 'TECHNOLOGY', label: 'Technology' },
+];
 
-    const handleLogout = async () => {
-        const endpoint = '/auth/logout';
-        const {ok} = await api.post(endpoint, {});
-        if (!ok){
-            Alert.alert('Logout Failed');
-            return;
-        } 
-        await logout();
-        router.replace('/');
+function extractPredictionList(payload: unknown): Prediction[] {
+    if (Array.isArray(payload)) return payload as Prediction[];
+    if (payload && typeof payload === 'object' && Array.isArray((payload as { data?: unknown }).data)) {
+        return (payload as { data: Prediction[] }).data;
     }
+    return [];
+}
 
+function normalizePrediction(item: Prediction & { volume?: number }): Prediction {
+    return {
+        ...item,
+        total_volume: item.total_volume ?? item.volume ?? 0,
+    };
+}
+
+// ─── Small inline skeleton ───────────────────────────────────────────────────
+function CardSkeleton() {
     return (
-        <SafeAreaView className="flex-1 p-2">
-            <View className="flex-1 w-max justify-center   self-center">
-                <TempAnim />
-            <Text >Prophetize Beta</Text>
-            </View>
-
-            <WideButton
-                label='Logout'
-                onPress={handleLogout}
-                variant='primary'
-                disabled={isLoading}
-            />
-
-        </SafeAreaView>
+        <View
+            className="w-full rounded-[12px] bg-[#F1F5F9]"
+            style={{ height: 140, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: ExploreTheme.sectionDivider }}
+        />
     );
 }
 
+// ─── Section Header ──────────────────────────────────────────────────────────
+function SectionHeader({
+    title,
+    onExploreMore,
+}: {
+    title: string;
+    onExploreMore?: () => void;
+}) {
+    return (
+        <View className="flex-row items-center mb-3">
+            <Text className="font-grotesk-bold text-[18px] flex-1" style={{ color: ExploreTheme.titleText }}>{title}</Text>
+            {onExploreMore && (
+                <Pressable onPress={onExploreMore} className="flex-row items-center gap-1" hitSlop={8}>
+                    <Text className="font-jetbrain text-[13px]" style={{ color: ExploreTheme.linkText }}>Explore more</Text>
+                    <MaterialIcons name="arrow-forward-ios" size={12} color={ExploreTheme.linkText} />
+                </Pressable>
+            )}
+        </View>
+    );
+}
+
+// ─── Main screen ─────────────────────────────────────────────────────────────
+export default function ExploreScreen() {
+    const router = useRouter();
+    const { userData } = useUserStore();
+    const hintTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const [trending, setTrending] = useState<Prediction[]>([]);
+    const [newest, setNewest] = useState<Prediction[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchHint, setSearchHint] = useState<string | null>(null);
+
+    // Fetch preview data (5 cards each)
+    useEffect(() => {
+        let cancelled = false;
+
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const [trendRes, newRes] = await Promise.all([
+                    api.get('/markets/trending'),
+                    api.get('/markets/get-all?limit=5'),
+                ]);
+
+                if (!cancelled) {
+                    if (trendRes.ok) {
+                        const data = extractPredictionList(trendRes.data)
+                            .filter((i) => i && i.id)
+                            .map((i) => normalizePrediction(i as Prediction & { volume?: number }));
+
+                        setTrending(data.slice(0, 5));
+                    }
+                    if (newRes.ok) {
+                        const data = extractPredictionList(newRes.data)
+                            .filter((i) => i && i.id)
+                            .map((i) => normalizePrediction(i as Prediction & { volume?: number }));
+
+                        // Backend now handles ordering & limit; set directly
+                        setNewest(data);
+                    }
+                }
+            } catch (e) {
+                if (!cancelled) Alert.alert('Error', 'Could not load markets.');
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+
+        fetchData();
+        return () => {
+            cancelled = true;
+            if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+        };
+    }, []);
+
+    const goMarketDetails = useCallback(
+        (id: number) => router.push({ pathname: '/marketDetails', params: { id } }),
+        [router],
+    );
+
+    const goExploreDetails = useCallback(
+        (sort?: string, category?: string) =>
+            router.push({
+                pathname: '/explore-details',
+                params: { ...(sort && { sort }), ...(category && { category }) },
+            }),
+        [router],
+    );
+
+    const goSearchResults = useCallback(
+        (query: string) => {
+            if (!query.trim()) {
+                setSearchHint('Type a market keyword first.');
+                if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+                hintTimeoutRef.current = setTimeout(() => setSearchHint(null), 2500);
+                return;
+            }
+            router.push({ pathname: '/explore-details', params: { search: query } });
+        },
+        [router],
+    );
+
+    return (
+        <View className="flex-1" style={{ backgroundColor: ExploreTheme.pageBg }}>
+            {/* ── Sticky white header ── */}
+            <SafeAreaView edges={['top']} className="bg-white">
+                <View
+                    className="px-5 pt-3 pb-4 bg-white"
+                    style={{ borderBottomWidth: 1, borderBottomColor: ExploreTheme.headerBorder }}
+                >
+                    <SearchHeader
+                        balance={userData?.balance ?? 0}
+                        onSearchSubmit={goSearchResults}
+                    />
+                    {searchHint && (
+                        <View
+                            testID="search-empty-hint"
+                            style={{
+                                marginTop: 10,
+                                borderRadius: 10,
+                                borderWidth: 1,
+                                borderColor: ExploreTheme.searchHintBorder,
+                                backgroundColor: ExploreTheme.searchHintBg,
+                                paddingHorizontal: 10,
+                                paddingVertical: 8,
+                            }}
+                        >
+                            <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.searchHint }}>
+                                {searchHint}
+                            </Text>
+                        </View>
+                    )}
+                </View>
+            </SafeAreaView>
+
+            {/* ── Scrollable body ── */}
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 100, gap: 0 }}
+            >
+                {/* ── Browse Categories ── */}
+                <View className="px-5 pt-5 pb-4">
+                    <View className="flex-row items-center mb-3">
+                        <Text className="font-grotesk-bold text-[18px] flex-1" style={{ color: ExploreTheme.titleText }}>
+                            Browse Categories
+                        </Text>
+                        <Pressable
+                            onPress={() => router.push('/categories')}
+                            className="flex-row items-center gap-1"
+                            hitSlop={8}
+                        >
+                            <Text className="font-jetbrain text-[13px]" style={{ color: ExploreTheme.linkText }}>See all</Text>
+                            <MaterialIcons name="arrow-forward-ios" size={12} color={ExploreTheme.linkText} />
+                        </Pressable>
+                    </View>
+
+                    {/* 2-column grid */}
+                    <View className="gap-3">
+                        <View className="flex-row gap-3">
+                            {GRID_CATEGORIES.slice(0, 2).map((cat) => (
+                                <CategoryCard
+                                    key={cat.key}
+                                    categoryKey={cat.key}
+                                    label={cat.label}
+                                    onPress={() => goExploreDetails(undefined, cat.key)}
+                                />
+                            ))}
+                        </View>
+                        <View className="flex-row gap-3">
+                            {GRID_CATEGORIES.slice(2, 4).map((cat) => (
+                                <CategoryCard
+                                    key={cat.key}
+                                    categoryKey={cat.key}
+                                    label={cat.label}
+                                    onPress={() => goExploreDetails(undefined, cat.key)}
+                                />
+                            ))}
+                        </View>
+                    </View>
+                </View>
+
+                {/* ── Divider ── */}
+                <View className="h-2" style={{ backgroundColor: ExploreTheme.sectionDivider }} />
+
+                {/* ── Trending Markets ── */}
+                <View className="px-5 pt-5 pb-2">
+                    <SectionHeader
+                        title="Trending Markets"
+                        onExploreMore={() => goExploreDetails('trending')}
+                    />
+
+                    {!loading && trending.length === 0 && (
+                        <View
+                            className="rounded-xl border px-3 py-2 mb-3"
+                            style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
+                        >
+                            <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
+                                There may be no trending markets right now.
+                            </Text>
+                        </View>
+                    )}
+
+                    <View className="gap-3">
+                        {loading
+                            ? Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
+                            : trending.map((item) => (
+                                <PredictionCard
+                                    key={item.id}
+                                    prediction={item}
+                                    onPress={() => goMarketDetails(item.id)}
+                                />
+                            ))}
+                    </View>
+                </View>
+
+                {/* ── Divider ── */}
+                <View className="h-2 mt-4" style={{ backgroundColor: ExploreTheme.sectionDivider }} />
+
+                {/* ── New Markets ── */}
+                <View className="px-5 pt-5 pb-2">
+                    <SectionHeader
+                        title="New Markets"
+                        onExploreMore={() => goExploreDetails('newest')}
+                    />
+
+                    <View className="gap-3">
+                        {loading
+                            ? Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
+                            : newest.map((item) => (
+                                <PredictionCard
+                                    key={item.id}
+                                    prediction={item}
+                                    onPress={() => goMarketDetails(item.id)}
+                                />
+                            ))}
+                    </View>
+
+                    {/* Empty state */}
+                    {!loading && newest.length === 0 && (
+                        <View className="items-center py-10">
+                            <MaterialIcons name="inbox" size={48} color={ExploreTheme.emptyIcon} />
+                            <Text className="font-jetbrain text-[14px] mt-2" style={{ color: ExploreTheme.secondaryText }}>
+                                No markets yet
+                            </Text>
+                        </View>
+                    )}
+                </View>
+            </ScrollView>
+        </View>
+    );
+}

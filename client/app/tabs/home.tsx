@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Text, View, Alert, ScrollView, FlatList } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,7 +15,7 @@ import ClaimAllowance from "../../components/claim-allowance";
 import { useUserStore } from '../../context/useUserStore';
 import categories from "../../constants/categories";
 
-export default function App() {
+export default function HomeScreen() {
 
     const router = useRouter();
     const tabBarHeight = useBottomTabBarHeight();
@@ -26,15 +26,14 @@ export default function App() {
     const [marketsLoading, setMarketsLoading] = useState(false);
     const [noMarket, setNoMarket] = useState(true);
 
-    //to be memo
-    const canClaimAllowance = (() => {
+    const canClaimAllowance = useMemo(() => {
         if (!userData) return false;
         if (!userData.last_claim_date) return true;
         const now = new Date();
         const last = new Date(userData.last_claim_date);
         return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) >
                Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate());
-    })();
+    }, [userData]);
 
     useEffect(() => {
         const getMarketData = async (endpoint:string) => {
@@ -42,7 +41,7 @@ export default function App() {
             const {ok, data} = await api.get("/markets/"+endpoint);
             console.log("Total predictions received:", data.length);
             if(ok){
-                setPrediction(Array.isArray(data) ? data : (data.data ?? []));
+                setPrediction(Array.isArray(data) ? data.filter(i => i && i.id) : (Array.isArray(data.data) ? data.data.filter((i: any) => i && i.id) : []));
                 if(data.length != 0){
                     setNoMarket(false);
                 } else {

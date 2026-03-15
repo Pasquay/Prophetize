@@ -51,6 +51,8 @@ function RootLayout() {
       <Stack.Screen name="login" options={{ title: 'Login', headerShown: false }} />
       <Stack.Screen name="signUp" options={{ title: 'signUp', headerShown: false }} />
       <Stack.Screen name="marketDetails" options={{ title: 'marketDetails', headerShown: false }}/>
+      <Stack.Screen name="explore-details" options={{ title: 'Explore', headerShown: false, presentation: 'modal' }}/>
+      <Stack.Screen name="categories" options={{ title: 'Categories', headerShown: false }}/>
       <Stack.Screen name="tabs" options={{ title: 'tabs', headerShown: false }}/>
     </Stack>
   );
