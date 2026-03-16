@@ -1,8 +1,9 @@
 import React, {useState} from 'react';
 import {View, Pressable, Text, Alert} from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import * as api from '../utils/api';
+import * as api from '@/utils/api';
 import AnimatedIcon from "./animated-gift";
+import { UI_COLORS } from '@/constants/ui-tokens';
 
 
 export default function ClaimAllowance({ onClaimed }: { onClaimed?: () => void }) {
@@ -19,18 +20,21 @@ export default function ClaimAllowance({ onClaimed }: { onClaimed?: () => void }
 
     return (
         <View className="">
-            <View className="rounded-xl bg-white h-auto p-4 border-[#E2E8F0] border-[1px] flex-row gap-3 items-center">
-                <View className="w-13 h-13 rounded-full p-3 bg-[#2563eb1a] inline-flex z-0 items-center">
-                    <MaterialCommunityIcons name="gift-outline" size={24} color="#2563EB" />
+            <View
+                className="rounded-xl h-auto p-4 border-[1px] flex-row gap-3 items-center"
+                style={{ backgroundColor: UI_COLORS.surface, borderColor: UI_COLORS.border }}
+            >
+                <View className="w-13 h-13 rounded-full p-3 inline-flex z-0 items-center" style={{ backgroundColor: UI_COLORS.accentSoft }}>
+                    <MaterialCommunityIcons name="gift-outline" size={24} color={UI_COLORS.accent} />
                     {/* <AnimatedIcon /> */}
                 </View>
                 <View className="flex-col">
                     <Text className="font-grotesk-bold text-[14px] ">Daily Login Bonus</Text>
-                    <Text className="font-jetbrain text-[12px] text-[#94A3B8]">+100 P-coins</Text>
+                    <Text className="font-jetbrain text-[12px]" style={{ color: UI_COLORS.textSecondary }}>+100 P-coins</Text>
                 </View>
                 <View className="flex-1"/>
                 <Pressable onPress={claimAllowance}>
-                    <Text className="font-grotesk-bold text-l text-[#2563EB]">Claim</Text>
+                    <Text className="font-grotesk-bold text-l" style={{ color: UI_COLORS.accent }}>Claim</Text>
                 </Pressable>
             </View>
         </View>

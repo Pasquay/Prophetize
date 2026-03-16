@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, Button, Alert, TextInput, Pressable } from 'react-native';
-import TempAnim from "../../components/temp";
+import TempAnim from "../../components/dev/temp";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import WideButton from '../../components/wide-button'
+import WideButton from '@/components/auth/wide-button'
 import * as api from '../../utils/api';
 import  { useAuth }  from '../../context/AuthContext';
 

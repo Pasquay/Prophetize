@@ -4,10 +4,10 @@ import { Text, View, Alert, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as api from '../utils/api';
 import {Prediction} from "../.expo/types/model";
-import LoadingScreen from '../components/loading-screen';
-import MarketDetailsHeader from "../components/market-detail-header";
-import MarketDetailBalance from "../components/market-detail-balance";
-import MarketDetailSummary from "../components/market-detail-summary";
+import LoadingScreen from '@/components/common/loading-screen';
+import MarketDetailsHeader from "@/components/market/market-detail-header";
+import MarketDetailBalance from "@/components/market/market-detail-balance";
+import MarketDetailSummary from "@/components/market/market-detail-summary";
 import { ExploreTheme } from "../constants/explore-theme";
 
 

@@ -10,7 +10,9 @@
 _Aesthetics, motion, accessibility, and user psychology._
 
 - `ui-ux-design/frontend-design/SKILL.md` — The core rules for building modern interfaces (layout, color, typography).
+- `ui-ux-design/arc-ui-ux/SKILL.md` — Primary Arc UI/UX design and critique skill using Impeccable principles.
 - `ui-ux-design/designing-ui/SKILL.md` — Micro-interactions, states, animations.
+- `ui-ux-design/animation-system/SKILL.md` — Practical motion system and animation guidance.
 - `ui-ux-design/ui-ux-pro-max/SKILL.md` — High-end UI audits, OKLCH colors, glassmorphism, Framer Motion.
 - `ui-ux-design/web-design-guidelines/SKILL.md` — Accessibility standards and core web design principles.
 - `ui-ux-design/brand-identity/SKILL.md` — Defining and sticking to a consistent aesthetic logic.

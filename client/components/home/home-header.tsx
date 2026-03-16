@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, Image, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ExploreTheme } from '../constants/explore-theme';
+import { ExploreTheme } from '@/constants/explore-theme';
+import { UI_COLORS } from '@/constants/ui-tokens';
 
 type Props = {
     balance: number;
@@ -19,7 +20,7 @@ export default function HomeHeader({ balance, hasNotification = true, onNotifica
         <View className="h-auto w-full flex-row items-center pb-4 gap-2">
             <View className="flex-row items-center gap-3 flex-1 p-2 inline-flex">
                 <Image
-                    source={require('../assets/app-icons/p-coin.png')}
+                    source={require('../../assets/app-icons/p-coin.png')}
                     style={{ width: 44, height: 44 }}
                     resizeMode="contain"
                 />
@@ -49,9 +50,9 @@ export default function HomeHeader({ balance, hasNotification = true, onNotifica
                                 width: 9,
                                 height: 9,
                                 borderRadius: 5,
-                                backgroundColor: '#38BDF8',
+                                backgroundColor: UI_COLORS.accent,
                                 borderWidth: 1.5,
-                                borderColor: '#ffffff',                           }}
+                                borderColor: UI_COLORS.surface,                           }}
                         />
                     )}
                 </View>

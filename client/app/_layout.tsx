@@ -6,7 +6,7 @@ import { JetBrainsMono_400Regular, JetBrainsMono_700Bold } from '@expo-google-fo
 import { useRouter, Stack } from 'expo-router';
 import React, { useEffect } from 'react';
 import { AuthProvider, useAuth } from '../context/AuthContext';
-import LoadingScreen from '../components/loading-screen';
+import LoadingScreen from '@/components/common/loading-screen';
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
 
 export default function Layout() {

@@ -9,10 +9,10 @@ import { Prediction } from '../../.expo/types/model';
 import * as api from '../../utils/api';
 import { extractPredictionList, normalizePrediction } from '../../utils/prediction-helpers';
 
-import CardSkeleton from '../../components/card-skeleton';
-import SearchHeader from '../../components/search-header';
-import CategoryCard from '../../components/category-card';
-import PredictionCard from '../../components/prediction-card';
+import CardSkeleton from '@/components/explore/card-skeleton';
+import SearchHeader from '@/components/explore/search-header';
+import CategoryCard from '@/components/explore/category-card';
+import PredictionCard from '@/components/explore/prediction-card';
 import { ExploreTheme } from '../../constants/explore-theme';
 
 // ─── Category display config ────────────────────────────────────────────────

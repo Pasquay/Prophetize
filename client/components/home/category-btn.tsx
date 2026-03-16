@@ -1,6 +1,6 @@
 import {Pressable, Text} from 'react-native';
 import {useState} from 'react';
-import { ExploreTheme } from '../constants/explore-theme';
+import { ExploreTheme } from '@/constants/explore-theme';
 
 type Props = {
     label:string;
@@ -8,7 +8,7 @@ type Props = {
     onPress: () => void;
 }
 
-export default function categoryBtn({label, isActive, onPress}:Props) {
+export default function CategoryBtn({label, isActive, onPress}:Props) {
     const [pressed, setPressed] = useState(false);
     return(
         <Pressable 

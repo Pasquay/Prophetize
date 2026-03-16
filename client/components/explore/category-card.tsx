@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { categoryIconMap } from '@/constants/ui-mappings';
-import { ExploreTheme } from '../constants/explore-theme';
+import { ExploreTheme } from '@/constants/explore-theme';
 
 export type CategoryKey = 'SPORTS' | 'POLITICS' | 'CRYPTO' | 'CULTURE' | 'TECHNOLOGY' | 'SCHOOL';
 

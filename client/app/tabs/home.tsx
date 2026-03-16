@@ -3,15 +3,14 @@ import { Text, View, Alert, ScrollView, FlatList } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import NoMarkets from "../../components/no-markets";
+import NoMarkets from "@/components/home/no-markets";
 import * as api from '../../utils/api';
-import  { useAuth }  from '../../context/AuthContext';
 import {Prediction} from "../../.expo/types/model";
-import  PredictionCard from "../../components/prediction-card";
-import CategoryBtn from "../../components/category-btn";
-import LoadingScreen from '../../components/loading-screen';
-import HomeHeader from "../../components/home-header";
-import ClaimAllowance from "../../components/claim-allowance";
+import  PredictionCard from "@/components/explore/prediction-card";
+import CategoryBtn from "@/components/home/category-btn";
+import HomeHeader from "@/components/home/home-header";
+import ClaimAllowance from "@/components/home/claim-allowance";
+import HomeListSkeleton from '@/components/home/home-list-skeleton';
 import { useUserStore } from '../../context/useUserStore';
 import categories from "../../constants/categories";
 import { ExploreTheme } from "../../constants/explore-theme";
@@ -40,14 +39,13 @@ export default function HomeScreen() {
         const getMarketData = async (endpoint:string) => {
             setMarketsLoading(true);
             const {ok, data} = await api.get("/markets/"+endpoint);
-            console.log("Total predictions received:", data.length);
             if(ok){
-                setPrediction(Array.isArray(data) ? data.filter(i => i && i.id) : (Array.isArray(data.data) ? data.data.filter((i: any) => i && i.id) : []));
-                if(data.length != 0){
-                    setNoMarket(false);
-                } else {
-                    setNoMarket(true);
-                }
+                const normalizedPredictions = Array.isArray(data)
+                    ? data.filter(i => i && i.id)
+                    : (Array.isArray(data.data) ? data.data.filter((i: any) => i && i.id) : []);
+
+                setPrediction(normalizedPredictions);
+                setNoMarket(normalizedPredictions.length === 0);
             } else {
                 Alert.alert('Something wrong happened when fetching for predictions!');
             }
@@ -57,7 +55,7 @@ export default function HomeScreen() {
     }, [activeCategory]);
 
     const goMarketDetails = useCallback((id:number) => {
-        router.push({ pathname: `../marketDetails`, params: {id} });
+        router.push({ pathname: '/marketDetails', params: {id} });
     }, [router]);
 
 
@@ -89,7 +87,7 @@ export default function HomeScreen() {
             {/* Scrollable content */}
             <View className="flex-1 px-5 pt-3">
                 {marketsLoading ? (
-                    <LoadingScreen/>
+                    <HomeListSkeleton count={5} />
                 ) : (
                     noMarket ? (
                         <NoMarkets/>

@@ -287,7 +287,8 @@ Duration based on:
 - Respect reduced-motion preference
 - Test on low-end devices
 
-For animation patterns: [animation-guide.md](animation-guide.md), for advanced: [motion-graphics.md](motion-graphics.md)
+For animation patterns: [animation-guide.md](animation-guide.md), for advanced: [motion-graphics.md](motion-graphics.md).
+For practical motion systems and interaction feedback, use `ui-ux-design/animation-system/SKILL.md`.
 
 ---
 

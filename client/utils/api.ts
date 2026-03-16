@@ -32,15 +32,17 @@ const handleResponse = async (response: Response, retryFn?: ()=> Promise<Respons
     if (response.status === 401) {
         const refreshToken = await getRefreshToken();
         if(refreshToken){
-            const refreshResponse = await fetch(baseUrl + '/auth/refresh', {
+            const refreshResponse = await fetch(baseUrl + '/auth/refresh-token', {
                 method: 'POST',
                 headers: {
                     'Content-Type':'application/json'},
-                body: JSON.stringify(refreshToken)
+                body: JSON.stringify({ refresh_token: refreshToken })
             });
             if(refreshResponse.ok){
                 const data = await refreshResponse.json();
-                await SecureStore.setItemAsync('access_token', data);
+                if (data?.access_token) {
+                    await SecureStore.setItemAsync('access_token', data.access_token);
+                }
                 if(retryFn){
                     const retried = await retryFn();
                     return { ok: retried.ok, data: await safeJson(retried)};
@@ -90,4 +92,56 @@ export const get = async(endpoint:string) => {
     const response = await doRequest();
     return handleResponse(response, doRequest);
 }
+
+export type LeaderboardPeriod = 'weekly' | 'all_time';
+
+export type LeaderboardApiEntry = {
+    rank: number;
+    user_id: string;
+    username: string;
+    avatar_url: string | null;
+    wins: number;
+    profit_pct: number;
+    is_current_user?: boolean;
+};
+
+export type LeaderboardApiMeta = {
+    page: number;
+    limit: number;
+    has_next_page: boolean;
+    total_records: number;
+    total_pages: number;
+};
+
+export type LeaderboardApiResponse = {
+    data: LeaderboardApiEntry[];
+    meta: LeaderboardApiMeta;
+};
+
+export type MyLeaderboardPositionResponse = {
+    position: number;
+    username: string;
+    avatar_url: string | null;
+    wins: number;
+    profit_pct: number;
+};
+
+export const getLeaderboard = async (
+    period: LeaderboardPeriod,
+    page: number = 0,
+    limit: number = 10
+) => {
+    const params = new URLSearchParams({
+        period,
+        page: String(page),
+        limit: String(limit),
+    });
+
+    return get(`/leaderboard?${params.toString()}`);
+};
+
+export const getMyLeaderboardPosition = async (period: LeaderboardPeriod) => {
+    const params = new URLSearchParams({ period });
+    return get(`/leaderboard/me?${params.toString()}`);
+};
 

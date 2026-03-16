@@ -5,9 +5,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from '../../context/AuthContext';
 import { useUserStore } from "../../context/useUserStore";
+import { UI_COLORS } from '@/constants/ui-tokens';
 
 
-export default function layout(){
+export default function TabsLayout(){
   const { token, isLoading } = useAuth();
   const router = useRouter();
   const { fetchUserData } = useUserStore();
@@ -15,7 +16,7 @@ export default function layout(){
   useEffect(() => {
     if (isLoading) return;
     if (!token) {
-      router.replace('../');
+            router.replace('/');
     } else {
         fetchUserData();
     }
@@ -24,7 +25,7 @@ export default function layout(){
   if (!token) return null;
 
   return (
-    <Tabs screenOptions={{ tabBarActiveTintColor:"#90E0EF" }}>
+    <Tabs screenOptions={{ tabBarActiveTintColor: UI_COLORS.accent }}>
         <Tabs.Screen name="home" options={{ 
             title: 'Home', 
             headerShown: false, 

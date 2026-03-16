@@ -3,23 +3,31 @@ import {
   statusCodes,
   isSuccessResponse
 } from '@react-native-google-signin/google-signin'
-import { supabase } from '../utils/supabase'
+import { supabase } from '@/utils/supabase'
 import { Alert } from 'react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, View, Text } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../context/AuthContext';
-import * as api from '../utils/api';
+import { useAuth } from '@/context/AuthContext';
+import * as api from '@/utils/api';
+import { UI_COLORS } from '@/constants/ui-tokens';
 
 const googleID = process.env.EXPO_PUBLIC_GOOGLECLIENT_ID as string;
 
 type Props = {
   disabled?: boolean;
+  colors?: {
+    surface?: string;
+    surfaceMuted?: string;
+    border?: string;
+    text?: string;
+    icon?: string;
+  };
 }
 
 
-export default function GoogleLogin({disabled}:Props) {
+export default function GoogleLogin({disabled, colors}:Props) {
   const { login } = useAuth();
   useEffect(() => {
     GoogleSignin.configure({
@@ -29,6 +37,14 @@ export default function GoogleLogin({disabled}:Props) {
 
   const [pressed, setPressed] = useState(false);
   const router = useRouter();
+  const palette = {
+    surface: UI_COLORS.surface,
+    surfaceMuted: UI_COLORS.surfaceMuted,
+    border: UI_COLORS.border,
+    text: UI_COLORS.textPrimary,
+    icon: UI_COLORS.textPrimary,
+    ...colors,
+  };
   return (
       <Pressable
         disabled={disabled}
@@ -36,10 +52,10 @@ export default function GoogleLogin({disabled}:Props) {
         onPressOut={()=>setPressed(false)}
         className={`flex-row items-center justify-center p-4 rounded-full gap-[8px]`}
         style={{
-            opacity: pressed ? 0.7 : 1,
-            backgroundColor: pressed ? '#e2e8f0' : '#ffffff',
+            opacity: disabled ? 0.6 : (pressed ? 0.9 : 1),
+            backgroundColor: pressed ? palette.surfaceMuted : palette.surface,
             borderWidth: 1,
-            borderColor: '#E2E8F0'
+            borderColor: palette.border
         }}
         onPress={async () => {
           try {
@@ -76,8 +92,8 @@ export default function GoogleLogin({disabled}:Props) {
             }
           }
         }}>
-        <AntDesign name="google" size={24} color="black" />
-        <Text className="text-[#0F172A] font-grotesk-bold text-[18px]">
+        <AntDesign name="google" size={24} color={palette.icon} />
+        <Text className="font-grotesk-bold text-[18px]" style={{ color: palette.text }}>
               Continue with Google
         </Text>
       </Pressable>

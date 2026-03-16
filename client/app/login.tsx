@@ -1,24 +1,78 @@
-import React, {useState} from 'react';
-import { Text, View, Pressable, useWindowDimensions, Image, TextInput, Alert} from 'react-native';
+import React, {useEffect, useRef, useState} from 'react';
+import { AccessibilityInfo, Animated, Easing, Text, View, Pressable, useWindowDimensions, Image, Alert} from 'react-native';
 import { useRouter } from 'expo-router';
-import Logo from "../components/logo-hint"
-import BackBtn from "../components/backbtn"
-import WideButton from '../components/wide-button';
+import Logo from "@/components/auth/logo-hint"
+import BackBtn from "@/components/auth/backbtn"
+import WideButton from '@/components/auth/wide-button';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as api from '../utils/api';
 import  { useAuth }  from '../context/AuthContext';
-import InputField from '../components/input-field';
-import GoogleLogin from "../components/google-login";
+import InputField from '@/components/auth/input-field';
+import GoogleLogin from "@/components/auth/google-login";
+import { UI_COLORS } from '@/constants/ui-tokens';
 
-export default function loginScreen() {
+export default function LoginScreen() {
     const { width, height } = useWindowDimensions();
     const router = useRouter();
+    const heroSize = Math.min(width * 0.35, 180);
+    const heroTop = Math.max(72, height * 0.18);
 
     // For login inputs
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const {login} = useAuth();
+    const headerOpacity = useRef(new Animated.Value(0)).current;
+    const headerTranslate = useRef(new Animated.Value(12)).current;
+    const panelOpacity = useRef(new Animated.Value(0)).current;
+    const panelTranslate = useRef(new Animated.Value(18)).current;
+
+    useEffect(() => {
+        let isMounted = true;
+        AccessibilityInfo.isReduceMotionEnabled().then((reduceMotion) => {
+            if (!isMounted) return;
+            if (reduceMotion) {
+                headerOpacity.setValue(1);
+                headerTranslate.setValue(0);
+                panelOpacity.setValue(1);
+                panelTranslate.setValue(0);
+                return;
+            }
+            Animated.stagger(120, [
+                Animated.parallel([
+                    Animated.timing(headerOpacity, {
+                        toValue: 1,
+                        duration: 220,
+                        easing: Easing.out(Easing.cubic),
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(headerTranslate, {
+                        toValue: 0,
+                        duration: 220,
+                        easing: Easing.out(Easing.cubic),
+                        useNativeDriver: true,
+                    }),
+                ]),
+                Animated.parallel([
+                    Animated.timing(panelOpacity, {
+                        toValue: 1,
+                        duration: 260,
+                        easing: Easing.out(Easing.cubic),
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(panelTranslate, {
+                        toValue: 0,
+                        duration: 260,
+                        easing: Easing.out(Easing.cubic),
+                        useNativeDriver: true,
+                    }),
+                ]),
+            ]).start();
+        });
+        return () => {
+            isMounted = false;
+        };
+    }, [headerOpacity, headerTranslate, panelOpacity, panelTranslate]);
 
     const handleLogin = async () => {
         if(!email || !password){
@@ -32,7 +86,7 @@ export default function loginScreen() {
             if(ok){
                 // Alert.alert('success');
                 await login(data.user, data.session.access_token, data.session.refresh_token);
-                router.push('./tabs/home');
+                router.push('/tabs/home');
             } else {
                 Alert.alert('Failed to log in', data.error);
             }
@@ -46,12 +100,15 @@ export default function loginScreen() {
     }
 
     return (
-        <SafeAreaView className="bg-[#F7F9FC] flex-1" edges={['top']} >
+        <SafeAreaView className="flex-1" style={{ backgroundColor: UI_COLORS.pageBg }} edges={['top']} >
         
-            <View className="flex-1 p-6 ">
+            <Animated.View
+                className="flex-1 p-6 "
+                style={{ opacity: headerOpacity, transform: [{ translateY: headerTranslate }] }}
+            >
                 <View className="flex flex-row gap-3 items-center">
                     <Pressable onPress={() => router.back()}>
-                            <BackBtn size={24} color="#0F172A" />
+                            <BackBtn size={24} color={UI_COLORS.textPrimary} />
                     </Pressable>
                     
                     <View className="">
@@ -60,44 +117,63 @@ export default function loginScreen() {
                 </View>
 
 
-                <View className="absolute right-0 top-40" pointerEvents="none">
+                <View style={{ position: 'absolute', right: 0, top: heroTop }} pointerEvents="none">
                     <Image
                         resizeMode="contain"
                         source={require("../assets/app-icons/ledger.png")}
-                        style={{ width: width * 0.3, height: height * 0.3 }}
+                        style={{ width: heroSize, height: heroSize }}
                     />
                 </View>
                 <View className="flex-1 justify-end">
-                    <Text className="text-[42px] font-grotesk-bold tracking-[-2px] text-[#0F172A]">
+                    <Text className="text-[42px] font-grotesk-bold tracking-[-2px]" style={{ color: UI_COLORS.textPrimary }}>
                         Welcome {'\n'}back.
                     </Text>
-                    <Text className="text-[18px] text-[#94A3B8] font-inter">
+                    <Text className="text-[18px] font-inter" style={{ color: UI_COLORS.textSecondary }}>
                         Continue your predictions on real-world outcomes.
                     </Text>
                 </View>
-            </View>
+            </Animated.View>
 
-            <View className="bg-[#F1F5F9] p-6 gap-4">
+            <Animated.View
+                className="p-6 gap-4"
+                style={{
+                    backgroundColor: UI_COLORS.surfaceMuted,
+                    opacity: panelOpacity,
+                    transform: [{ translateY: panelTranslate }],
+                }}
+            >
 
                 <InputField
                     label="Email"
                     placeholder="name@example.com"
                     keyboardType="email-address"
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor={UI_COLORS.textSecondary}
                     onChangeText={setEmail}
                     autoCapitalize="none"
+                    colors={{
+                        label: UI_COLORS.textSecondary,
+                        text: UI_COLORS.textPrimary,
+                        surface: UI_COLORS.surface,
+                        border: UI_COLORS.border,
+                    }}
                 />
 
                 <InputField
                     label="Password"
                     placeholder="••••••"
-                    placeholderTextColor="#94A3B8"
+                    placeholderTextColor={UI_COLORS.textSecondary}
                     onChangeText={setPassword}
                     secureTextEntry
+                    colors={{
+                        label: UI_COLORS.textSecondary,
+                        text: UI_COLORS.textPrimary,
+                        surface: UI_COLORS.surface,
+                        border: UI_COLORS.border,
+                    }}
                 />
 
                 <Pressable className="self-end">
-                    <Text className="text-[#87CEEB] font-inter text-[14px]">Forgot Password?</Text>
+                    <Text className="font-inter text-[14px]" style={{ color: UI_COLORS.link }}>Forgot Password?</Text>
                 </Pressable>
 
                 <WideButton 
@@ -108,9 +184,9 @@ export default function loginScreen() {
                 />
 
                 <View className="flex-row items-center gap-3">
-                    <View className="flex-1 h-[1px] bg-slate-300" />
-                    <Text className="text-slate-400 font-inter text-[13px]">or</Text>
-                    <View className="flex-1 h-[1px] bg-slate-300" />
+                    <View className="flex-1 h-[1px]" style={{ backgroundColor: UI_COLORS.border }} />
+                    <Text className="font-inter text-[13px]" style={{ color: UI_COLORS.textSecondary }}>or</Text>
+                    <View className="flex-1 h-[1px]" style={{ backgroundColor: UI_COLORS.border }} />
                 </View>
 
                 {/* <WideButton 
@@ -123,12 +199,12 @@ export default function loginScreen() {
                 <GoogleLogin></GoogleLogin>
 
                 <View className="flex-row items-center justify-center gap-1">
-                    <Text className="text-slate-400 font-grotesk-bold text-[14px]">Don't have an account?</Text>
+                    <Text className="text-slate-400 font-grotesk-bold text-[14px]">Don&apos;t have an account?</Text>
                     <Pressable onPress={() => router.push('/signUp')}>
-                        <Text className="text-[#87CEEB] font-grotesk-bold text-[14px]">Sign Up</Text>
+                        <Text className="font-grotesk-bold text-[14px]" style={{ color: UI_COLORS.link }}>Sign Up</Text>
                     </Pressable>
                 </View>
-            </View>
+            </Animated.View>
 
         </SafeAreaView>
     );

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, Image } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { UI_COLORS } from '@/constants/ui-tokens';
 
 type Props = {
     balance: number;
@@ -35,14 +36,15 @@ export default function SearchHeader({
             <View className="flex-row items-center pb-1 gap-2">
                 <View className="flex-row items-center gap-3 flex-1 inline-flex">
                     <Image
-                        source={require('../assets/app-icons/p-coin.png')}
+                        source={require('../../assets/app-icons/p-coin.png')}
                         style={{ width: 36, height: 36 }}
                         resizeMode="contain"
                     />
                     <Text
-                        className="font-jetbrain-bold text-[26px] tracking-[-1px] text-[#0F172A]"
+                        className="font-jetbrain-bold text-[26px] tracking-[-1px]"
                         numberOfLines={1}
                         adjustsFontSizeToFit
+                        style={{ color: UI_COLORS.textPrimary }}
                     >
                         {formatted}
                     </Text>
@@ -54,7 +56,7 @@ export default function SearchHeader({
                     className="rounded-full"
                 >
                     <View>
-                        <Ionicons name="notifications-outline" size={24} color="#0F172A" />
+                        <Ionicons name="notifications-outline" size={24} color={UI_COLORS.textPrimary} />
                         {hasNotification && (
                             <View
                                 style={{
@@ -64,9 +66,9 @@ export default function SearchHeader({
                                     width: 9,
                                     height: 9,
                                     borderRadius: 5,
-                                    backgroundColor: '#38BDF8',
+                                    backgroundColor: UI_COLORS.accent,
                                     borderWidth: 1.5,
-                                    borderColor: '#ffffff',
+                                    borderColor: UI_COLORS.surface,
                                 }}
                             />
                         )}
@@ -78,22 +80,22 @@ export default function SearchHeader({
             <View
                 className="flex-row items-center rounded-xl px-3 gap-2"
                 style={{
-                    backgroundColor: '#F8FAFC',
+                    backgroundColor: UI_COLORS.surfaceSoft,
                     borderWidth: 1,
-                    borderColor: '#E2E8F0',
+                    borderColor: UI_COLORS.border,
                     height: 48,
                 }}
             >
-                <Ionicons name="search-outline" size={20} color="#94A3B8" />
+                <Ionicons name="search-outline" size={20} color={UI_COLORS.textSecondary} />
                 <TextInput
                     value={query}
                     onChangeText={handleChange}
                     onSubmitEditing={() => onSearchSubmit?.(query)}
                     placeholder="Search markets…"
-                    placeholderTextColor="#CBD5E1"
+                    placeholderTextColor={UI_COLORS.textMuted}
                     returnKeyType="search"
-                    className="flex-1 text-[#0F172A] font-jetbrain text-[14px]"
-                    style={{ paddingVertical: 0 }}
+                    className="flex-1 font-jetbrain text-[14px]"
+                    style={{ color: UI_COLORS.textPrimary, paddingVertical: 0 }}
                 />
                 {query.length > 0 && (
                     <Pressable
@@ -103,7 +105,7 @@ export default function SearchHeader({
                         }}
                         hitSlop={8}
                     >
-                        <Ionicons name="close-circle" size={18} color="#94A3B8" />
+                        <Ionicons name="close-circle" size={18} color={UI_COLORS.textSecondary} />
                     </Pressable>
                 )}
             </View>

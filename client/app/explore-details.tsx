@@ -11,8 +11,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Prediction } from '../.expo/types/model';
-import CardSkeleton from '../components/card-skeleton';
-import PredictionCard from '../components/prediction-card';
+import CardSkeleton from '@/components/explore/card-skeleton';
+import PredictionCard from '@/components/explore/prediction-card';
 import { ExploreTheme } from '../constants/explore-theme';
 import * as api from '../utils/api';
 import { normalizePrediction } from '../utils/prediction-helpers';

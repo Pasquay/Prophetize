@@ -1,10 +1,10 @@
-import {Prediction} from "../.expo/types/model";
+import {Prediction} from "../../.expo/types/model";
 import React from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { categoryIconMap, OPTION_COLORS } from '@/constants/ui-mappings';
-import { ExploreTheme } from '../constants/explore-theme';
+import { ExploreTheme } from '@/constants/explore-theme';
 
 type Props = {
     prediction: Prediction;

@@ -23,6 +23,7 @@ description: Activates the Sparks Persona (The Designer) for UI/UX tasks. Use wh
   <!-- TODO: Create missing protocol file -->
   <!-- - [Visual Verification](../../../../../protocols/guidelines/99-visual-verification.md) -->
 - [Anti-Vibe Coding Checklist](../../../../../references/anti-vibe-coding-checklist.md)
+- [Animation System](../animation-system/SKILL.md) for practical motion guidance
 
 ## Engineering Protocols
 

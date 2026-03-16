@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Image, Text, View } from 'react-native';
-import { Prediction } from '../.expo/types/model';
+import { Prediction } from '../../.expo/types/model';
+import { UI_COLORS, UI_FONTS, UI_SHADOWS } from '@/constants/ui-tokens';
 
 interface Props {
     prediction: Prediction;
@@ -21,7 +22,7 @@ function formatCountdown(endDate: string): string {
 
 const PCoin = () => (
     <Image
-        source={require('../assets/app-icons/p-coin.png')}
+        source={require('../../assets/app-icons/p-coin.png')}
         style={{ width: 18, height: 18 }}
         resizeMode="contain"
     />
@@ -42,24 +43,21 @@ export default function MarketDetailSummary({ prediction, userPosition = null, u
 
     return (
         <View
-            className="mx-4 rounded-2xl bg-white overflow-hidden"
+            className="mx-4 rounded-2xl overflow-hidden"
             style={{
-                shadowColor: '#CBD5E1',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.5,
-                shadowRadius: 8,
-                elevation: 3,
+                backgroundColor: UI_COLORS.surface,
+                ...UI_SHADOWS.soft,
                 borderWidth: 1,
-                borderColor: '#EEF2F7',
+                borderColor: UI_COLORS.borderSoft,
             }}
         >
             {/* Row 1 */}
-            <View className="flex-row" style={{ borderBottomWidth: 1, borderBottomColor: '#EEF2F7' }}>
+            <View className="flex-row" style={{ borderBottomWidth: 1, borderBottomColor: UI_COLORS.borderSoft }}>
                 {/* VOLUME */}
-                <View className="flex-1 p-4" style={{ borderRightWidth: 1, borderRightColor: '#EEF2F7' }}>
+                <View className="flex-1 p-4" style={{ borderRightWidth: 1, borderRightColor: UI_COLORS.borderSoft }}>
                     <Text
                         className="text-[10px] tracking-widest mb-2"
-                        style={{ color: '#94A3B8', fontFamily: 'InterTight_700Bold' }}
+                        style={{ color: UI_COLORS.textSecondary, fontFamily: UI_FONTS.bodyBold }}
                     >
                         VOLUME
                     </Text>
@@ -67,7 +65,7 @@ export default function MarketDetailSummary({ prediction, userPosition = null, u
                         <PCoin />
                         <Text
                             className="text-base"
-                            style={{ color: '#0D1117', fontFamily: 'JetBrainsMono_700Bold' }}
+                            style={{ color: UI_COLORS.textPrimary, fontFamily: UI_FONTS.monoBold }}
                         >
                             {(prediction.total_volume ?? 0).toLocaleString()}
                         </Text>
@@ -78,13 +76,13 @@ export default function MarketDetailSummary({ prediction, userPosition = null, u
                 <View className="flex-1 p-4">
                     <Text
                         className="text-[10px] tracking-widest mb-2"
-                        style={{ color: '#94A3B8', fontFamily: 'InterTight_700Bold' }}
+                        style={{ color: UI_COLORS.textSecondary, fontFamily: UI_FONTS.bodyBold }}
                     >
                         EXPIRATION
                     </Text>
                     <Text
                         className="text-base"
-                        style={{ color: '#0D1117', fontFamily: 'JetBrainsMono_700Bold' }}
+                        style={{ color: UI_COLORS.textPrimary, fontFamily: UI_FONTS.monoBold }}
                     >
                         {countdown}
                     </Text>
@@ -94,10 +92,10 @@ export default function MarketDetailSummary({ prediction, userPosition = null, u
             {/* Row 2 */}
             <View className="flex-row">
                 {/* YOUR POSITION */}
-                <View className="flex-1 p-4" style={{ borderRightWidth: 1, borderRightColor: '#EEF2F7' }}>
+                <View className="flex-1 p-4" style={{ borderRightWidth: 1, borderRightColor: UI_COLORS.borderSoft }}>
                     <Text
                         className="text-[10px] tracking-widest mb-2"
-                        style={{ color: '#94A3B8', fontFamily: 'InterTight_700Bold' }}
+                        style={{ color: UI_COLORS.textSecondary, fontFamily: UI_FONTS.bodyBold }}
                     >
                         YOUR POSITION
                     </Text>
@@ -105,7 +103,7 @@ export default function MarketDetailSummary({ prediction, userPosition = null, u
                         <PCoin />
                         <Text
                             className="text-base"
-                            style={{ color: '#0D1117', fontFamily: 'JetBrainsMono_700Bold' }}
+                            style={{ color: UI_COLORS.textPrimary, fontFamily: UI_FONTS.monoBold }}
                         >
                             {userPosition !== null ? userPosition!.toFixed(2) : '0.00'}
                         </Text>
@@ -116,15 +114,15 @@ export default function MarketDetailSummary({ prediction, userPosition = null, u
                 <View className="flex-1 p-4">
                     <Text
                         className="text-[10px] tracking-widest mb-2"
-                        style={{ color: '#94A3B8', fontFamily: 'InterTight_700Bold' }}
+                        style={{ color: UI_COLORS.textSecondary, fontFamily: UI_FONTS.bodyBold }}
                     >
                         P/L
                     </Text>
                     <Text
                         className="text-base"
                         style={{
-                            fontFamily: 'JetBrainsMono_700Bold',
-                            color: !hasPL ? '#CBD5E1' : userPL! >= 0 ? '#22C55E' : '#EF4444',
+                            fontFamily: UI_FONTS.monoBold,
+                            color: !hasPL ? UI_COLORS.textMuted : userPL! >= 0 ? UI_COLORS.success : UI_COLORS.danger,
                         }}
                     >
                         {!hasPL ? '--' : (userPL! >= 0 ? '+' : '') + userPL!.toFixed(2)}

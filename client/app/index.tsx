@@ -1,38 +1,45 @@
 import { Text, View, Pressable, Image, useWindowDimensions } from "react-native";
 import { useRouter } from 'expo-router';
-import Logo from "../components/logo-hint"
+import Logo from "@/components/auth/logo-hint"
 import Fontisto from '@expo/vector-icons/Fontisto';
-import WideButton from '../components/wide-button';
+import WideButton from '@/components/auth/wide-button';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import GoogleLogin from "../components/google-login";
+import GoogleLogin from "@/components/auth/google-login";
+import { UI_COLORS } from "@/constants/ui-tokens";
 
 
-export default function welcomeScreen(){
+export default function WelcomeScreen(){
     const { width, height } = useWindowDimensions();
     const router = useRouter();
+    const heroSize = Math.min(width * 0.35, 180);
+    const heroTop = Math.max(72, height * 0.18);
 
     return (
-        <SafeAreaView className="bg-[#F7F9FC] flex-1 ">
+        <SafeAreaView className="flex-1" style={{ backgroundColor: UI_COLORS.pageBg }}>
             <View className="flex-1 p-6 ">
             
                 <View className="mt-[40px]">
                     <Logo />
                 </View>
 
-                <Image resizeMode="contain" className= "absolute right-0 top-40" source={require("../assets/app-icons/ledger.png")} style={{width: width * 0.3, height: height * 0.3}}></Image>
+                <Image
+                    resizeMode="contain"
+                    source={require("../assets/app-icons/ledger.png")}
+                    style={{ position: "absolute", right: 0, top: heroTop, width: heroSize, height: heroSize }}
+                />
 
                 <View className="flex-1 justify-center gap-[12px] ">
-                    <Text className="text-[52px] font-grotesk-bold tracking-[-1.05px] text-[#0F172A] ">
+                    <Text className="text-[52px] font-grotesk-bold tracking-[-1.05px]" style={{ color: UI_COLORS.textPrimary }}>
                         Predict{"\n"}the future.
                     </Text>
-                    <Text className="text-[18px] text-[#94A3B8] font-inter">
+                    <Text className="text-[18px] font-inter" style={{ color: UI_COLORS.textSecondary }}>
                         Trade virtual currency on real-world {'\n'} outcomes without the risk.
                     </Text>
                 </View>
 
             </View>
 
-            <View className="bg-[#F7F9FC] p-6  gap-[12px]">
+            <View className="p-6 gap-[12px]" style={{ backgroundColor: UI_COLORS.pageBg }}>
 
                 <WideButton
                     onPress={() => router.push('/signUp')}
@@ -50,7 +57,7 @@ export default function welcomeScreen(){
 
                 <GoogleLogin></GoogleLogin>
 
-                <Text className=" text-center text-[12px] text-[#94A3B8] font-inter">
+                <Text className=" text-center text-[12px] font-inter" style={{ color: UI_COLORS.textSecondary }}>
                     By continuing, you agree to our{" "}
                     <Text className="underline">Terms of Service</Text>
                     {" & "} 

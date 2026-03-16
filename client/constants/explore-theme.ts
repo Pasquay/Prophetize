@@ -1,12 +1,14 @@
+import { UI_COLORS } from './ui-tokens';
+
 export const ExploreTheme = {
-    pageBg: '#F7F9FC',
-    sectionDivider: '#F1F5F9',
-    headerBorder: '#E8EDF5',
-    titleText: '#0F172A',
-    secondaryText: '#94A3B8',
-    linkText: '#6366F1',
-    emptyIcon: '#CBD5E1',
-    searchHint: '#B45309',
-    searchHintBg: '#FFFBEB',
-    searchHintBorder: '#FDE68A',
+    pageBg: UI_COLORS.pageBg,
+    sectionDivider: UI_COLORS.surfaceMuted,
+    headerBorder: UI_COLORS.borderMuted,
+    titleText: UI_COLORS.textPrimary,
+    secondaryText: UI_COLORS.textSecondary,
+    linkText: UI_COLORS.link,
+    emptyIcon: UI_COLORS.textMuted,
+    searchHint: UI_COLORS.hint,
+    searchHintBg: UI_COLORS.hintBg,
+    searchHintBorder: UI_COLORS.hintBorder,
 };

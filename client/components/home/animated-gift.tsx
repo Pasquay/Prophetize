@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Animated, Easing, TouchableWithoutFeedback, View, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { UI_COLORS } from '@/constants/ui-tokens';
 
 const AnimatedGift = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -53,7 +54,7 @@ const AnimatedGift = () => {
             // Swap the icon name based on state!
             name={isOpen ? "gift-open-outline" : "gift-outline"} 
             size={24} 
-            color="#2563EB" 
+            color={UI_COLORS.accent} 
           />
         </Animated.View>
       </TouchableWithoutFeedback>
