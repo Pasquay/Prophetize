@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Image, Pressable } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { ExploreTheme } from '../constants/explore-theme';
 
 type Props = {
     balance: number;
@@ -23,9 +24,10 @@ export default function HomeHeader({ balance, hasNotification = true, onNotifica
                     resizeMode="contain"
                 />
                 <Text
-                    className="font-jetbrain-bold text-[30px] tracking-[-1px] text-[#0F172A]"
+                    className="font-jetbrain-bold text-[30px] tracking-[-1px]"
                     numberOfLines={1}
                     adjustsFontSizeToFit
+                    style={{ color: ExploreTheme.titleText }}
                 >
                     {formatted}
                 </Text>
@@ -37,7 +39,7 @@ export default function HomeHeader({ balance, hasNotification = true, onNotifica
                 className="rounded-full "
             >
                 <View >
-                    <Ionicons name="notifications-outline" size={26} color="#0F172A" />
+                    <Ionicons name="notifications-outline" size={26} color={ExploreTheme.titleText} />
                     {hasNotification && (
                         <View
                             style={{

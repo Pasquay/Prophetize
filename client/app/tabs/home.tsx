@@ -14,6 +14,7 @@ import HomeHeader from "../../components/home-header";
 import ClaimAllowance from "../../components/claim-allowance";
 import { useUserStore } from '../../context/useUserStore';
 import categories from "../../constants/categories";
+import { ExploreTheme } from "../../constants/explore-theme";
 
 export default function HomeScreen() {
 
@@ -61,10 +62,10 @@ export default function HomeScreen() {
 
 
     return (
-        <View className="flex-1 bg-[#F7F9FC]">
+        <View className="flex-1" style={{ backgroundColor: ExploreTheme.pageBg }}>
             {/* White header zone — includes status bar */}
             <SafeAreaView edges={['top']} className="bg-white">
-                <View className="px-5 pt-3 bg-white" style={{ borderBottomWidth: 1, borderBottomColor: '#E8EDF5' }}>
+                <View className="px-5 pt-3 bg-white" style={{ borderBottomWidth: 1, borderBottomColor: ExploreTheme.headerBorder }}>
                     <HomeHeader balance={userData?.balance ?? 0}/>
                  </View>   
             </SafeAreaView>

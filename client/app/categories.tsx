@@ -29,7 +29,7 @@ function CategoryRow({
     label: string;
     onPress: () => void;
 }) {
-    const icon = categoryIconMap[categoryKey] ?? { name: 'help-outline', color: '#94A3B8', bg: '#F8FAFC' };
+    const icon = categoryIconMap[categoryKey] ?? { name: 'help-outline', color: ExploreTheme.secondaryText, bg: ExploreTheme.sectionDivider };
 
     return (
         <Pressable
@@ -40,7 +40,7 @@ function CategoryRow({
                 backgroundColor: 'white',
                 borderRadius: 14,
                 borderWidth: 1,
-                borderColor: '#E2E8F0',
+                borderColor: ExploreTheme.headerBorder,
                 padding: 16,
                 gap: 14,
             }}
@@ -58,12 +58,12 @@ function CategoryRow({
                 <MaterialIcons name={icon.name as any} size={24} color={icon.color} />
             </View>
             <Text
-                style={{ flex: 1, fontSize: 16, color: '#0F172A' }}
+                style={{ flex: 1, fontSize: 16, color: ExploreTheme.titleText }}
                 className="font-grotesk-bold"
             >
                 {label}
             </Text>
-            <MaterialIcons name="arrow-forward-ios" size={14} color="#94A3B8" />
+            <MaterialIcons name="arrow-forward-ios" size={14} color={ExploreTheme.secondaryText} />
         </Pressable>
     );
 }
@@ -121,7 +121,7 @@ export default function CategoriesScreen() {
                         paddingHorizontal: 20,
                         paddingVertical: 14,
                         borderBottomWidth: 1,
-                        borderBottomColor: '#CBD5E1',
+                        borderBottomColor: ExploreTheme.headerBorder,
                         backgroundColor: ExploreTheme.pageBg,
                         gap: 12,
                     }}

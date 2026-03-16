@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { categoryIconMap } from '@/constants/ui-mappings';
+import { ExploreTheme } from '../constants/explore-theme';
 
 export type CategoryKey = 'SPORTS' | 'POLITICS' | 'CRYPTO' | 'CULTURE' | 'TECHNOLOGY' | 'SCHOOL';
 
@@ -18,8 +19,8 @@ type Props = {
 export default function CategoryCard({ categoryKey, label, count, onPress }: Props) {
     const icon = categoryIconMap[categoryKey.toUpperCase()] ?? {
         name: 'help-outline' as keyof typeof MaterialIcons.glyphMap,
-        color: '#94A3B8',
-        bg: '#F8FAFC',
+        color: ExploreTheme.secondaryText,
+        bg: ExploreTheme.sectionDivider,
     };
 
     return (
@@ -29,7 +30,7 @@ export default function CategoryCard({ categoryKey, label, count, onPress }: Pro
             style={{
                 minHeight: 96,
                 borderWidth: 1,
-                borderColor: '#E2E8F0',
+                borderColor: ExploreTheme.headerBorder,
                 backgroundColor: 'white',
             }}
         >
@@ -51,13 +52,14 @@ export default function CategoryCard({ categoryKey, label, count, onPress }: Pro
                 {/* Labels */}
                 <View>
                     <Text
-                        className="text-[#0F172A] font-grotesk-bold text-[14px]"
+                        className="font-grotesk-bold text-[14px]"
+                        style={{ color: ExploreTheme.titleText }}
                         numberOfLines={1}
                     >
                         {label}
                     </Text>
                     {count !== undefined && (
-                        <Text className="text-[#94A3B8] font-jetbrain text-[11px]">
+                        <Text className="font-jetbrain text-[11px]" style={{ color: ExploreTheme.secondaryText }}>
                             {count} markets
                         </Text>
                     )}

@@ -8,6 +8,7 @@ import LoadingScreen from '../components/loading-screen';
 import MarketDetailsHeader from "../components/market-detail-header";
 import MarketDetailBalance from "../components/market-detail-balance";
 import MarketDetailSummary from "../components/market-detail-summary";
+import { ExploreTheme } from "../constants/explore-theme";
 
 
 export default function DetailsScreen() {
@@ -35,9 +36,9 @@ export default function DetailsScreen() {
 
 
   return (
-    <View className="flex-1 bg-[#F7F9FC] gap-2">
+    <View className="flex-1 gap-2" style={{ backgroundColor: ExploreTheme.pageBg }}>
       <SafeAreaView edges={['top']} className="bg-white">
-          <View className="p-5 bg-white " style={{ borderBottomWidth: 1, borderBottomColor: '#E8EDF5' }}>
+          <View className="p-5 bg-white " style={{ borderBottomWidth: 1, borderBottomColor: ExploreTheme.headerBorder }}>
             <MarketDetailsHeader
               title={prediction ? prediction.title : "undefined"}
             />

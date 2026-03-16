@@ -11,26 +11,13 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Prediction } from '../.expo/types/model';
+import CardSkeleton from '../components/card-skeleton';
 import PredictionCard from '../components/prediction-card';
 import { ExploreTheme } from '../constants/explore-theme';
 import * as api from '../utils/api';
+import { normalizePrediction } from '../utils/prediction-helpers';
 
 const PAGE_SIZE = 10;
-
-function CardSkeleton() {
-    return (
-        <View
-            testID="explore-details-skeleton"
-            style={{
-                height: 140,
-                borderRadius: 12,
-                backgroundColor: ExploreTheme.sectionDivider,
-                borderWidth: 1,
-                borderColor: '#E2E8F0',
-            }}
-        />
-    );
-}
 
 export default function ExploreDetails() {
     const router = useRouter();
@@ -76,10 +63,7 @@ export default function ExploreDetails() {
             const { ok, data } = await api.get(`/markets/explore?${params.toString()}`);
             const rawItems = ok && Array.isArray(data) ? data : [];
 
-            const items = rawItems.map((item: any) => ({
-                ...item,
-                total_volume: item.total_volume ?? item.volume ?? 0,
-            })) as Prediction[];
+            const items = rawItems.map((item: any) => normalizePrediction(item));
 
             setMarkets((prev) => (append ? [...prev, ...items] : items));
             offsetRef.current = offset + items.length;
@@ -113,7 +97,7 @@ export default function ExploreDetails() {
                         paddingHorizontal: 20,
                         paddingVertical: 14,
                         borderBottomWidth: 1,
-                        borderBottomColor: '#CBD5E1',
+                        borderBottomColor: ExploreTheme.headerBorder,
                         backgroundColor: ExploreTheme.pageBg,
                         gap: 12,
                     }}

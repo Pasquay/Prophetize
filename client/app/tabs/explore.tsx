@@ -7,7 +7,9 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useUserStore } from '../../context/useUserStore';
 import { Prediction } from '../../.expo/types/model';
 import * as api from '../../utils/api';
+import { extractPredictionList, normalizePrediction } from '../../utils/prediction-helpers';
 
+import CardSkeleton from '../../components/card-skeleton';
 import SearchHeader from '../../components/search-header';
 import CategoryCard from '../../components/category-card';
 import PredictionCard from '../../components/prediction-card';
@@ -20,31 +22,6 @@ const GRID_CATEGORIES: { key: string; label: string }[] = [
     { key: 'CRYPTO', label: 'Crypto' },
     { key: 'TECHNOLOGY', label: 'Technology' },
 ];
-
-function extractPredictionList(payload: unknown): Prediction[] {
-    if (Array.isArray(payload)) return payload as Prediction[];
-    if (payload && typeof payload === 'object' && Array.isArray((payload as { data?: unknown }).data)) {
-        return (payload as { data: Prediction[] }).data;
-    }
-    return [];
-}
-
-function normalizePrediction(item: Prediction & { volume?: number }): Prediction {
-    return {
-        ...item,
-        total_volume: item.total_volume ?? item.volume ?? 0,
-    };
-}
-
-// ─── Small inline skeleton ───────────────────────────────────────────────────
-function CardSkeleton() {
-    return (
-        <View
-            className="w-full rounded-[12px] bg-[#F1F5F9]"
-            style={{ height: 140, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: ExploreTheme.sectionDivider }}
-        />
-    );
-}
 
 // ─── Section Header ──────────────────────────────────────────────────────────
 function SectionHeader({
@@ -101,7 +78,7 @@ export default function ExploreScreen() {
                     if (newRes.ok) {
                         const data = extractPredictionList(newRes.data)
                             .filter((i) => i && i.id)
-                            .map((i) => normalizePrediction(i as Prediction & { volume?: number }));
+                             .map((i) => normalizePrediction(i as Prediction & { volume?: number }));
 
                         // Backend now handles ordering & limit; set directly
                         setNewest(data);

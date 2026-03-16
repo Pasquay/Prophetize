@@ -4,6 +4,7 @@ import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { categoryIconMap, OPTION_COLORS } from '@/constants/ui-mappings';
+import { ExploreTheme } from '../constants/explore-theme';
 
 type Props = {
     prediction: Prediction;
@@ -15,15 +16,31 @@ const normalizeProbability = (value: number) => {
   return Math.max(0, Math.min(1, normalized));
 };
 
+const formatOptionLabel = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
 export default function PredictionCard({prediction, onPress}:Props) {
   const mediumDate = prediction.endDate
     ? new Date(prediction.endDate).toLocaleDateString('en-US', { dateStyle: 'medium' })
     : 'TBD';
 
   const categoryIcon = categoryIconMap[prediction.category] ?? { name: "help-outline", color: "#94A3B8" };
+  const options = prediction?.options || [];
+  const rawPercents = options.map((option) => normalizeProbability(option.probability) * 100);
+  const totalPercent = rawPercents.reduce((sum, value) => sum + value, 0);
+  const displayPercents = totalPercent > 0
+    ? rawPercents.map((value) => (value / totalPercent) * 100)
+    : options.map(() => (options.length > 0 ? 100 / options.length : 0));
+  const totalDisplay = displayPercents.reduce((sum, v) => sum + v, 0);
+  const segmentWidths: `${number}%`[] = totalDisplay > 0
+    ? displayPercents.map((v) => `${(v / totalDisplay) * 100}%` as `${number}%`)
+    : options.map(() => `${100 / options.length}%` as `${number}%`);
 
     return (
-    <Pressable onPress={onPress} className="w-full h-auto rounded-[12px] border-[#E2E8F0] border-[1px]">
+    <Pressable onPress={onPress} className="w-full h-auto rounded-[12px] border-[1px]" style={{ borderColor: ExploreTheme.headerBorder }}>
       <View className="bg-white rounded-2xl overflow-hidden shadow-sm">
 
         {/* Image with diagonal gradient fade: top-right visible → bottom-left hidden */}
@@ -63,47 +80,40 @@ export default function PredictionCard({prediction, onPress}:Props) {
           <Text className="text-gray-900 text-[18px] font-semibold mb-2 leading-7 font-grotesk-bold w-3/5">
             {prediction?.title}
           </Text>
+          {/* Option Labels */}
+          <View className="w-full mt-2 h-6" style={{ flexDirection: 'row' }}>
+            {options.map((option, index) => {
+              const color = OPTION_COLORS[index % OPTION_COLORS.length];
+              const width = segmentWidths[index];
+              const showPercent = options.length === 2;
 
-
-           {/* Option Labels */}
-          {prediction?.options?.length === 2 ? (
-            <View className="flex-row justify-between mt-2">
-              <Text style={{ color: OPTION_COLORS[0] }} className="font-jetbrain-bold text-[14px]">
-                {prediction.options[0].name} {(normalizeProbability(prediction.options[0].probability) * 100).toFixed(0)}%
-              </Text>
-              <Text style={{ color: OPTION_COLORS[1] }} className="font-jetbrain-bold text-[14px]">
-                {prediction.options[1].name} {(normalizeProbability(prediction.options[1].probability) * 100).toFixed(0)}%
-              </Text>
-            </View>
-          ) : (
-            <View className="flex-row w-full mt-2">
-              {(prediction?.options || []).map((option, index) => {
-                const percent = normalizeProbability(option.probability) * 100;
-                const color = OPTION_COLORS[index % OPTION_COLORS.length];
-                return (
-                  <View
-                    key={option.id ?? index}
-                    style={{ width: `${percent}%` }}
-                    className="overflow-hidden"
+              return (
+                <View
+                  key={option.id ?? index}
+                  style={{ width }}
+                  className="overflow-hidden justify-center items-center"
+                >
+                  <Text
+                    style={{ color, textAlign: 'center' }}
+                    className="font-jetbrain-bold text-[14px] leading-[18px]"
+                    numberOfLines={1}
                   >
-                    <Text style={{ color }} className="font-jetbrain-bold text-[11px]" numberOfLines={1}>
-                      {option.name}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-          )}
+                    {formatOptionLabel(option.name)}{showPercent ? ` ${rawPercents[index].toFixed(0)}%` : ''}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
 
           {/* Dynamic Progress Bar */}
-          <View className="flex-row w-full h-2.5 rounded-xl overflow-hidden mt-1">
-            {(prediction?.options || []).map((option, index) => {
-              const percent = normalizeProbability(option.probability) * 100;
+          <View className="w-full h-2.5 rounded-xl overflow-hidden mt-1" style={{ flexDirection: 'row' }}>
+            {options.map((option, index) => {
+              const width = segmentWidths[index];
               const color = OPTION_COLORS[index % OPTION_COLORS.length];
               return (
                 <View
                   key={option.id ?? index}
-                  style={{ width: `${percent}%`, backgroundColor: color }}
+                  style={{ width, backgroundColor: color }}
                 />
               );
             })}
