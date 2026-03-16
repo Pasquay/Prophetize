@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { supabase } from '../config/supabaseClient';
 import { AuthRequest } from '../types/authRequest';
 import { MARKET_CATEGORIES } from '../types/marketCategories';
+import { getPaginationRange } from '../utils/pagination';
 
 // GET /markets/categories
 export const getCategories = (req: Request, res: Response) => {
@@ -10,6 +11,11 @@ export const getCategories = (req: Request, res: Response) => {
 
 // GET /get-all - Get all markets (Testing only)
 export const getAllMarkets = async(req:Request, res:Response) => {
+    const page = parseInt(req.query.page as string) || 0;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const { from, to } = getPaginationRange(page, limit);
+
     try {
         const { data, error } = await supabase
             .from('markets')
@@ -22,9 +28,10 @@ export const getAllMarkets = async(req:Request, res:Response) => {
                 )
             `)
             .order('created_at', { ascending:false })
-            .limit(20);
+            .range(from, to);
         
         if(error) throw error;
+        if(!data || !data.length) return res.status(200).json([]);
 
         const marketData = data.map((item:any) => {
             const rawOptions = item.option || [];
@@ -63,6 +70,11 @@ export const getAllMarkets = async(req:Request, res:Response) => {
 
 // GET /trending - Get trending markets (home page)
 export const getTrendingMarkets = async(req:Request, res:Response) => {
+    const page = parseInt(req.query.page as string) || 0;
+    const limit = parseInt(req.query.limit as string) || 10;
+    
+    const { from, to } = getPaginationRange(page, limit);
+
     try {
         const { data, error } = await supabase
             .from('market_24h_stats')
@@ -78,9 +90,10 @@ export const getTrendingMarkets = async(req:Request, res:Response) => {
                 )
             `)
             .order('volume_24h', { ascending: false })
-            .limit(20);
+            .range(from, to);
         
         if(error) throw error;
+        if(!data || !data.length) return res.status(200).json([]);
 
         const marketData = data.map((item:any) => {
             const market = item.market;
@@ -125,6 +138,11 @@ export const getMarketByCategory = async(req:Request, res:Response) => {
     const category = (req.params.category as string)?.toUpperCase();    
     if(!category) return res.status(400).json({ error: "Please select a category" });
 
+    const page = parseInt(req.query.page as string) || 0;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const { from, to } = getPaginationRange(page, limit);
+
     try {
         const { data, error } = await supabase
             .from('markets')
@@ -137,10 +155,12 @@ export const getMarketByCategory = async(req:Request, res:Response) => {
                 )
             `)
             .eq('category', category)
-            .in('category', MARKET_CATEGORIES);
+            .in('category', MARKET_CATEGORIES)
+            .order('created_at', { ascending: false })
+            .range(from, to);
 
         if(error) throw error;
-        if(!data) return res.status(404).json({ error: "Category is empty" });
+        if(!data || !data.length) return res.status(404).json({ error: "Category is empty" });
 
         const marketData = data.map((market:any) => {
             const rawOptions = market.options || [];
@@ -212,7 +232,82 @@ export const getMarketById = async(req:Request, res:Response) => {
 
 // GET /search - Search markets with filters
 export const searchMarket = async(req:Request, res:Response) => {
- 
+    const search = req.query.search as string;
+    const category = req.query.category as string;
+    const status = req.query.status as string;
+    const sort = req.query.sort as string;
+    const isAscending = req.query.isAscending === 'true';
+
+    const page = parseInt(req.query.page as string) || 0;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const { from, to } = getPaginationRange(page, limit);   
+    try {
+        let query = supabase
+            .from('markets')
+            .select(`
+                *,
+                options: market_options!market_options_market_id_fkey(
+                    id,
+                    name,
+                    probability
+                )
+            `, { count: "exact" });
+
+        if(search) query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+        if(category) query = query.eq('category', category.toUpperCase());
+        if(status) query = query.eq('status', status.toLowerCase());
+        else query = query.eq('status', 'active');
+        switch(sort){
+            case 'volume': query = query.order('total_volume', { ascending: isAscending }); break;
+            case 'end_date': query = query.order('end_date', { ascending: isAscending }); break;
+            default: query = query.order('created_at', { ascending: false }); break;
+        }
+
+        const { data, count, error } = await query.range(from, to);
+        if(error) throw error;
+
+        const marketData = data.map((market: any) => {
+            const rawOptions = market.options || [];
+            const sortedOptions = rawOptions.sort((a: any, b: any) => b.probability - a.probability);
+            const topOptions = sortedOptions.slice(0, 2);
+
+            const otherOptions = sortedOptions.slice(2);
+            const otherProbability = otherOptions.reduce((sum: number, opt: any) => sum + opt.probability, 0);
+
+            const finalOptions = [...topOptions];
+            if (otherProbability > 0.01) {
+                finalOptions.push({
+                    id: 'other',
+                    name: 'Other',
+                    probability: otherProbability
+                });
+            }
+
+            return {
+                id: market.id,
+                title: market.title,
+                image: market.image_url,
+                category: market.category,
+                endDate: market.end_date,
+                status: market.status,
+                volume: market.total_volume || 0,
+                options: finalOptions
+            };
+        });
+
+        return res.status(200).json({
+            data: marketData,
+            meta: {
+                total_records: count,
+                current_page: page,
+                total_pages: count ? Math.ceil(count / limit) : 0,
+                has_next_page: count ? (page * limit) < count : false
+            }
+        });
+    } catch(error:any){
+        return res.status(500).json({ error: error.message });
+    }
 };
 
 // POST /create - Adds market to pending for admin's approval
