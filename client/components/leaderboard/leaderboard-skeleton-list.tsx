@@ -9,10 +9,11 @@ type Props = {
 };
 
 export default function LeaderboardSkeletonList({ count = 4, compact = false }: Props) {
+    const skeletonKeys = Array.from({ length: count }, (_, i) => `leaderboard-skeleton-${i}`);
     return (
         <View style={styles.wrapper}>
-            {Array.from({ length: count }).map((_, index) => (
-                <LeaderboardSkeletonRow key={`leaderboard-skeleton-${index}`} compact={compact} />
+            {skeletonKeys.map((key) => (
+                <LeaderboardSkeletonRow key={key} compact={compact} />
             ))}
         </View>
     );

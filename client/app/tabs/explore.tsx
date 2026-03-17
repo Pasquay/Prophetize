@@ -130,8 +130,12 @@ export default function ExploreScreen() {
             {/* ── Sticky white header ── */}
             <SafeAreaView edges={['top']} className="bg-white">
                 <View
-                    className="px-5 pt-3 pb-4 bg-white"
-                    style={{ borderBottomWidth: 1, borderBottomColor: ExploreTheme.headerBorder }}
+                    className="px-5 bg-white"
+                    style={{
+                        borderBottomWidth: 1,
+                        borderBottomColor: ExploreTheme.headerBorder,
+                        paddingVertical: 14,
+                    }}
                 >
                     <SearchHeader
                         balance={userData?.balance ?? 0}

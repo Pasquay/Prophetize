@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { categoryIconMap } from '@/constants/ui-mappings';
 import { ExploreTheme } from '../constants/explore-theme';
+import { UI_COLORS } from '../constants/ui-tokens';
 import * as api from '../utils/api';
 
 type CategoryItem = { key: string; label: string };
@@ -113,7 +114,7 @@ export default function CategoriesScreen() {
 
     return (
         <View style={{ flex: 1, backgroundColor: ExploreTheme.pageBg }}>
-            <SafeAreaView style={{ backgroundColor: ExploreTheme.pageBg }}>
+            <SafeAreaView style={{ backgroundColor: UI_COLORS.surface }}>
                 <View
                     style={{
                         flexDirection: 'row',
@@ -122,7 +123,7 @@ export default function CategoriesScreen() {
                         paddingVertical: 14,
                         borderBottomWidth: 1,
                         borderBottomColor: ExploreTheme.headerBorder,
-                        backgroundColor: ExploreTheme.pageBg,
+                        backgroundColor: UI_COLORS.surface,
                         gap: 12,
                     }}
                 >

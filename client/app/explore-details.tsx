@@ -14,6 +14,7 @@ import { Prediction } from '../.expo/types/model';
 import CardSkeleton from '@/components/explore/card-skeleton';
 import PredictionCard from '@/components/explore/prediction-card';
 import { ExploreTheme } from '../constants/explore-theme';
+import { UI_COLORS } from '../constants/ui-tokens';
 import * as api from '../utils/api';
 import { normalizePrediction } from '../utils/prediction-helpers';
 
@@ -31,7 +32,8 @@ export default function ExploreDetails() {
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
-    const offsetRef = useRef(0);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const pageRef = useRef(0);
 
     /** Build the title based on the params */
     const pageTitle = search
@@ -44,30 +46,53 @@ export default function ExploreDetails() {
         ? 'New Markets'
         : 'Explore';
 
-    const fetchPage = useCallback(async (offset: number, append: boolean) => {
-        if (offset === 0) {
+    const fetchPage = useCallback(async (page: number, append: boolean) => {
+        if (page === 0) {
             setLoading(true);
         } else {
             setLoadingMore(true);
         }
 
+        if (!append) {
+            setErrorMessage(null);
+        }
+
         try {
             const params = new URLSearchParams();
             params.set('limit', String(PAGE_SIZE));
-            params.set('offset', String(offset));
+            params.set('page', String(page));
 
-            if (sort) params.set('sort', String(sort));
+            if (sort === 'trending') {
+                params.set('sort', 'volume');
+                params.set('isAscending', 'false');
+            }
             if (category) params.set('category', String(category).toUpperCase());
             if (search) params.set('search', String(search));
 
-            const { ok, data } = await api.get(`/markets/explore?${params.toString()}`);
-            const rawItems = ok && Array.isArray(data) ? data : [];
+            const { ok, data } = await api.get(`/markets/search?${params.toString()}`);
+            if (!ok) {
+                throw new Error('Failed to load markets');
+            }
+
+            const payload = (data && typeof data === 'object') ? data as { data?: unknown; meta?: { has_next_page?: boolean } } : {};
+            const rawItems = Array.isArray(payload.data) ? payload.data : [];
 
             const items = rawItems.map((item: any) => normalizePrediction(item));
 
             setMarkets((prev) => (append ? [...prev, ...items] : items));
-            offsetRef.current = offset + items.length;
-            setHasMore(items.length === PAGE_SIZE);
+            pageRef.current = page + 1;
+            if (typeof payload.meta?.has_next_page === 'boolean') {
+                setHasMore(payload.meta.has_next_page);
+            } else {
+                setHasMore(items.length === PAGE_SIZE);
+            }
+        } catch {
+            if (!append) {
+                setErrorMessage('Could not load markets right now.');
+                setMarkets([]);
+            } else {
+                setHasMore(false);
+            }
         } finally {
             setLoading(false);
             setLoadingMore(false);
@@ -75,9 +100,10 @@ export default function ExploreDetails() {
     }, [category, search, sort]);
 
     useEffect(() => {
-        offsetRef.current = 0;
+        pageRef.current = 0;
         setMarkets([]);
         setHasMore(true);
+        setErrorMessage(null);
         fetchPage(0, false);
     }, [fetchPage]);
 
@@ -89,7 +115,7 @@ export default function ExploreDetails() {
     return (
         <View style={{ flex: 1, backgroundColor: ExploreTheme.pageBg }}>
             {/* Header */}
-            <SafeAreaView style={{ backgroundColor: ExploreTheme.pageBg }}>
+            <SafeAreaView style={{ backgroundColor: UI_COLORS.surface }}>
                 <View
                     style={{
                         flexDirection: 'row',
@@ -98,7 +124,7 @@ export default function ExploreDetails() {
                         paddingVertical: 14,
                         borderBottomWidth: 1,
                         borderBottomColor: ExploreTheme.headerBorder,
-                        backgroundColor: ExploreTheme.pageBg,
+                        backgroundColor: UI_COLORS.surface,
                         gap: 12,
                     }}
                 >
@@ -134,7 +160,7 @@ export default function ExploreDetails() {
                     contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 16, gap: 14 }}
                     showsVerticalScrollIndicator={false}
                     onEndReached={() => {
-                        if (!loadingMore && hasMore) fetchPage(offsetRef.current, true);
+                        if (!loadingMore && hasMore) fetchPage(pageRef.current, true);
                     }}
                     onEndReachedThreshold={0.4}
                     ListFooterComponent={
@@ -162,8 +188,25 @@ export default function ExploreDetails() {
                                 style={{ color: ExploreTheme.secondaryText, marginTop: 8, fontSize: 14 }}
                                 className="font-jetbrain"
                             >
-                                No markets found
+                                {errorMessage ?? 'No markets found'}
                             </Text>
+                            {errorMessage && (
+                                <Pressable
+                                    onPress={() => fetchPage(0, false)}
+                                    style={{
+                                        marginTop: 12,
+                                        borderRadius: 10,
+                                        borderWidth: 1,
+                                        borderColor: ExploreTheme.linkText,
+                                        paddingHorizontal: 14,
+                                        paddingVertical: 8,
+                                    }}
+                                >
+                                    <Text className="font-jetbrain" style={{ color: ExploreTheme.linkText }}>
+                                        Retry
+                                    </Text>
+                                </Pressable>
+                            )}
                         </View>
                     }
                 />

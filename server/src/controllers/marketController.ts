@@ -302,7 +302,7 @@ export const searchMarket = async(req:Request, res:Response) => {
                 total_records: count,
                 current_page: page,
                 total_pages: count ? Math.ceil(count / limit) : 0,
-                has_next_page: count ? (page * limit) < count : false
+                has_next_page: count ? ((page + 1) * limit) < count : false
             }
         });
     } catch(error:any){

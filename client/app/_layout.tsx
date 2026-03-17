@@ -3,7 +3,7 @@ import { useFonts } from 'expo-font';
 import { SpaceGrotesk_700Bold, SpaceGrotesk_400Regular } from '@expo-google-fonts/space-grotesk';
 import { InterTight_400Regular, InterTight_700Bold } from '@expo-google-fonts/inter-tight';
 import { JetBrainsMono_400Regular, JetBrainsMono_700Bold } from '@expo-google-fonts/jetbrains-mono';
-import { useRouter, Stack } from 'expo-router';
+import { usePathname, useRootNavigationState, useRouter, Stack } from 'expo-router';
 import React, { useEffect } from 'react';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import LoadingScreen from '@/components/common/loading-screen';
@@ -21,16 +21,24 @@ export default function Layout() {
 
 function RootLayout() {
   const router = useRouter();
+  const pathname = usePathname();
+  const rootNavState = useRootNavigationState();
   const { token, isLoading } = useAuth();
 
   useEffect(() => {
     if(isLoading) return;
-    if(token){
-      router.replace('/tabs/home');
-    } else {
+    if(!rootNavState?.key) return;
+    const isPublicRoute = pathname === '/' || pathname === '/login' || pathname === '/signUp';
+    if(!token && !isPublicRoute){
       router.replace('/');
+      return;
     }
-  }, [token, isLoading, router]);
+    // Only auto-forward authenticated users from the landing page.
+    // Keep /login and /signUp reachable to avoid unexpected route jumps.
+    if(token && pathname === '/'){
+      router.replace('/tabs/home');
+    }
+  }, [token, isLoading, pathname, router, rootNavState?.key]);
 
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_400Regular,

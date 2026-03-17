@@ -63,7 +63,14 @@ export default function HomeScreen() {
         <View className="flex-1" style={{ backgroundColor: ExploreTheme.pageBg }}>
             {/* White header zone — includes status bar */}
             <SafeAreaView edges={['top']} className="bg-white">
-                <View className="px-5 pt-3 bg-white" style={{ borderBottomWidth: 1, borderBottomColor: ExploreTheme.headerBorder }}>
+                <View
+                    className="px-5 bg-white"
+                    style={{
+                        borderBottomWidth: 1,
+                        borderBottomColor: ExploreTheme.headerBorder,
+                        paddingVertical: 14,
+                    }}
+                >
                     <HomeHeader balance={userData?.balance ?? 0}/>
                  </View>   
             </SafeAreaView>

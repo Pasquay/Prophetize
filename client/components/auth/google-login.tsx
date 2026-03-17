@@ -55,7 +55,8 @@ export default function GoogleLogin({disabled, colors}:Props) {
             opacity: disabled ? 0.6 : (pressed ? 0.9 : 1),
             backgroundColor: pressed ? palette.surfaceMuted : palette.surface,
             borderWidth: 1,
-            borderColor: palette.border
+            borderColor: palette.border,
+            transform: [{ scale: pressed ? 0.98 : 1 }],
         }}
         onPress={async () => {
           try {

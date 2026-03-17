@@ -38,7 +38,15 @@ export default function DetailsScreen() {
   return (
     <View className="flex-1 gap-2" style={{ backgroundColor: ExploreTheme.pageBg }}>
       <SafeAreaView edges={['top']} className="bg-white">
-          <View className="p-5 bg-white " style={{ borderBottomWidth: 1, borderBottomColor: ExploreTheme.headerBorder }}>
+          <View
+            className="bg-white"
+            style={{
+              borderBottomWidth: 1,
+              borderBottomColor: ExploreTheme.headerBorder,
+              paddingHorizontal: 20,
+              paddingVertical: 14,
+            }}
+          >
             <MarketDetailsHeader
               title={prediction ? prediction.title : "undefined"}
             />

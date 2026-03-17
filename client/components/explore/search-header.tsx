@@ -52,7 +52,12 @@ export default function SearchHeader({
 
                 <Pressable
                     onPress={onNotificationPress}
-                    style={{ padding: 8 }}
+                    hitSlop={4}
+                    style={({ pressed }) => ({
+                        padding: 8,
+                        opacity: pressed ? 0.85 : 1,
+                        transform: [{ scale: pressed ? 0.92 : 1 }],
+                    })}
                     className="rounded-full"
                 >
                     <View>
@@ -103,7 +108,11 @@ export default function SearchHeader({
                             setQuery('');
                             onSearchChange?.('');
                         }}
-                        hitSlop={8}
+                        hitSlop={13}
+                        style={({ pressed }) => ({
+                            opacity: pressed ? 0.8 : 1,
+                            transform: [{ scale: pressed ? 0.92 : 1 }],
+                        })}
                     >
                         <Ionicons name="close-circle" size={18} color={UI_COLORS.textSecondary} />
                     </Pressable>

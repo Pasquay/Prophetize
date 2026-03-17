@@ -1,5 +1,5 @@
-import React, {useEffect, useRef, useState} from 'react';
-import { AccessibilityInfo, Animated, Easing, Text, View, Pressable, useWindowDimensions, Image, Alert} from 'react-native';
+import React, {useState} from 'react';
+import { Text, View, Pressable, useWindowDimensions, Image, Alert} from 'react-native';
 import { useRouter } from 'expo-router';
 import Logo from "@/components/auth/logo-hint"
 import BackBtn from "@/components/auth/backbtn"
@@ -22,57 +22,6 @@ export default function LoginScreen() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const {login} = useAuth();
-    const headerOpacity = useRef(new Animated.Value(0)).current;
-    const headerTranslate = useRef(new Animated.Value(12)).current;
-    const panelOpacity = useRef(new Animated.Value(0)).current;
-    const panelTranslate = useRef(new Animated.Value(18)).current;
-
-    useEffect(() => {
-        let isMounted = true;
-        AccessibilityInfo.isReduceMotionEnabled().then((reduceMotion) => {
-            if (!isMounted) return;
-            if (reduceMotion) {
-                headerOpacity.setValue(1);
-                headerTranslate.setValue(0);
-                panelOpacity.setValue(1);
-                panelTranslate.setValue(0);
-                return;
-            }
-            Animated.stagger(120, [
-                Animated.parallel([
-                    Animated.timing(headerOpacity, {
-                        toValue: 1,
-                        duration: 220,
-                        easing: Easing.out(Easing.cubic),
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(headerTranslate, {
-                        toValue: 0,
-                        duration: 220,
-                        easing: Easing.out(Easing.cubic),
-                        useNativeDriver: true,
-                    }),
-                ]),
-                Animated.parallel([
-                    Animated.timing(panelOpacity, {
-                        toValue: 1,
-                        duration: 260,
-                        easing: Easing.out(Easing.cubic),
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(panelTranslate, {
-                        toValue: 0,
-                        duration: 260,
-                        easing: Easing.out(Easing.cubic),
-                        useNativeDriver: true,
-                    }),
-                ]),
-            ]).start();
-        });
-        return () => {
-            isMounted = false;
-        };
-    }, [headerOpacity, headerTranslate, panelOpacity, panelTranslate]);
 
     const handleLogin = async () => {
         if(!email || !password){
@@ -102,10 +51,7 @@ export default function LoginScreen() {
     return (
         <SafeAreaView className="flex-1" style={{ backgroundColor: UI_COLORS.pageBg }} edges={['top']} >
         
-            <Animated.View
-                className="flex-1 p-6 "
-                style={{ opacity: headerOpacity, transform: [{ translateY: headerTranslate }] }}
-            >
+            <View className="flex-1 p-6 ">
                 <View className="flex flex-row gap-3 items-center">
                     <Pressable onPress={() => router.back()}>
                             <BackBtn size={24} color={UI_COLORS.textPrimary} />
@@ -132,14 +78,12 @@ export default function LoginScreen() {
                         Continue your predictions on real-world outcomes.
                     </Text>
                 </View>
-            </Animated.View>
+            </View>
 
-            <Animated.View
+            <View
                 className="p-6 gap-4"
                 style={{
                     backgroundColor: UI_COLORS.surfaceMuted,
-                    opacity: panelOpacity,
-                    transform: [{ translateY: panelTranslate }],
                 }}
             >
 
@@ -204,7 +148,7 @@ export default function LoginScreen() {
                         <Text className="font-grotesk-bold text-[14px]" style={{ color: UI_COLORS.link }}>Sign Up</Text>
                     </Pressable>
                 </View>
-            </Animated.View>
+            </View>
 
         </SafeAreaView>
     );

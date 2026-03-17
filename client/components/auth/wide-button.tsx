@@ -48,7 +48,8 @@ export default function Button({label, onPress, variant="primary", icon, disable
                     opacity: disabled ? 0.6 : (pressed ? 0.9 : 1),
                     backgroundColor,
                     borderWidth: isPrimary ? 0 : 1,
-                    borderColor: palette.border
+                    borderColor: palette.border,
+                    transform: [{ scale: pressed ? 0.98 : 1 }],
                 }}
             >
                 {icon && icon} 

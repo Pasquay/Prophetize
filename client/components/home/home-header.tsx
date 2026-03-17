@@ -17,7 +17,7 @@ export default function HomeHeader({ balance, hasNotification = true, onNotifica
     });
 
     return (
-        <View className="h-auto w-full flex-row items-center pb-4 gap-2">
+        <View className="h-auto w-full flex-row items-center gap-2">
             <View className="flex-row items-center gap-3 flex-1 p-2 inline-flex">
                 <Image
                     source={require('../../assets/app-icons/p-coin.png')}
@@ -36,7 +36,12 @@ export default function HomeHeader({ balance, hasNotification = true, onNotifica
 
             <Pressable
                 onPress={onNotificationPress}
-                style={{ padding: 8 }}
+                hitSlop={4}
+                style={({ pressed }) => ({
+                    padding: 8,
+                    opacity: pressed ? 0.85 : 1,
+                    transform: [{ scale: pressed ? 0.92 : 1 }],
+                })}
                 className="rounded-full "
             >
                 <View >

@@ -14,12 +14,14 @@ export default function CategoryBtn({label, isActive, onPress}:Props) {
         <Pressable 
             className="h-[38px] w-[88px] rounded-full items-center justify-center"
             onPress={onPress}
+            hitSlop={{ top: 3, bottom: 3 }}
             onPressIn={()=>setPressed(true)}
             onPressOut={()=>setPressed(false)}
             style={{
                     backgroundColor: (isActive ? ExploreTheme.titleText : 'white'),
                     borderWidth: 1,
-                    borderColor: (isActive ? ExploreTheme.titleText : ExploreTheme.headerBorder)
+                    borderColor: (isActive ? ExploreTheme.titleText : ExploreTheme.headerBorder),
+                    transform: [{ scale: pressed ? 0.97 : 1 }],
                 }}
             >
             <Text

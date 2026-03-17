@@ -30,10 +30,17 @@ export default function ClaimAllowance({ onClaimed }: { onClaimed?: () => void }
                 </View>
                 <View className="flex-col">
                     <Text className="font-grotesk-bold text-[14px] ">Daily Login Bonus</Text>
-                    <Text className="font-jetbrain text-[12px]" style={{ color: UI_COLORS.textSecondary }}>+100 P-coins</Text>
+                    <Text className="font-jetbrain text-[12px]" style={{ color: UI_COLORS.textSecondary }}>+15 P-coins</Text>
                 </View>
                 <View className="flex-1"/>
-                <Pressable onPress={claimAllowance}>
+                <Pressable
+                    onPress={claimAllowance}
+                    hitSlop={14}
+                    style={({ pressed }) => ({
+                        opacity: pressed ? 0.7 : 1,
+                        transform: [{ scale: pressed ? 0.98 : 1 }],
+                    })}
+                >
                     <Text className="font-grotesk-bold text-l" style={{ color: UI_COLORS.accent }}>Claim</Text>
                 </Pressable>
             </View>

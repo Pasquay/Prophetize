@@ -10,6 +10,7 @@ router.get("/get-all", marketController.getAllMarkets);
 
 // ACTUAL ROUTES
 router.get("/trending", marketController.getTrendingMarkets);
+router.get("/categories", marketController.getCategories);
 router.get("/category/:category", marketController.getMarketByCategory);
 router.get("/search", marketController.searchMarket);
 router.post("/create", requireAuth, marketController.createMarket);

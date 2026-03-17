@@ -1,4 +1,4 @@
-import { Tabs, useRouter } from 'expo-router';
+import { Redirect, Tabs, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -22,7 +22,11 @@ export default function TabsLayout(){
     }
   }, [token, isLoading]);
 
-  if (!token) return null;
+    if (!token && !isLoading) {
+        return <Redirect href="/" />;
+    }
+
+    if (!token) return null;
 
   return (
     <Tabs screenOptions={{ tabBarActiveTintColor: UI_COLORS.accent }}>

@@ -54,7 +54,7 @@ export default function SignUpScreen() {
             const { ok, data } = await api.post(endpoint, {username, email, password});
             if(ok){
                 Alert.alert('Success');
-                router.push('/login');
+                router.replace('/login');
             } else {
                 Alert.alert('Signup failed', data.error);
             }
@@ -150,7 +150,7 @@ export default function SignUpScreen() {
 
                 <View className="flex-row items-center justify-center gap-1 mt-2">
                     <Text className="text-slate-400 font-grotesk-bold text-[14px]">Already have an account?</Text>
-                    <Pressable onPress={() => router.push('/login')}>
+                    <Pressable onPress={() => router.replace('/login')}>
                         <Text className="font-grotesk-bold text-[14px]" style={{ color: UI_COLORS.link }}>Log in</Text>
                     </Pressable>
                 </View>

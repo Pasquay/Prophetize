@@ -139,13 +139,13 @@ export default function LeaderboardScreen() {
 
     return (
         <View className="flex-1" style={{ backgroundColor: ExploreTheme.pageBg }}>
-            <SafeAreaView edges={['top']} className="bg-transparent" style={{ backgroundColor: ExploreTheme.pageBg }}>
+            <SafeAreaView edges={['top']} className="bg-white">
                 <View
-                    className="px-5 pt-3 pb-3 bg-transparent"
+                    className="px-5 bg-white"
                     style={{
                         borderBottomWidth: 1,
                         borderBottomColor: ExploreTheme.headerBorder,
-                        backgroundColor: ExploreTheme.pageBg,
+                        paddingVertical: 14,
                     }}
                 >
                     <View className="mb-2">
