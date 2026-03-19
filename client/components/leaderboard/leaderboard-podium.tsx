@@ -5,6 +5,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ExploreTheme } from '@/constants/explore-theme';
 import { LeaderboardEntry } from './leaderboard-row';
 import { getTopRankStyle } from './leaderboard-style';
+import { UI_COLORS } from '@/constants/ui-tokens';
 
 type Props = {
     entries: LeaderboardEntry[];
@@ -20,7 +21,7 @@ export default function LeaderboardPodium({ entries }: Props) {
             {ordered.map((entry) => {
                 const isCenter = entry.rank === 1;
                 const topStyles = getTopRankStyle(entry.rank);
-                const profitColor = entry.profitPct >= 0 ? '#10B981' : '#EF4444';
+                const profitColor = entry.profitPct >= 0 ? UI_COLORS.success : UI_COLORS.danger;
                 const profitLabel = `${entry.profitPct >= 0 ? '+' : ''}${entry.profitPct.toFixed(1)}%`;
 
                 return (
@@ -41,7 +42,7 @@ export default function LeaderboardPodium({ entries }: Props) {
                         >
                             {entry.rank === 1 && (
                                 <View className="absolute left-2 top-2">
-                                    <MaterialIcons name="emoji-events" size={16} color="#C28C00" />
+                                    <MaterialIcons name="workspace-premium" size={16} color="#C28C00" />
                                 </View>
                             )}
 

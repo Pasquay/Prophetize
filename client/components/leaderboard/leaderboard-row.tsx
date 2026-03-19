@@ -22,12 +22,18 @@ export default function LeaderboardRow({ item }: Props) {
     const isTopThree = item.rank <= 3;
     const isCurrentUser = item.isCurrentUser;
     const topStyles = getTopRankStyle(item.rank);
-    const profitColor = item.profitPct >= 0 ? '#10B981' : '#EF4444';
+    const profitColor = item.profitPct >= 0 ? UI_COLORS.success : UI_COLORS.danger;
     const profitLabel = `${item.profitPct >= 0 ? '+' : ''}${item.profitPct.toFixed(1)}%`;
 
     if (!isTopThree) {
         return (
-            <View className="px-1 py-2">
+            <Pressable
+                onPress={() => {}}
+                hitSlop={10}
+                accessibilityLabel={`View profile: ${item.username}`}
+                accessibilityRole="button"
+                className="px-1 py-2"
+            >
                 <View
                     className="flex-row items-center gap-3 py-2 px-2 rounded-xl"
                     style={{
@@ -36,17 +42,17 @@ export default function LeaderboardRow({ item }: Props) {
                         borderColor: isCurrentUser ? UI_COLORS.accentBorder : 'transparent',
                     }}
                 >
-                    <Text className="font-jetbrain-bold text-[12px] w-5 text-center" style={{ color: UI_COLORS.textSecondary }}>
+                    <Text className="font-jetbrain-bold text-xs w-5 text-center" style={{ color: UI_COLORS.textSecondary }}>
                         {item.rank}
                     </Text>
 
                     <View className="h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: UI_COLORS.accentSoft }}>
-                        <Text className="font-grotesk-bold text-[16px]" style={{ color: UI_COLORS.accent }}>
+                        <Text className="font-grotesk-bold text-base" style={{ color: UI_COLORS.accent }}>
                             {item.initials}
                         </Text>
                     </View>
 
-                    <Text className="font-grotesk-bold text-[12px] flex-1" style={{ color: UI_COLORS.textPrimary }} numberOfLines={1}>
+                    <Text className="font-grotesk-bold text-xs flex-1" style={{ color: UI_COLORS.textPrimary }} numberOfLines={1}>
                         {item.username}
                     </Text>
 
@@ -54,12 +60,16 @@ export default function LeaderboardRow({ item }: Props) {
                         {profitLabel}
                     </Text>
                 </View>
-            </View>
+            </Pressable>
         );
     }
 
     return (
-        <View
+        <Pressable
+            onPress={() => {}}
+            hitSlop={10}
+            accessibilityLabel={`View profile: ${item.username}, rank ${item.rank}`}
+            accessibilityRole="button"
             className="rounded-2xl border px-3 py-3"
             style={{
                 borderColor: isCurrentUser ? UI_COLORS.accentBorder : topStyles.borderColor,
@@ -73,7 +83,7 @@ export default function LeaderboardRow({ item }: Props) {
         >
             {item.rank === 1 && (
                 <View className="absolute left-1 top-1 z-10">
-                    <MaterialIcons name="emoji-events" size={16} color="#D89E00" />
+                    <MaterialIcons name="workspace-premium" size={16} color="#D89E00" />
                 </View>
             )}
 
@@ -95,7 +105,7 @@ export default function LeaderboardRow({ item }: Props) {
                     <Text className="font-grotesk-bold text-[12px]" style={{ color: UI_COLORS.textPrimary }} numberOfLines={1}>
                         {item.username}
                     </Text>
-                    <Text className="font-jetbrain text-[11px]" style={{ color: UI_COLORS.textMuted }}>
+                    <Text className="font-jetbrain text-[11px]" style={{ color: UI_COLORS.textSecondary }}>
                         {item.wins} wins
                     </Text>
                 </View>
@@ -104,6 +114,6 @@ export default function LeaderboardRow({ item }: Props) {
                     {profitLabel}
                 </Text>
             </View>
-        </View>
+        </Pressable>
     );
 }

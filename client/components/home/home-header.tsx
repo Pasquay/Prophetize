@@ -25,7 +25,7 @@ export default function HomeHeader({ balance, hasNotification = true, onNotifica
                     resizeMode="contain"
                 />
                 <Text
-                    className="font-jetbrain-bold text-[30px] tracking-[-1px]"
+                    className="font-jetbrain-bold text-2xl tracking-[-1px]"
                     numberOfLines={1}
                     adjustsFontSizeToFit
                     style={{ color: ExploreTheme.titleText }}
@@ -36,13 +36,16 @@ export default function HomeHeader({ balance, hasNotification = true, onNotifica
 
             <Pressable
                 onPress={onNotificationPress}
-                hitSlop={4}
+                hitSlop={10}
+                accessibilityLabel="Notifications"
+                accessibilityRole="button"
+                accessibilityHint="Opens notifications"
                 style={({ pressed }) => ({
-                    padding: 8,
+                    padding: 12,  // Increased to ensure 44px+ touch target (26px icon + 24px padding)
                     opacity: pressed ? 0.85 : 1,
                     transform: [{ scale: pressed ? 0.92 : 1 }],
                 })}
-                className="rounded-full "
+                className="rounded-full"
             >
                 <View >
                     <Ionicons name="notifications-outline" size={26} color={ExploreTheme.titleText} />

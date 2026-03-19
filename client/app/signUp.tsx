@@ -72,8 +72,14 @@ export default function SignUpScreen() {
             <View className="flex-1 p-6">
 
                 <View className="flex flex-row gap-3 items-center">
-                    <Pressable onPress={() => router.back()}>
-                            <BackBtn size={24} color={UI_COLORS.textPrimary} />
+                    <Pressable
+                        onPress={() => router.back()}
+                        hitSlop={10}
+                        accessibilityLabel="Go back"
+                        accessibilityRole="button"
+                        accessibilityHint="Navigates to previous screen"
+                    >
+                        <BackBtn size={24} color={UI_COLORS.textPrimary} />
                     </Pressable>
                     
                     <View className="">
@@ -97,7 +103,7 @@ export default function SignUpScreen() {
                 </View>
             </View>
 
-            <View className="px-6 pt-6 pb-2 gap-3" style={{ backgroundColor: UI_COLORS.surfaceMuted }}>
+            <View className="px-6 pt-6 pb-8 gap-3" style={{ backgroundColor: UI_COLORS.surfaceMuted, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
                 <InputField
                     label="Username"
                     placeholder="John Doe"
@@ -134,22 +140,15 @@ export default function SignUpScreen() {
                 </View>
 
                 <View className="flex-row items-center gap-3">
-                    <View className="flex-1 h-[1px] bg-slate-300" />
-                    <Text className="text-slate-400 font-grotesk-bold-[13px]">or continue with</Text>
-                    <View className="flex-1 h-[1px] bg-slate-300" />
+                    <View className="flex-1 h-[1px]" style={{ backgroundColor: UI_COLORS.border }} />
+                    <Text className="font-grotesk-bold text-[13px]" style={{ color: UI_COLORS.textSecondary }}>or continue with</Text>
+                    <View className="flex-1 h-[1px]" style={{ backgroundColor: UI_COLORS.border }} />
                 </View>
 
-                {/* <WideButton 
-                    onPress={() => null}
-                    label="Continue with Google"
-                    variant="secondary"
-                    icon={<AntDesign name="google" size={24} color="black" />}
-                /> */}
-
-                <GoogleLogin></GoogleLogin>
+                <GoogleLogin />
 
                 <View className="flex-row items-center justify-center gap-1 mt-2">
-                    <Text className="text-slate-400 font-grotesk-bold text-[14px]">Already have an account?</Text>
+                    <Text className="font-grotesk-bold text-[14px]" style={{ color: UI_COLORS.textSecondary }}>Already have an account?</Text>
                     <Pressable onPress={() => router.replace('/login')}>
                         <Text className="font-grotesk-bold text-[14px]" style={{ color: UI_COLORS.link }}>Log in</Text>
                     </Pressable>

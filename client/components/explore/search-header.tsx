@@ -52,9 +52,12 @@ export default function SearchHeader({
 
                 <Pressable
                     onPress={onNotificationPress}
-                    hitSlop={4}
+                    hitSlop={10}
+                    accessibilityLabel="Notifications"
+                    accessibilityRole="button"
+                    accessibilityHint="Opens notifications"
                     style={({ pressed }) => ({
-                        padding: 8,
+                        padding: 12,  // Increased from 8 to ensure 44px minimum (24px icon + 24px padding)
                         opacity: pressed ? 0.85 : 1,
                         transform: [{ scale: pressed ? 0.92 : 1 }],
                     })}
@@ -109,12 +112,15 @@ export default function SearchHeader({
                             onSearchChange?.('');
                         }}
                         hitSlop={13}
+                        accessibilityLabel="Clear search"
+                        accessibilityRole="button"
+                        accessibilityHint="Clears the search field"
                         style={({ pressed }) => ({
                             opacity: pressed ? 0.8 : 1,
                             transform: [{ scale: pressed ? 0.92 : 1 }],
                         })}
                     >
-                        <Ionicons name="close-circle" size={18} color={UI_COLORS.textSecondary} />
+                        <Ionicons name="close-circle" size={20} color={UI_COLORS.textSecondary} />
                     </Pressable>
                 )}
             </View>

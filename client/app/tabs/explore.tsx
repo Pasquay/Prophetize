@@ -13,6 +13,7 @@ import CardSkeleton from '@/components/explore/card-skeleton';
 import SearchHeader from '@/components/explore/search-header';
 import CategoryCard from '@/components/explore/category-card';
 import PredictionCard from '@/components/explore/prediction-card';
+import { EmptyState } from '@/components/common/empty-state';
 import { ExploreTheme } from '../../constants/explore-theme';
 
 // ─── Category display config ────────────────────────────────────────────────
@@ -35,7 +36,14 @@ function SectionHeader({
         <View className="flex-row items-center mb-3">
             <Text className="font-grotesk-bold text-[18px] flex-1" style={{ color: ExploreTheme.titleText }}>{title}</Text>
             {onExploreMore && (
-                <Pressable onPress={onExploreMore} className="flex-row items-center gap-1" hitSlop={8}>
+                <Pressable
+                    onPress={onExploreMore}
+                    className="flex-row items-center gap-1"
+                    hitSlop={10}
+                    accessibilityLabel="Explore more"
+                    accessibilityRole="button"
+                    accessibilityHint="Shows more items"
+                >
                     <Text className="font-jetbrain text-[13px]" style={{ color: ExploreTheme.linkText }}>Explore more</Text>
                     <MaterialIcons name="arrow-forward-ios" size={12} color={ExploreTheme.linkText} />
                 </Pressable>
@@ -176,7 +184,10 @@ export default function ExploreScreen() {
                         <Pressable
                             onPress={() => router.push('/categories')}
                             className="flex-row items-center gap-1"
-                            hitSlop={8}
+                            hitSlop={10}
+                            accessibilityLabel="See all categories"
+                            accessibilityRole="button"
+                            accessibilityHint="Shows all market categories"
                         >
                             <Text className="font-jetbrain text-[13px]" style={{ color: ExploreTheme.linkText }}>See all</Text>
                             <MaterialIcons name="arrow-forward-ios" size={12} color={ExploreTheme.linkText} />
@@ -219,14 +230,11 @@ export default function ExploreScreen() {
                     />
 
                     {!loading && trending.length === 0 && (
-                        <View
-                            className="rounded-xl border px-3 py-2 mb-3"
-                            style={{ borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' }}
-                        >
-                            <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
-                                There may be no trending markets right now.
-                            </Text>
-                        </View>
+                        <EmptyState
+                            icon="trending-up"
+                            title="No trending markets"
+                            description="There may be no trending markets right now"
+                        />
                     )}
 
                     <View className="gap-3">
@@ -266,12 +274,11 @@ export default function ExploreScreen() {
 
                     {/* Empty state */}
                     {!loading && newest.length === 0 && (
-                        <View className="items-center py-10">
-                            <MaterialIcons name="inbox" size={48} color={ExploreTheme.emptyIcon} />
-                            <Text className="font-jetbrain text-[14px] mt-2" style={{ color: ExploreTheme.secondaryText }}>
-                                No markets yet
-                            </Text>
-                        </View>
+                        <EmptyState
+                            icon="inbox"
+                            title="No markets yet"
+                            description="Check back later for new prediction markets"
+                        />
                     )}
                 </View>
             </ScrollView>

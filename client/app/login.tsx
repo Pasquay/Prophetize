@@ -53,8 +53,14 @@ export default function LoginScreen() {
         
             <View className="flex-1 p-6 ">
                 <View className="flex flex-row gap-3 items-center">
-                    <Pressable onPress={() => router.back()}>
-                            <BackBtn size={24} color={UI_COLORS.textPrimary} />
+                    <Pressable
+                        onPress={() => router.back()}
+                        hitSlop={10}
+                        accessibilityLabel="Go back"
+                        accessibilityRole="button"
+                        accessibilityHint="Navigates to previous screen"
+                    >
+                        <BackBtn size={24} color={UI_COLORS.textPrimary} />
                     </Pressable>
                     
                     <View className="">
@@ -81,9 +87,11 @@ export default function LoginScreen() {
             </View>
 
             <View
-                className="p-6 gap-4"
+                className="px-6 pt-6 pb-8 gap-4"
                 style={{
                     backgroundColor: UI_COLORS.surfaceMuted,
+                    borderTopLeftRadius: 24,
+                    borderTopRightRadius: 24,
                 }}
             >
 
@@ -133,17 +141,10 @@ export default function LoginScreen() {
                     <View className="flex-1 h-[1px]" style={{ backgroundColor: UI_COLORS.border }} />
                 </View>
 
-                {/* <WideButton 
-                    onPress={() => null}
-                    label="Continue with Google"
-                    variant="secondary"
-                    icon={<AntDesign name="google" size={24} color="black" />}
-                /> */}
+                <GoogleLogin />
 
-                <GoogleLogin></GoogleLogin>
-
-                <View className="flex-row items-center justify-center gap-1">
-                    <Text className="text-slate-400 font-grotesk-bold text-[14px]">Don&apos;t have an account?</Text>
+                <View className="flex-row items-center justify-center gap-1 mt-2">
+                    <Text className="font-grotesk-bold text-[14px]" style={{ color: UI_COLORS.textSecondary }}>Don't have an account?</Text>
                     <Pressable onPress={() => router.push('/signUp')}>
                         <Text className="font-grotesk-bold text-[14px]" style={{ color: UI_COLORS.link }}>Sign Up</Text>
                     </Pressable>

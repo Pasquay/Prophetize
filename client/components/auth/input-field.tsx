@@ -22,9 +22,9 @@ export default function inputField({label, colors, ...props}:Props) {
     };
     return (
         <View className="gap-0">
-            <Text className="font-grotesk-bold text-base" style={{ color: palette.label }}>{"  "}{label}</Text>
+            <Text className="font-grotesk-bold text-base px-3" style={{ color: palette.label }}>{label}</Text>
             <TextInput
-                className="font-inter text-[16px] p-3.5 rounded-3xl border-2"
+                className="font-inter text-base p-3.5 rounded-3xl border-2"
                 style={{
                     color: palette.text,
                     backgroundColor: palette.surface,

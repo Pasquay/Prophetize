@@ -5,6 +5,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { categoryIconMap, OPTION_COLORS } from '@/constants/ui-mappings';
 import { ExploreTheme } from '@/constants/explore-theme';
+import { UI_COLORS } from '@/constants/ui-tokens';
 
 type Props = {
     prediction: Prediction;
@@ -27,7 +28,7 @@ export default function PredictionCard({prediction, onPress}:Props) {
     ? new Date(prediction.endDate).toLocaleDateString('en-US', { dateStyle: 'medium' })
     : 'TBD';
 
-  const categoryIcon = categoryIconMap[prediction.category] ?? { name: "help-outline", color: "#94A3B8" };
+  const categoryIcon = categoryIconMap[prediction.category] ?? { name: "help-outline", color: UI_COLORS.textMuted };
   const options = prediction?.options || [];
   const rawPercents = options.map((option) => normalizeProbability(option.probability) * 100);
   const totalPercent = rawPercents.reduce((sum, value) => sum + value, 0);
@@ -40,7 +41,14 @@ export default function PredictionCard({prediction, onPress}:Props) {
     : options.map(() => `${100 / options.length}%` as `${number}%`);
 
     return (
-    <Pressable onPress={onPress} className="w-full h-auto rounded-[12px] border-[1px]" style={{ borderColor: ExploreTheme.headerBorder }}>
+    <Pressable 
+      onPress={onPress} 
+      className="w-full h-auto rounded-[12px] border-[1px]" 
+      style={{ borderColor: ExploreTheme.headerBorder }}
+      accessibilityLabel={`View market: ${prediction.title}`}
+      accessibilityRole="button"
+      accessibilityHint="Opens market details"
+    >
       <View className="bg-white rounded-2xl overflow-hidden shadow-sm">
 
         {/* Image with diagonal gradient fade: top-right visible → bottom-left hidden */}
@@ -65,19 +73,19 @@ export default function PredictionCard({prediction, onPress}:Props) {
           {/* Category and Read Time */}
           <View className="flex-row items-center gap-3 mb-2">
             <MaterialIcons name={categoryIcon.name} size={18} color={categoryIcon.color} />
-            <Text className="text-[#94A3B8] text-[12px] font-medium font-jetbrain">
+            <Text className="text-xs font-medium font-jetbrain" style={{ color: UI_COLORS.textMuted }}>
               {prediction.category}
             </Text>
             <View className="flex-1" />
-            <View className="bg-[#F8FAFC] rounded-xl px-4 py-2 ">
-              <Text className="text-[#94A3B8] text-[12px] font-jetbrain-bold">
+            <View className="rounded-xl px-4 py-2 " style={{ backgroundColor: UI_COLORS.surface }}>
+              <Text className="text-xs font-jetbrain-bold" style={{ color: UI_COLORS.textMuted }}>
                 Ends {mediumDate}
               </Text>
             </View>
           </View>
 
           {/* Title */}
-          <Text className="text-gray-900 text-[18px] font-semibold mb-2 leading-7 font-grotesk-bold w-3/5">
+          <Text className="font-grotesk-bold text-lg font-semibold mb-2 leading-7 w-3/5" style={{ color: UI_COLORS.textPrimary }}>
             {prediction?.title}
           </Text>
           {/* Option Labels */}
@@ -95,7 +103,7 @@ export default function PredictionCard({prediction, onPress}:Props) {
                 >
                   <Text
                     style={{ color, textAlign: 'center' }}
-                    className="font-jetbrain-bold text-[14px] leading-[18px]"
+                    className="font-jetbrain-bold text-sm leading-snug"
                     numberOfLines={1}
                   >
                     {formatOptionLabel(option.name)}{showPercent ? ` ${rawPercents[index].toFixed(0)}%` : ''}
@@ -120,13 +128,13 @@ export default function PredictionCard({prediction, onPress}:Props) {
           </View>
 
           {/* Line Break */}
-          <View className="w-full h-[1px] bg-stone-200 mt-4 overflow-hidden"/>
+          <View className="w-full h-[1px] mt-4 overflow-hidden" style={{ backgroundColor: UI_COLORS.border }}/>
 
           {/* Brief Summary and Volume*/}
           <View className="flex-row mt-4">
-            <Text className="font-jetbrain text-[14px]">Sample</Text>
+            <Text className="font-jetbrain text-sm">Sample</Text>
             <View className="flex-1"/>
-            <Text className="font-jetbrain text-[12px]">Vol: <Text className="font-jetbrain-bold">{((prediction.total_volume ?? ((prediction as Prediction & { volume?: number }).volume ?? 0))).toLocaleString()}</Text></Text>
+            <Text className="font-jetbrain text-xs">Vol: <Text className="font-jetbrain-bold">{((prediction.total_volume ?? ((prediction as Prediction & { volume?: number }).volume ?? 0))).toLocaleString()}</Text></Text>
           </View>
 
         </View>

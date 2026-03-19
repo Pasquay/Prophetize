@@ -114,30 +114,39 @@ export default function CategoriesScreen() {
 
     return (
         <View style={{ flex: 1, backgroundColor: ExploreTheme.pageBg }}>
-            <SafeAreaView style={{ backgroundColor: UI_COLORS.surface }}>
-                <View
-                    style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        paddingHorizontal: 20,
-                        paddingVertical: 14,
-                        borderBottomWidth: 1,
-                        borderBottomColor: ExploreTheme.headerBorder,
-                        backgroundColor: UI_COLORS.surface,
-                        gap: 12,
-                    }}
-                >
-                    <Pressable onPress={() => router.back()} hitSlop={8}>
-                        <MaterialIcons name="arrow-back" size={24} color={ExploreTheme.titleText} />
-                    </Pressable>
-                    <Text
-                        style={{ flex: 1, fontSize: 18, color: ExploreTheme.titleText }}
-                        className="font-grotesk-bold"
+            {/* Header */}
+            <View style={{ backgroundColor: UI_COLORS.surface }}>
+                <SafeAreaView edges={['top']}>
+                    <View
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingHorizontal: 20,
+                            paddingVertical: 14,
+                            borderBottomWidth: 1,
+                            borderBottomColor: ExploreTheme.headerBorder,
+                            backgroundColor: UI_COLORS.surface,
+                            gap: 12,
+                        }}
                     >
-                        All Categories
-                    </Text>
-                </View>
-            </SafeAreaView>
+                        <Pressable
+                            onPress={() => router.back()}
+                            hitSlop={10}
+                            accessibilityLabel="Go back"
+                            accessibilityRole="button"
+                            accessibilityHint="Navigates to previous screen"
+                        >
+                            <MaterialIcons name="arrow-back" size={24} color={ExploreTheme.titleText} />
+                        </Pressable>
+                        <Text
+                            style={{ flex: 1, fontSize: 18, color: ExploreTheme.titleText }}
+                            className="font-grotesk-bold"
+                        >
+                            All Categories
+                        </Text>
+                    </View>
+                </SafeAreaView>
+            </View>
 
             <FlatList
                 data={allCategories}

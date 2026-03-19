@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Prediction } from '../.expo/types/model';
 import CardSkeleton from '@/components/explore/card-skeleton';
 import PredictionCard from '@/components/explore/prediction-card';
+import { EmptyState } from '@/components/common/empty-state';
 import { ExploreTheme } from '../constants/explore-theme';
 import { UI_COLORS } from '../constants/ui-tokens';
 import * as api from '../utils/api';
@@ -115,31 +116,39 @@ export default function ExploreDetails() {
     return (
         <View style={{ flex: 1, backgroundColor: ExploreTheme.pageBg }}>
             {/* Header */}
-            <SafeAreaView style={{ backgroundColor: UI_COLORS.surface }}>
-                <View
-                    style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        paddingHorizontal: 20,
-                        paddingVertical: 14,
-                        borderBottomWidth: 1,
-                        borderBottomColor: ExploreTheme.headerBorder,
-                        backgroundColor: UI_COLORS.surface,
-                        gap: 12,
-                    }}
-                >
-                    <Pressable onPress={() => router.back()} hitSlop={8}>
-                        <MaterialIcons name="arrow-back" size={24} color={ExploreTheme.titleText} />
-                    </Pressable>
-                    <Text
-                        style={{ flex: 1, fontSize: 18, color: ExploreTheme.titleText }}
-                        className="font-grotesk-bold"
-                        numberOfLines={1}
+            <View style={{ backgroundColor: UI_COLORS.surface }}>
+                <SafeAreaView edges={['top']}>
+                    <View
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingHorizontal: 20,
+                            paddingVertical: 14,
+                            borderBottomWidth: 1,
+                            borderBottomColor: ExploreTheme.headerBorder,
+                            backgroundColor: UI_COLORS.surface,
+                            gap: 12,
+                        }}
                     >
-                        {pageTitle}
-                    </Text>
-                </View>
-            </SafeAreaView>
+                        <Pressable
+                            onPress={() => router.back()}
+                            hitSlop={10}
+                            accessibilityLabel="Go back"
+                            accessibilityRole="button"
+                            accessibilityHint="Navigates to previous screen"
+                        >
+                            <MaterialIcons name="arrow-back" size={24} color={ExploreTheme.titleText} />
+                        </Pressable>
+                        <Text
+                            style={{ flex: 1, fontSize: 18, color: ExploreTheme.titleText }}
+                            className="font-grotesk-bold"
+                            numberOfLines={1}
+                        >
+                            {pageTitle}
+                        </Text>
+                    </View>
+                </SafeAreaView>
+            </View>
 
             {/* List */}
             {loading ? (
@@ -182,32 +191,13 @@ export default function ExploreDetails() {
                         ) : null
                     }
                     ListEmptyComponent={
-                        <View style={{ alignItems: 'center', paddingTop: 60 }}>
-                            <MaterialIcons name="inbox" size={48} color={ExploreTheme.emptyIcon} />
-                            <Text
-                                style={{ color: ExploreTheme.secondaryText, marginTop: 8, fontSize: 14 }}
-                                className="font-jetbrain"
-                            >
-                                {errorMessage ?? 'No markets found'}
-                            </Text>
-                            {errorMessage && (
-                                <Pressable
-                                    onPress={() => fetchPage(0, false)}
-                                    style={{
-                                        marginTop: 12,
-                                        borderRadius: 10,
-                                        borderWidth: 1,
-                                        borderColor: ExploreTheme.linkText,
-                                        paddingHorizontal: 14,
-                                        paddingVertical: 8,
-                                    }}
-                                >
-                                    <Text className="font-jetbrain" style={{ color: ExploreTheme.linkText }}>
-                                        Retry
-                                    </Text>
-                                </Pressable>
-                            )}
-                        </View>
+                        <EmptyState
+                            icon="search-off"
+                            title={errorMessage ?? 'No markets found'}
+                            description={errorMessage ? 'Try a different search term' : undefined}
+                            actionLabel={errorMessage ? 'Retry' : undefined}
+                            onAction={errorMessage ? () => fetchPage(0, false) : undefined}
+                        />
                     }
                 />
             )}

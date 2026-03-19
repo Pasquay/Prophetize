@@ -193,7 +193,24 @@ module.exports = {
         extrablack: '950',
       },
       fontSize: {
-        '2xs': '10px',
+        // 1.25 modular scale for consistent typography
+        '2xs': ['10px', { lineHeight: '14px', letterSpacing: '0.5px' }],  // Micro labels
+        'xs':  ['12px', { lineHeight: '16px', letterSpacing: '0.25px' }],  // Metadata
+        'sm':  ['14px', { lineHeight: '20px', letterSpacing: '0.1px' }],   // Body small
+        'base': ['16px', { lineHeight: '24px', letterSpacing: '0px' }],    // Default body
+        'lg':  ['18px', { lineHeight: '26px', letterSpacing: '-0.25px' }], // Section headers
+        'xl':  ['22px', { lineHeight: '28px', letterSpacing: '-0.5px' }],  // Screen titles
+        '2xl': ['30px', { lineHeight: '36px', letterSpacing: '-0.75px' }], // Balance display
+        '3xl': ['42px', { lineHeight: '48px', letterSpacing: '-1px' }],    // Hero (login)
+        '4xl': ['52px', { lineHeight: '58px', letterSpacing: '-1.5px' }],  // Hero (welcome)
+      },
+      letterSpacing: {
+        // Standardized tracking values
+        'tighter': '-2px',
+        'tight': '-1px',
+        'normal': '0px',
+        'wide': '0.5px',
+        'wider': '1px',
       },
       boxShadow: {
         'hard-1': '-2px 2px 8px 0px rgba(38, 38, 38, 0.20)',

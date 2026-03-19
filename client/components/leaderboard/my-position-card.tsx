@@ -10,7 +10,7 @@ type Props = {
 };
 
 export default function LeaderboardMyPositionCard({ item }: Props) {
-    const profitColor = item.profitPct >= 0 ? '#10B981' : '#EF4444';
+    const profitColor = item.profitPct >= 0 ? UI_COLORS.success : UI_COLORS.danger;
     const profitLabel = `${item.profitPct >= 0 ? '+' : ''}${item.profitPct.toFixed(1)}%`;
 
     return (
