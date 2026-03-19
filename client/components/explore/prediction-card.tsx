@@ -1,15 +1,20 @@
 import {Prediction} from "../../.expo/types/model";
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay, withSpring, interpolate } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { categoryIconMap, OPTION_COLORS } from '@/constants/ui-mappings';
 import { ExploreTheme } from '@/constants/explore-theme';
 import { UI_COLORS } from '@/constants/ui-tokens';
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 type Props = {
     prediction: Prediction;
     onPress: () => void;
+    index?: number;
 }
 
 const normalizeProbability = (value: number) => {
@@ -23,7 +28,18 @@ const formatOptionLabel = (value: string) =>
     .toLowerCase()
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
-export default function PredictionCard({prediction, onPress}:Props) {
+function AnimatedBar({ percent, color, delay }: { percent: number; color: string; delay: number }) {
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    progress.value = withDelay(delay, withTiming(1, { duration: 600 }));
+  }, []);
+  const style = useAnimatedStyle(() => ({
+    width: `${progress.value * percent}%`,
+  }));
+  return <Animated.View style={[style, { backgroundColor: color }]} />;
+}
+
+export default function PredictionCard({prediction, onPress, index = 0}:Props) {
   const mediumDate = prediction.endDate
     ? new Date(prediction.endDate).toLocaleDateString('en-US', { dateStyle: 'medium' })
     : 'TBD';
@@ -36,22 +52,46 @@ export default function PredictionCard({prediction, onPress}:Props) {
     ? rawPercents.map((value) => (value / totalPercent) * 100)
     : options.map(() => (options.length > 0 ? 100 / options.length : 0));
   const totalDisplay = displayPercents.reduce((sum, v) => sum + v, 0);
-  const segmentWidths: `${number}%`[] = totalDisplay > 0
-    ? displayPercents.map((v) => `${(v / totalDisplay) * 100}%` as `${number}%`)
-    : options.map(() => `${100 / options.length}%` as `${number}%`);
+  const segmentWidths = totalDisplay > 0
+    ? displayPercents.map((v) => (v / totalDisplay) * 100)
+    : options.map(() => (options.length > 0 ? 100 / options.length : 0));
+
+  // Staggered entrance
+  const entranceProgress = useSharedValue(0);
+  useEffect(() => {
+    entranceProgress.value = withDelay(index * 80, withTiming(1, { duration: 400 }));
+  }, []);
+
+  const entranceStyle = useAnimatedStyle(() => ({
+    opacity: entranceProgress.value,
+    transform: [{ translateY: interpolate(entranceProgress.value, [0, 1], [16, 0]) }],
+  }));
+
+  // Press feedback
+  const pressProgress = useSharedValue(0);
+  const pressStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: withSpring(pressProgress.value === 1 ? 0.97 : 1, { damping: 20, stiffness: 300 }) }],
+  }));
+
+  const barDelay = index * 80 + 200;
 
     return (
-    <Pressable 
-      onPress={onPress} 
-      className="w-full h-auto rounded-[12px] border-[1px]" 
-      style={{ borderColor: ExploreTheme.headerBorder }}
+    <AnimatedPressable
+      onPress={onPress}
+      onPressIn={() => {
+        pressProgress.value = 1;
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }}
+      onPressOut={() => { pressProgress.value = 0; }}
+      className="w-full h-auto rounded-[12px] border-[1px]"
+      style={[{ borderColor: ExploreTheme.headerBorder }, entranceStyle, pressStyle]}
       accessibilityLabel={`View market: ${prediction.title}`}
       accessibilityRole="button"
       accessibilityHint="Opens market details"
     >
       <View className="bg-white rounded-2xl overflow-hidden shadow-sm">
 
-        {/* Image with diagonal gradient fade: top-right visible → bottom-left hidden */}
+        {/* Image with diagonal gradient fade: top-right visible -> bottom-left hidden */}
         {prediction.image ? (
           <View style={styles.imageContainer}>
             <Image
@@ -90,15 +130,14 @@ export default function PredictionCard({prediction, onPress}:Props) {
           </Text>
           {/* Option Labels */}
           <View className="w-full mt-2 h-6" style={{ flexDirection: 'row' }}>
-            {options.map((option, index) => {
-              const color = OPTION_COLORS[index % OPTION_COLORS.length];
-              const width = segmentWidths[index];
+            {options.map((option, i) => {
+              const color = OPTION_COLORS[i % OPTION_COLORS.length];
               const showPercent = options.length === 2;
 
               return (
                 <View
-                  key={option.id ?? index}
-                  style={{ width }}
+                  key={option.id ?? i}
+                  style={{ width: `${segmentWidths[i]}%` }}
                   className="overflow-hidden justify-center items-center"
                 >
                   <Text
@@ -106,25 +145,23 @@ export default function PredictionCard({prediction, onPress}:Props) {
                     className="font-jetbrain-bold text-sm leading-snug"
                     numberOfLines={1}
                   >
-                    {formatOptionLabel(option.name)}{showPercent ? ` ${rawPercents[index].toFixed(0)}%` : ''}
+                    {formatOptionLabel(option.name)}{showPercent ? ` ${rawPercents[i].toFixed(0)}%` : ''}
                   </Text>
                 </View>
               );
             })}
           </View>
 
-          {/* Dynamic Progress Bar */}
+          {/* Animated Progress Bar */}
           <View className="w-full h-2.5 rounded-xl overflow-hidden mt-1" style={{ flexDirection: 'row' }}>
-            {options.map((option, index) => {
-              const width = segmentWidths[index];
-              const color = OPTION_COLORS[index % OPTION_COLORS.length];
-              return (
-                <View
-                  key={option.id ?? index}
-                  style={{ width, backgroundColor: color }}
-                />
-              );
-            })}
+            {options.map((option, i) => (
+              <AnimatedBar
+                key={option.id ?? i}
+                percent={segmentWidths[i]}
+                color={OPTION_COLORS[i % OPTION_COLORS.length]}
+                delay={barDelay}
+              />
+            ))}
           </View>
 
           {/* Line Break */}
@@ -139,7 +176,7 @@ export default function PredictionCard({prediction, onPress}:Props) {
 
         </View>
       </View>
-    </Pressable>
+    </AnimatedPressable>
     );
 }
 
@@ -157,4 +194,3 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 });
-

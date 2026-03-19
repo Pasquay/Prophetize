@@ -13,7 +13,7 @@ export default function SkeletonShell({ style, children }: Props) {
         const loop = Animated.loop(
             Animated.timing(progress, {
                 toValue: 1,
-                duration: 1300,
+                duration: 1800,
                 useNativeDriver: true,
                 isInteraction: false,
             })
@@ -29,16 +29,16 @@ export default function SkeletonShell({ style, children }: Props) {
 
     const shimmerTranslateX = progress.interpolate({
         inputRange: [0, 1],
-        outputRange: [-140, 240],
+        outputRange: [-200, 400],
     });
 
-    const shellOpacity = progress.interpolate({
-        inputRange: [0, 0.5, 1],
-        outputRange: [0.92, 1, 0.92],
+    const shimmerOpacity = progress.interpolate({
+        inputRange: [0, 0.3, 0.5, 0.7, 1],
+        outputRange: [0, 0.6, 0.8, 0.6, 0],
     });
 
     return (
-        <Animated.View style={[styles.shell, style, { opacity: shellOpacity }]}>
+        <Animated.View style={[styles.shell, style]}>
             {children}
             <Animated.View
                 pointerEvents="none"
@@ -46,6 +46,7 @@ export default function SkeletonShell({ style, children }: Props) {
                     styles.shimmer,
                     {
                         transform: [{ translateX: shimmerTranslateX }],
+                        opacity: shimmerOpacity,
                     },
                 ]}
             />
@@ -61,7 +62,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 0,
         bottom: 0,
-        width: 110,
-        backgroundColor: 'rgba(255,255,255,0.35)',
+        width: 150,
+        backgroundColor: 'rgba(255,255,255,0.5)',
     },
 });

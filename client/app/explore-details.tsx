@@ -160,10 +160,11 @@ export default function ExploreDetails() {
                     testID="explore-details-list"
                     data={markets}
                     keyExtractor={(item) => String(item.id)}
-                    renderItem={({ item }) => (
+                    renderItem={({ item, index }) => (
                         <PredictionCard
                             prediction={item}
                             onPress={() => goMarketDetails(item.id)}
+                            index={index}
                         />
                     )}
                     contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 16, gap: 14 }}

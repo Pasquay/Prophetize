@@ -102,10 +102,11 @@ export default function HomeScreen() {
                         <FlatList
                             data={predictions}
                             keyExtractor={(item) => item.id.toString()}
-                            renderItem={({ item }) => (
-                                <PredictionCard 
-                                    prediction={item} 
+                            renderItem={({ item, index }) => (
+                                <PredictionCard
+                                    prediction={item}
                                     onPress={() => goMarketDetails(item.id)}
+                                    index={index}
                                 />
                             )}
                             showsVerticalScrollIndicator={false}

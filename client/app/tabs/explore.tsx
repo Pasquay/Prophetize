@@ -240,11 +240,12 @@ export default function ExploreScreen() {
                     <View className="gap-3">
                         {loading
                             ? Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
-                            : trending.map((item) => (
+                            : trending.map((item, i) => (
                                 <PredictionCard
                                     key={item.id}
                                     prediction={item}
                                     onPress={() => goMarketDetails(item.id)}
+                                    index={i}
                                 />
                             ))}
                     </View>
@@ -263,11 +264,12 @@ export default function ExploreScreen() {
                     <View className="gap-3">
                         {loading
                             ? Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)
-                            : newest.map((item) => (
+                            : newest.map((item, i) => (
                                 <PredictionCard
                                     key={item.id}
                                     prediction={item}
                                     onPress={() => goMarketDetails(item.id)}
+                                    index={i}
                                 />
                             ))}
                     </View>
