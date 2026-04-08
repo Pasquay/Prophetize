@@ -12,3 +12,6 @@ docs
 .agent
 .github
 my-agent-os/
+.opencode
+.idea
+client\constants\backendUrl.ts
