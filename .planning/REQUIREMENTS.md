@@ -141,3 +141,45 @@ This addendum is now canonical for backend integration planning tied to leaderbo
 - **Acceptance Criteria**:
   - `POST /auth/refresh-token` accepts `{ "refresh_token": "<token>" }`.
   - Success response includes `access_token`.
+
+## Addendum: Phase 3 Advanced Feature Requirements (2026-04-13)
+
+### ADV-01: Market Creation Flow
+- **ID**: ADV-01
+- **Description**: Users can create new prediction markets with required market fields.
+- **Acceptance Criteria**:
+  - Market creation form supports title, description, category, and resolution date.
+  - Backend validates required fields and returns 4xx for invalid input.
+  - Created market is queryable from existing market listing/detail endpoints.
+
+### ADV-02: Trading Interface
+- **ID**: ADV-02
+- **Description**: Users can buy/sell market shares from market detail experience.
+- **Acceptance Criteria**:
+  - Buy/sell actions call backend endpoints with auth and validated payloads.
+  - Balance and position data update after successful trade.
+  - Insufficient balance and invalid trade requests return clear errors.
+
+### ADV-03: Realtime Updates
+- **ID**: ADV-03
+- **Description**: Market odds and user-relevant activity update in near-real time.
+- **Acceptance Criteria**:
+  - Socket events are emitted by backend on market/trade updates.
+  - Client subscribes and applies updates without full-screen reload.
+  - Reconnect behavior resyncs data after temporary disconnect.
+
+### ADV-04: Notifications
+- **ID**: ADV-04
+- **Description**: Users receive actionable notifications for market resolution and price alerts.
+- **Acceptance Criteria**:
+  - Notification preferences and token registration are stored.
+  - Backend triggers notifications for supported events.
+  - Client displays notification payload with deep-link target.
+
+### ADV-05: Social Features Baseline
+- **ID**: ADV-05
+- **Description**: Social primitives exist for following, comments, and leaderboard interactions.
+- **Acceptance Criteria**:
+  - Backend exposes follow/comment contracts with auth checks.
+  - Client can render and submit comments for a market thread.
+  - Follow state is persisted and queryable for profile/social views.
