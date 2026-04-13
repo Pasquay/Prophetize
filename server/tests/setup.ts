@@ -1,6 +1,8 @@
 import express from "express";
 import marketRoutes from "../src/routes/marketRoutes";
 import userRoutes from "../src/routes/userRoutes";
+import leaderboardRoutes from "../src/routes/leaderboardRoutes";
+import transactionRoutes from "../src/routes/transactionRoutes";
 
 export const createTestApp = () => {
   const app = express();
@@ -12,15 +14,8 @@ export const createTestApp = () => {
 
   app.use("/auth", userRoutes);
   app.use("/markets", marketRoutes);
-
-  // Task 1 runs red before leaderboard routes exist.
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const leaderboardRoutes = require("../src/routes/leaderboardRoutes").default;
-    app.use("/leaderboard", leaderboardRoutes);
-  } catch {
-    // Intentionally empty while endpoint is not yet implemented.
-  }
+  app.use("/leaderboard", leaderboardRoutes);
+  app.use("/transaction", transactionRoutes);
 
   return app;
 };
