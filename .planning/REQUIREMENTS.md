@@ -146,6 +146,7 @@ This addendum is now canonical for backend integration planning tied to leaderbo
 
 ### ADV-01: Market Creation Flow
 - **ID**: ADV-01
+- **Status**: Completed in Phase 03 Plan 01 (2026-04-13)
 - **Description**: Users can create new prediction markets with required market fields.
 - **Acceptance Criteria**:
   - Market creation form supports title, description, category, and resolution date.
