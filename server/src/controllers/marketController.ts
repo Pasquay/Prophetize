@@ -4,6 +4,14 @@ import { AuthRequest } from '../types/authRequest';
 import { MARKET_CATEGORIES } from '../types/marketCategories';
 import { getPaginationRange } from '../utils/pagination';
 
+const PUBLIC_MARKET_STATUSES = [
+    'active',
+    'closed',
+    'resolving',
+    'disputed',
+    'finalized'
+] as const;
+
 // GET /markets/categories
 export const getCategories = (req: Request, res: Response) => {
     res.status(200).json(MARKET_CATEGORIES);
@@ -27,6 +35,7 @@ export const getAllMarkets = async(req:Request, res:Response) => {
                     probability
                 )
             `)
+            .in('status', [...PUBLIC_MARKET_STATUSES])
             .order('created_at', { ascending:false })
             .range(from, to);
         
@@ -156,6 +165,7 @@ export const getMarketByCategory = async(req:Request, res:Response) => {
             `)
             .eq('category', category)
             .in('category', MARKET_CATEGORIES)
+            .in('status', [...PUBLIC_MARKET_STATUSES])
             .order('created_at', { ascending: false })
             .range(from, to);
 
@@ -211,13 +221,7 @@ export const getMarketById = async(req:Request, res:Response) => {
                 )
             `)
             .eq('id', id)
-            .in('status', [
-                'active',
-                'closed',
-                'resolving',
-                'disputed',
-                'finalized'
-            ])
+            .in('status', [...PUBLIC_MARKET_STATUSES])
             .maybeSingle();
 
         if(error) throw error;
@@ -323,15 +327,31 @@ export const createMarket = async(req:AuthRequest, res:Response) => {
             options
         } = req.body;
 
+        if(typeof title !== 'string' || !title.trim()) return res.status(400).json({ error: 'Missing required field: title' });
+        if(typeof description !== 'string' || !description.trim()) return res.status(400).json({ error: 'Missing required field: description' });
+        if(typeof category !== 'string' || !category.trim()) return res.status(400).json({ error: 'Missing required field: category' });
+        if(typeof endDate !== 'string' || !endDate.trim()) return res.status(400).json({ error: 'Missing required field: endDate' });
+
+        if(!MARKET_CATEGORIES.includes(category.toUpperCase() as typeof MARKET_CATEGORIES[number])) {
+            return res.status(400).json({ error: 'Invalid category' });
+        }
+
+        if(Number.isNaN(new Date(endDate).getTime())) {
+            return res.status(400).json({ error: 'Invalid resolution date' });
+        }
+
         if(!options || options.length<2) return res.status(400).json({ error: "You must provide atleast 2 options." });
+        if(!Array.isArray(options) || options.some((option:string) => typeof option !== 'string' || !option.trim())) {
+            return res.status(400).json({ error: 'Options must be non-empty strings.' });
+        }
 
         const { data:market, error:marketError } = await supabase
             .from('markets')
             .insert({
-                title,
-                description,
+                title: title.trim(),
+                description: description.trim(),
                 image_url: imageUrl,
-                category,
+                category: category.toUpperCase(),
                 end_date: endDate,
                 user_id: userId,
                 status: 'pending' 
@@ -360,7 +380,7 @@ export const createMarket = async(req:AuthRequest, res:Response) => {
         if(optionsError) throw optionsError;
 
         res.status(201).json({
-            message: "Market submitted for admin approval. It will be visible once approved",
+            message: 'Market submitted and is pending admin approval. It will be visible once approved.',
             marketId: market.id
         }); 
     } catch(error:any){
@@ -370,8 +390,6 @@ export const createMarket = async(req:AuthRequest, res:Response) => {
 
 // POST /review - Admin approves/rejects market for posting
 export const reviewMarket = async(req:AuthRequest, res:Response) => {
-    console.log("BODY RECEIVED:", req.body); // Check your terminal!
-    console.log("PARAMS RECEIVED:", req.params);
     try {
         const { id } = req.params;
         const { action } = req.body || {}; // 'approve', 'reject'
