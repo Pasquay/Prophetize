@@ -11,9 +11,32 @@ import MarketDetailSummary from "@/components/market/market-detail-summary";
 import { ExploreTheme } from "../constants/explore-theme";
 import { useUserStore } from '@/context/useUserStore';
 import { UI_COLORS } from '@/constants/ui-tokens';
+import { EmptyState } from '@/components/common/empty-state';
 
 const CREATE_MARKET_CATEGORIES = ['SPORTS', 'CRYPTO', 'POLITICS', 'CULTURE', 'TECHNOLOGY'];
 type CreateFieldKey = 'title' | 'description' | 'category' | 'resolutionDate' | 'options';
+
+type CommentSubmissionState =
+  | { type: 'success'; message: string }
+  | { type: 'error'; message: string }
+  | null;
+
+const sanitizeDisplayText = (value: unknown): string => {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return value.replace(/[\u0000-\u001F\u007F]/g, '').trim();
+};
+
+const toSafeMessage = (value: unknown, fallback: string): string => {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+
+  const normalized = sanitizeDisplayText(value);
+  return normalized || fallback;
+};
 
 
 export default function DetailsScreen() {
@@ -34,8 +57,10 @@ export default function DetailsScreen() {
   const [userPosition, setUserPosition] = useState<number | null>(null);
   const [comments, setComments] = useState<api.CommentItem[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentsError, setCommentsError] = useState<string | null>(null);
   const [commentInput, setCommentInput] = useState('');
   const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [commentSubmissionState, setCommentSubmissionState] = useState<CommentSubmissionState>(null);
 
   const { fetchUserData, setBalanceFromSnapshot } = useUserStore();
 
@@ -85,13 +110,42 @@ export default function DetailsScreen() {
   const loadComments = useCallback(async () => {
     if (!marketID || Number.isNaN(marketID)) {
       setComments([]);
+      setCommentsError(null);
       return;
     }
 
     setCommentsLoading(true);
+    setCommentsError(null);
     const { ok, data } = await api.getComments(marketID);
     if (ok) {
-      setComments(Array.isArray(data?.data) ? data.data : []);
+      const normalizedComments = Array.isArray(data?.data)
+        ? data.data
+            .map((item: unknown) => {
+              if (!item || typeof item !== 'object') {
+                return null;
+              }
+
+              const candidate = item as Partial<api.CommentItem>;
+              const content = sanitizeDisplayText(candidate.content);
+              if (!content) {
+                return null;
+              }
+
+              return {
+                id: typeof candidate.id === 'string' ? candidate.id : `comment-${Date.now()}-${Math.random()}`,
+                market_id: typeof candidate.market_id === 'number' ? candidate.market_id : marketID,
+                user_id: sanitizeDisplayText(candidate.user_id) || 'Anonymous',
+                content,
+                created_at: typeof candidate.created_at === 'string' ? candidate.created_at : new Date().toISOString(),
+              } satisfies api.CommentItem;
+            })
+            .filter((item: api.CommentItem | null): item is api.CommentItem => Boolean(item))
+        : [];
+
+      setComments(normalizedComments);
+    } else {
+      setComments([]);
+      setCommentsError(toSafeMessage(data?.error, 'Unable to load comments right now.'));
     }
     setCommentsLoading(false);
   }, [marketID]);
@@ -251,23 +305,33 @@ export default function DetailsScreen() {
       return;
     }
 
-    if (!commentInput.trim()) {
+    if (commentSubmitting) {
+      return;
+    }
+
+    const normalizedContent = sanitizeDisplayText(commentInput);
+    if (!normalizedContent) {
       Alert.alert('Comment required', 'Write a short comment before posting.');
       return;
     }
 
     setCommentSubmitting(true);
-    const { ok, data } = await api.createComment(marketID, commentInput.trim());
+    setCommentSubmissionState(null);
+    const { ok, data } = await api.createComment(marketID, normalizedContent);
     setCommentSubmitting(false);
 
     if (!ok) {
-      Alert.alert('Comment failed', data?.error ?? 'Unable to post your comment right now.');
+      setCommentSubmissionState({
+        type: 'error',
+        message: toSafeMessage(data?.error, 'Unable to post your comment right now.'),
+      });
       return;
     }
 
     setCommentInput('');
+    setCommentSubmissionState({ type: 'success', message: 'Comment posted.' });
     await loadComments();
-  }, [commentInput, loadComments, marketID]);
+  }, [commentInput, commentSubmitting, loadComments, marketID]);
 
   if (isCreateMode) {
     return (
@@ -435,7 +499,7 @@ export default function DetailsScreen() {
         <View
           className="mx-4 mt-3 rounded-2xl p-4"
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: UI_COLORS.surface,
             borderWidth: 1,
             borderColor: ExploreTheme.headerBorder,
           }}
@@ -541,7 +605,12 @@ export default function DetailsScreen() {
           </Text>
           <TextInput
             value={commentInput}
-            onChangeText={setCommentInput}
+            onChangeText={(value) => {
+              setCommentInput(value);
+              if (commentSubmissionState?.type === 'error') {
+                setCommentSubmissionState(null);
+              }
+            }}
             placeholder="Share your take..."
             multiline
             maxLength={280}
@@ -554,27 +623,71 @@ export default function DetailsScreen() {
             className="rounded-xl py-3 items-center mb-3"
             style={{ backgroundColor: commentSubmitting ? ExploreTheme.headerBorder : ExploreTheme.titleText }}
           >
-            <Text className="font-grotesk-bold text-[14px]" style={{ color: '#FFFFFF' }}>
+            <Text className="font-grotesk-bold text-[14px]" style={{ color: UI_COLORS.surface }}>
               {commentSubmitting ? 'Posting...' : 'Post Comment'}
             </Text>
           </TouchableOpacity>
+
+          {commentSubmissionState ? (
+            <Text
+              className="font-jetbrain text-[12px] mb-3"
+              style={{
+                color:
+                  commentSubmissionState.type === 'error'
+                    ? ExploreTheme.searchHint
+                    : ExploreTheme.secondaryText,
+              }}
+            >
+              {commentSubmissionState.message}
+            </Text>
+          ) : null}
+
+          {commentSubmissionState?.type === 'error' ? (
+            <TouchableOpacity
+              disabled={commentSubmitting || !sanitizeDisplayText(commentInput)}
+              onPress={handlePostComment}
+              className="rounded-xl py-2 items-center mb-3"
+              style={{
+                borderWidth: 1,
+                borderColor: ExploreTheme.headerBorder,
+                backgroundColor: UI_COLORS.surface,
+                opacity: commentSubmitting || !sanitizeDisplayText(commentInput) ? 0.6 : 1,
+              }}
+            >
+              <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.titleText }}>
+                Retry Post
+              </Text>
+            </TouchableOpacity>
+          ) : null}
 
           {commentsLoading ? (
             <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
               Loading comments...
             </Text>
+          ) : commentsError ? (
+            <EmptyState
+              icon="error-outline"
+              title="Could not load comments"
+              description={commentsError}
+              actionLabel="Retry"
+              onAction={() => {
+                void loadComments();
+              }}
+            />
           ) : comments.length === 0 ? (
-            <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
-              No comments yet.
-            </Text>
+            <EmptyState
+              icon="forum"
+              title="No comments yet"
+              description="Start the conversation with your first take."
+            />
           ) : (
             comments.map((item) => (
               <View key={item.id} className="mb-3 pb-3" style={{ borderBottomWidth: 1, borderBottomColor: ExploreTheme.headerBorder }}>
                 <Text className="font-jetbrain text-[11px] mb-1" style={{ color: ExploreTheme.secondaryText }}>
-                  {item.user_id}
+                  {sanitizeDisplayText(item.user_id) || 'Anonymous'}
                 </Text>
                 <Text className="font-jetbrain text-[13px]" style={{ color: ExploreTheme.titleText }}>
-                  {item.content}
+                  {sanitizeDisplayText(item.content)}
                 </Text>
               </View>
             ))
