@@ -8,6 +8,8 @@ import marketRoutes from "../src/routes/marketRoutes";
 import transactionRoutes from "../src/routes/transactionRoutes";
 import portfolioRoutes from '../src/routes/portfolioRoutes';
 import leaderboardRoutes from '../src/routes/leaderboardRoutes';
+import notificationRoutes from "../src/routes/notificationRoutes";
+import socialRoutes from "../src/routes/socialRoutes";
 import { initializeRealtimeEmitter } from "../src/services/realtimeService";
 
 // Server
@@ -64,6 +66,8 @@ app.use("/markets", marketRoutes);
 app.use("/transaction", transactionRoutes);
 app.use('/portfolio', portfolioRoutes);
 app.use('/leaderboard', leaderboardRoutes);
+app.use("/notifications", notificationRoutes);
+app.use("/social", socialRoutes);
 
 // Starting server
 const PORT = process.env.PORT || 3000;

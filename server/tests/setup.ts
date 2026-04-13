@@ -3,6 +3,8 @@ import marketRoutes from "../src/routes/marketRoutes";
 import userRoutes from "../src/routes/userRoutes";
 import leaderboardRoutes from "../src/routes/leaderboardRoutes";
 import transactionRoutes from "../src/routes/transactionRoutes";
+import notificationRoutes from "../src/routes/notificationRoutes";
+import socialRoutes from "../src/routes/socialRoutes";
 
 export const createTestApp = () => {
   const app = express();
@@ -16,6 +18,8 @@ export const createTestApp = () => {
   app.use("/markets", marketRoutes);
   app.use("/leaderboard", leaderboardRoutes);
   app.use("/transaction", transactionRoutes);
+  app.use("/notifications", notificationRoutes);
+  app.use("/social", socialRoutes);
 
   return app;
 };
