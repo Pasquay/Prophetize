@@ -398,6 +398,13 @@ export type NotificationPayload = {
     target_signature: string;
 };
 
+export type NotificationInboxSource = 'backend' | 'fallback';
+
+export type NotificationInboxItem = NotificationPayload & {
+    id: string;
+    created_at: string;
+};
+
 export type NotificationRouteTarget =
     | { pathname: '/marketDetails'; params: { id: string } }
     | { pathname: '/tabs/leaderboard' }
@@ -428,6 +435,113 @@ export const triggerNotification = async (payload: TriggerNotificationPayload) =
     return post('/notifications/trigger', payload);
 };
 
+const normalizeNotificationItem = (raw: unknown): NotificationInboxItem | null => {
+    if (!raw || typeof raw !== 'object') {
+        return null;
+    }
+
+    const record = raw as Record<string, unknown>;
+    const type = typeof record.type === 'string' ? record.type : '';
+    const recipientUserId = typeof record.recipient_user_id === 'string' ? record.recipient_user_id : '';
+    const title = typeof record.title === 'string' ? record.title : '';
+    const body = typeof record.body === 'string' ? record.body : '';
+    const targetPath = typeof record.target_path === 'string' ? record.target_path : '';
+    const targetSignature = typeof record.target_signature === 'string' ? record.target_signature : '';
+
+    if (
+        (type !== 'market' && type !== 'leaderboard' && type !== 'profile') ||
+        !recipientUserId ||
+        !title ||
+        !body ||
+        !targetPath ||
+        !targetSignature
+    ) {
+        return null;
+    }
+
+    const createdAt = typeof record.created_at === 'string' && record.created_at
+        ? record.created_at
+        : new Date().toISOString();
+    const id = typeof record.id === 'string' && record.id
+        ? record.id
+        : `${type}:${recipientUserId}:${targetPath}:${createdAt}`;
+
+    return {
+        id,
+        created_at: createdAt,
+        type,
+        recipient_user_id: recipientUserId,
+        title,
+        body,
+        target_path: targetPath,
+        target_signature: targetSignature,
+    };
+};
+
+const extractNotifications = (payload: unknown): NotificationInboxItem[] => {
+    if (Array.isArray(payload)) {
+        return payload.map(normalizeNotificationItem).filter((item): item is NotificationInboxItem => Boolean(item));
+    }
+
+    if (!payload || typeof payload !== 'object') {
+        return [];
+    }
+
+    const record = payload as Record<string, unknown>;
+    const candidate = Array.isArray(record.notifications)
+        ? record.notifications
+        : Array.isArray(record.data)
+            ? record.data
+            : [];
+
+    return candidate.map(normalizeNotificationItem).filter((item): item is NotificationInboxItem => Boolean(item));
+};
+
+export const getNotifications = async (): Promise<{
+    ok: boolean;
+    data: { items: NotificationInboxItem[]; source: NotificationInboxSource; message?: string } | { error: string };
+}> => {
+    const token = await getToken();
+
+    const doRequest = () => fetch(baseUrl + '/notifications', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+
+    const initial = await doRequest();
+    if (initial.status === 404) {
+        return {
+            ok: true,
+            data: {
+                items: [],
+                source: 'fallback',
+                message: 'Notification inbox endpoint is not available yet.',
+            },
+        };
+    }
+
+    const handled = await handleResponse(initial, doRequest);
+    if (!handled.ok) {
+        return {
+            ok: false,
+            data: {
+                error: (handled.data as Record<string, unknown>)?.error as string || 'Unable to load notifications right now.',
+            },
+        };
+    }
+
+    return {
+        ok: true,
+        data: {
+            items: extractNotifications(handled.data),
+            source: 'backend',
+        },
+    };
+};
+
 export type FollowAction = 'follow' | 'unfollow';
 
 export const followUser = async (targetUserId: string, action: FollowAction = 'follow') => {
@@ -451,6 +565,10 @@ export const createComment = async (marketId: number, content: string) => {
 };
 
 const parseTargetPath = (path: string) => {
+    if (!path.startsWith('/')) {
+        return null;
+    }
+
     const [pathname, queryString = ''] = path.split('?');
     const query = new URLSearchParams(queryString);
     return { pathname, query };
@@ -459,7 +577,12 @@ const parseTargetPath = (path: string) => {
 export const resolveNotificationTarget = (
     payload: Pick<NotificationPayload, 'type' | 'target_path'>
 ): NotificationRouteTarget | null => {
-    const { pathname, query } = parseTargetPath(payload.target_path);
+    const parsedTarget = parseTargetPath(payload.target_path);
+    if (!parsedTarget) {
+        return null;
+    }
+
+    const { pathname, query } = parsedTarget;
 
     if (payload.type === 'market' && pathname === '/marketDetails') {
         const id = query.get('id');
