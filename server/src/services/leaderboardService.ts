@@ -4,7 +4,6 @@ import { getPaginationRange } from "../utils/pagination";
 export type LeaderboardPeriod = "weekly" | "all_time";
 
 type LeaderboardRow = {
-  rank: number;
   user_id: string;
   wins: number;
   profit_pct: number;
@@ -21,7 +20,6 @@ type LeaderboardRow = {
 };
 
 type LeaderboardMeRow = {
-  rank: number;
   wins: number;
   profit_pct: number;
   profiles:
@@ -67,11 +65,11 @@ export type LeaderboardMeta = {
   total_pages: number;
 };
 
-const mapRow = (row: LeaderboardRow): LeaderboardItem => {
+const mapRow = (row: LeaderboardRow, rank: number): LeaderboardItem => {
   const profile = getProfile(row.profiles);
 
   return {
-    rank: row.rank,
+    rank,
     user_id: row.user_id,
     username: profile?.username ?? "unknown",
     avatar_url: profile?.avatar_url ?? null,
@@ -90,11 +88,12 @@ export const getLeaderboardPage = async (
 
   const { data, error, count } = await supabase
     .from("leaderboard_snapshots")
-    .select("rank,user_id,wins,profit_pct,profiles(username,avatar_url)", {
+    .select("user_id,wins,profit_pct,profiles(username,avatar_url)", {
       count: "exact",
     })
     .eq("period", period)
-    .order("rank", { ascending: true })
+    .order("profit_pct", { ascending: false })
+    .order("wins", { ascending: false })
     .range(from, to);
 
   if (error) {
@@ -105,7 +104,7 @@ export const getLeaderboardPage = async (
   const totalRecords = count ?? rows.length;
 
   return {
-    data: rows.map(mapRow),
+    data: rows.map((row, index) => mapRow(row, from + index + 1)),
     meta: {
       page,
       limit,
@@ -128,7 +127,7 @@ export const getMyLeaderboardPosition = async (
 } | null> => {
   const { data, error } = await supabase
     .from("leaderboard_snapshots")
-    .select("rank,wins,profit_pct,profiles(username,avatar_url)")
+    .select("wins,profit_pct,profiles(username,avatar_url)")
     .eq("period", period)
     .eq("user_id", userId)
     .maybeSingle();
@@ -141,11 +140,21 @@ export const getMyLeaderboardPosition = async (
     return null;
   }
 
+  const { count: higherProfitCount, error: rankError } = await supabase
+    .from("leaderboard_snapshots")
+    .select("user_id", { count: "exact", head: true })
+    .eq("period", period)
+    .gt("profit_pct", data.profit_pct);
+
+  if (rankError) {
+    throw new Error(rankError.message);
+  }
+
   const row = data as LeaderboardMeRow;
   const profile = getProfile(row.profiles);
 
   return {
-    position: row.rank,
+    position: (higherProfitCount ?? 0) + 1,
     username: profile?.username ?? "unknown",
     avatar_url: profile?.avatar_url ?? null,
     wins: row.wins,
