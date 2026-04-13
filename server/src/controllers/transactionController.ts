@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabaseClient';
 import { AuthRequest } from '../types/authRequest';
+import { emitTradeRealtimeUpdates } from '../services/realtimeService';
 
 const ACTIVE_MARKET_STATUSES = new Set(['active', 'open']);
 
@@ -124,6 +125,14 @@ export const buyShare = async(req:AuthRequest, res:Response) => {
 
         const snapshot = await getTradeSnapshot(userId, optionId);
 
+        emitTradeRealtimeUpdates({
+            userId,
+            marketId: optionValidation.option.marketId,
+            optionId,
+            balance: snapshot.balance,
+            sharesOwned: snapshot.position.sharesOwned,
+        });
+
         return res.status(200).json({
             message: "Purchase successful",
             trade: {
@@ -172,6 +181,14 @@ export const sellShare = async(req:AuthRequest, res:Response) => {
         if(rpcError) return res.status(400).json({ error: rpcError.message });
 
         const snapshot = await getTradeSnapshot(userId, optionId);
+
+        emitTradeRealtimeUpdates({
+            userId,
+            marketId: optionValidation.option.marketId,
+            optionId,
+            balance: snapshot.balance,
+            sharesOwned: snapshot.position.sharesOwned,
+        });
 
         return res.status(200).json({
             message: "Sale successful",
