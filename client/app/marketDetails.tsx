@@ -9,6 +9,7 @@ import MarketDetailsHeader from "@/components/market/market-detail-header";
 import MarketDetailBalance from "@/components/market/market-detail-balance";
 import MarketDetailSummary from "@/components/market/market-detail-summary";
 import { ExploreTheme } from "../constants/explore-theme";
+import { useUserStore } from '@/context/useUserStore';
 
 const CREATE_MARKET_CATEGORIES = ['SPORTS', 'CRYPTO', 'POLITICS', 'CULTURE', 'TECHNOLOGY'];
 
@@ -22,6 +23,13 @@ export default function DetailsScreen() {
   const [prediction, setPrediction] = useState<Prediction>();
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+  const [tradeLoading, setTradeLoading] = useState(false);
+  const [tradeMessage, setTradeMessage] = useState<string | null>(null);
+  const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
+  const [shareInput, setShareInput] = useState('1');
+  const [userPosition, setUserPosition] = useState<number | null>(null);
+
+  const { fetchUserData, setBalanceFromSnapshot } = useUserStore();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -48,6 +56,21 @@ export default function DetailsScreen() {
       };
       getMarketData(marketID); 
     }, [isCreateMode, marketID]);
+
+  useEffect(() => {
+    if (!isCreateMode) {
+      fetchUserData();
+    }
+  }, [fetchUserData, isCreateMode]);
+
+  useEffect(() => {
+    if (!prediction?.options?.length) {
+      setSelectedOptionId(null);
+      return;
+    }
+
+    setSelectedOptionId(prediction.options[0].id);
+  }, [prediction]);
 
   const handleCreateMarket = useCallback(async () => {
     const normalizedCategory = category.trim().toUpperCase();
@@ -100,6 +123,55 @@ export default function DetailsScreen() {
     setOptionOne('Yes');
     setOptionTwo('No');
   }, [title, description, category, resolutionDate, optionOne, optionTwo]);
+
+  const handleTrade = useCallback(async (side: 'buy' | 'sell') => {
+    if (!prediction) {
+      return;
+    }
+
+    if (tradeLoading) {
+      return;
+    }
+
+    if (!selectedOptionId) {
+      Alert.alert('Missing option', 'Please select an option before placing a trade.');
+      return;
+    }
+
+    const shares = Number(shareInput);
+    if (!Number.isFinite(shares) || shares <= 0) {
+      Alert.alert('Invalid shares', 'Enter a shares value greater than 0.');
+      return;
+    }
+
+    setTradeLoading(true);
+    setTradeMessage(null);
+
+    const tradeFn = side === 'buy' ? api.buyShares : api.sellShares;
+    const { ok, data } = await tradeFn({
+      optionId: selectedOptionId,
+      shares,
+    });
+
+    setTradeLoading(false);
+
+    if (!ok) {
+      Alert.alert('Trade failed', data?.error ?? 'Unable to execute trade right now.');
+      return;
+    }
+
+    if (typeof data?.snapshot?.balance === 'number') {
+      setBalanceFromSnapshot(data.snapshot.balance);
+    }
+
+    const sharesOwned = Number(data?.snapshot?.position?.sharesOwned);
+    if (Number.isFinite(sharesOwned)) {
+      setUserPosition(sharesOwned);
+    }
+
+    setTradeMessage(data?.message ?? 'Trade submitted successfully.');
+    await fetchUserData();
+  }, [prediction, tradeLoading, selectedOptionId, shareInput, setBalanceFromSnapshot, fetchUserData]);
 
   if (isCreateMode) {
     return (
@@ -215,7 +287,86 @@ export default function DetailsScreen() {
       ) : prediction ? (
       <View>
         <MarketDetailBalance />
-        <MarketDetailSummary prediction={prediction} />
+        <MarketDetailSummary prediction={prediction} userPosition={userPosition} />
+        <View
+          className="mx-4 mt-3 rounded-2xl p-4"
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderWidth: 1,
+            borderColor: ExploreTheme.headerBorder,
+          }}
+        >
+          <Text className="font-grotesk-bold text-[16px] mb-2" style={{ color: ExploreTheme.titleText }}>
+            Trade
+          </Text>
+          <Text className="font-jetbrain text-[12px] mb-3" style={{ color: ExploreTheme.secondaryText }}>
+            Select an option, enter shares, then buy or sell.
+          </Text>
+
+          <View className="flex-row flex-wrap gap-2 mb-3">
+            {prediction.options.map((option) => {
+              const isSelected = option.id === selectedOptionId;
+              return (
+                <TouchableOpacity
+                  key={option.id}
+                  onPress={() => setSelectedOptionId(option.id)}
+                  className="rounded-full px-3 py-2"
+                  style={{
+                    borderWidth: 1,
+                    borderColor: ExploreTheme.headerBorder,
+                    backgroundColor: isSelected ? ExploreTheme.titleText : '#FFFFFF',
+                  }}
+                >
+                  <Text
+                    className="font-jetbrain text-[12px]"
+                    style={{ color: isSelected ? '#FFFFFF' : ExploreTheme.titleText }}
+                  >
+                    {option.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <TextInput
+            value={shareInput}
+            onChangeText={setShareInput}
+            keyboardType="decimal-pad"
+            placeholder="Shares"
+            className="bg-white rounded-xl px-4 py-3 mb-3 font-jetbrain"
+            style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, color: ExploreTheme.titleText }}
+          />
+
+          <View className="flex-row gap-2">
+            <TouchableOpacity
+              disabled={tradeLoading}
+              onPress={() => handleTrade('buy')}
+              className="flex-1 rounded-xl py-3 items-center"
+              style={{ backgroundColor: tradeLoading ? ExploreTheme.headerBorder : '#0F8A5F' }}
+            >
+              <Text className="font-grotesk-bold text-[14px]" style={{ color: '#FFFFFF' }}>
+                {tradeLoading ? 'Processing...' : 'Buy'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              disabled={tradeLoading}
+              onPress={() => handleTrade('sell')}
+              className="flex-1 rounded-xl py-3 items-center"
+              style={{ backgroundColor: tradeLoading ? ExploreTheme.headerBorder : '#CC3A3A' }}
+            >
+              <Text className="font-grotesk-bold text-[14px]" style={{ color: '#FFFFFF' }}>
+                {tradeLoading ? 'Processing...' : 'Sell'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {tradeMessage ? (
+            <Text className="font-jetbrain text-[12px] mt-3" style={{ color: ExploreTheme.secondaryText }}>
+              {tradeMessage}
+            </Text>
+          ) : null}
+        </View>
       </View>
       ) : null}
     </View>

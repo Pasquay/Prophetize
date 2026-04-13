@@ -158,3 +158,37 @@ export const createMarket = async (payload: CreateMarketPayload) => {
     return post('/markets/create', payload);
 };
 
+export type TradePayload = {
+    optionId: number;
+    shares: number;
+};
+
+export type TradeSnapshot = {
+    balance: number;
+    position: {
+        optionId: number;
+        sharesOwned: number;
+    };
+};
+
+export type TradeResponse = {
+    message: string;
+    trade: {
+        side: 'buy' | 'sell';
+        optionId: number;
+        shares: number;
+        price: number;
+        totalCost?: number;
+        totalReturn?: number;
+    };
+    snapshot?: TradeSnapshot;
+};
+
+export const buyShares = async (payload: TradePayload) => {
+    return post('/transaction/buy', payload);
+};
+
+export const sellShares = async (payload: TradePayload) => {
+    return post('/transaction/sell', payload);
+};
+
