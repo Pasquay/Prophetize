@@ -12,6 +12,7 @@ import { ExploreTheme } from "../constants/explore-theme";
 import { useUserStore } from '@/context/useUserStore';
 
 const CREATE_MARKET_CATEGORIES = ['SPORTS', 'CRYPTO', 'POLITICS', 'CULTURE', 'TECHNOLOGY'];
+type CreateFieldKey = 'title' | 'description' | 'category' | 'resolutionDate' | 'options';
 
 
 export default function DetailsScreen() {
@@ -41,6 +42,8 @@ export default function DetailsScreen() {
   const [resolutionDate, setResolutionDate] = useState('');
   const [optionOne, setOptionOne] = useState('Yes');
   const [optionTwo, setOptionTwo] = useState('No');
+  const [createErrors, setCreateErrors] = useState<Partial<Record<CreateFieldKey, string>>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isCreateMode || marketID === null || Number.isNaN(marketID)) {
@@ -96,46 +99,75 @@ export default function DetailsScreen() {
     }
   }, [isCreateMode, loadComments]);
 
-  const handleCreateMarket = useCallback(async () => {
+  const validateCreateForm = useCallback(() => {
     const normalizedCategory = category.trim().toUpperCase();
     const optionValues = [optionOne.trim(), optionTwo.trim()].filter(Boolean);
+    const nextErrors: Partial<Record<CreateFieldKey, string>> = {};
 
-    if (!title.trim() || !description.trim() || !normalizedCategory || !resolutionDate.trim()) {
-      Alert.alert('Missing fields', 'Please complete title, description, category, and resolution date.');
-      return;
+    if (!title.trim()) {
+      nextErrors.title = 'Title is required.';
     }
 
-    if (!CREATE_MARKET_CATEGORIES.includes(normalizedCategory)) {
-      Alert.alert('Invalid category', `Use one of: ${CREATE_MARKET_CATEGORIES.join(', ')}`);
-      return;
+    if (!description.trim()) {
+      nextErrors.description = 'Description is required.';
+    }
+
+    if (!normalizedCategory) {
+      nextErrors.category = 'Category is required.';
+    }
+
+    if (!resolutionDate.trim()) {
+      nextErrors.resolutionDate = 'Resolution date is required.';
+    }
+
+    if (normalizedCategory && !CREATE_MARKET_CATEGORIES.includes(normalizedCategory)) {
+      nextErrors.category = `Use one of: ${CREATE_MARKET_CATEGORIES.join(', ')}`;
     }
 
     const parsedDate = new Date(resolutionDate);
-    if (Number.isNaN(parsedDate.getTime())) {
-      Alert.alert('Invalid date', 'Use ISO date format, for example 2026-12-31T00:00:00.000Z');
-      return;
+    if (resolutionDate.trim() && Number.isNaN(parsedDate.getTime())) {
+      nextErrors.resolutionDate = 'Use ISO date format, for example 2026-12-31T00:00:00.000Z';
     }
 
     if (optionValues.length < 2) {
-      Alert.alert('Invalid options', 'Please provide at least two options.');
+      nextErrors.options = 'Please provide at least two options.';
+    }
+
+    setCreateErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      return null;
+    }
+
+    return {
+      normalizedCategory,
+      parsedDate,
+      optionValues,
+    };
+  }, [category, description, optionOne, optionTwo, resolutionDate, title]);
+
+  const handleCreateMarket = useCallback(async () => {
+    const validated = validateCreateForm();
+    if (!validated) {
       return;
     }
 
     setSubmitLoading(true);
     setSubmitMessage(null);
+    setSubmitError(null);
 
     const { ok, data } = await api.createMarket({
       title: title.trim(),
       description: description.trim(),
-      category: normalizedCategory,
-      endDate: parsedDate.toISOString(),
-      options: optionValues,
+      category: validated.normalizedCategory,
+      endDate: validated.parsedDate.toISOString(),
+      options: validated.optionValues,
     });
 
     setSubmitLoading(false);
 
     if (!ok) {
-      Alert.alert('Create market failed', data?.error ?? 'Unable to submit market right now.');
+      setSubmitError(data?.error ?? 'Unable to submit market right now.');
       return;
     }
 
@@ -146,7 +178,9 @@ export default function DetailsScreen() {
     setResolutionDate('');
     setOptionOne('Yes');
     setOptionTwo('No');
-  }, [title, description, category, resolutionDate, optionOne, optionTwo]);
+    setCreateErrors({});
+    setSubmitError(null);
+  }, [title, description, validateCreateForm]);
 
   const handleTrade = useCallback(async (side: 'buy' | 'sell') => {
     if (!prediction) {
@@ -247,48 +281,91 @@ export default function DetailsScreen() {
 
           <TextInput
             value={title}
-            onChangeText={setTitle}
+            onChangeText={(value) => {
+              setTitle(value);
+              setCreateErrors((prev) => ({ ...prev, title: undefined }));
+            }}
             placeholder="Title"
             className="bg-white rounded-xl px-4 py-3 mb-3 font-jetbrain"
             style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, color: ExploreTheme.titleText }}
           />
+          {createErrors.title ? (
+            <Text className="font-jetbrain text-[12px] mt-[-8px] mb-3" style={{ color: ExploreTheme.searchHint }}>
+              {createErrors.title}
+            </Text>
+          ) : null}
           <TextInput
             value={description}
-            onChangeText={setDescription}
+            onChangeText={(value) => {
+              setDescription(value);
+              setCreateErrors((prev) => ({ ...prev, description: undefined }));
+            }}
             placeholder="Description"
             multiline
             className="bg-white rounded-xl px-4 py-3 mb-3 font-jetbrain"
             style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, color: ExploreTheme.titleText, minHeight: 92 }}
           />
+          {createErrors.description ? (
+            <Text className="font-jetbrain text-[12px] mt-[-8px] mb-3" style={{ color: ExploreTheme.searchHint }}>
+              {createErrors.description}
+            </Text>
+          ) : null}
           <TextInput
             value={category}
-            onChangeText={setCategory}
+            onChangeText={(value) => {
+              setCategory(value);
+              setCreateErrors((prev) => ({ ...prev, category: undefined }));
+            }}
             placeholder={`Category (${CREATE_MARKET_CATEGORIES.join(', ')})`}
             autoCapitalize="characters"
             className="bg-white rounded-xl px-4 py-3 mb-3 font-jetbrain"
             style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, color: ExploreTheme.titleText }}
           />
+          {createErrors.category ? (
+            <Text className="font-jetbrain text-[12px] mt-[-8px] mb-3" style={{ color: ExploreTheme.searchHint }}>
+              {createErrors.category}
+            </Text>
+          ) : null}
           <TextInput
             value={resolutionDate}
-            onChangeText={setResolutionDate}
+            onChangeText={(value) => {
+              setResolutionDate(value);
+              setCreateErrors((prev) => ({ ...prev, resolutionDate: undefined }));
+            }}
             placeholder="Resolution date (ISO)"
             className="bg-white rounded-xl px-4 py-3 mb-3 font-jetbrain"
             style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, color: ExploreTheme.titleText }}
           />
+          {createErrors.resolutionDate ? (
+            <Text className="font-jetbrain text-[12px] mt-[-8px] mb-3" style={{ color: ExploreTheme.searchHint }}>
+              {createErrors.resolutionDate}
+            </Text>
+          ) : null}
           <TextInput
             value={optionOne}
-            onChangeText={setOptionOne}
+            onChangeText={(value) => {
+              setOptionOne(value);
+              setCreateErrors((prev) => ({ ...prev, options: undefined }));
+            }}
             placeholder="Option 1"
             className="bg-white rounded-xl px-4 py-3 mb-3 font-jetbrain"
             style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, color: ExploreTheme.titleText }}
           />
           <TextInput
             value={optionTwo}
-            onChangeText={setOptionTwo}
+            onChangeText={(value) => {
+              setOptionTwo(value);
+              setCreateErrors((prev) => ({ ...prev, options: undefined }));
+            }}
             placeholder="Option 2"
             className="bg-white rounded-xl px-4 py-3 mb-4 font-jetbrain"
             style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, color: ExploreTheme.titleText }}
           />
+          {createErrors.options ? (
+            <Text className="font-jetbrain text-[12px] mt-[-10px] mb-4" style={{ color: ExploreTheme.searchHint }}>
+              {createErrors.options}
+            </Text>
+          ) : null}
 
           <TouchableOpacity
             disabled={submitLoading}
@@ -304,6 +381,11 @@ export default function DetailsScreen() {
           {submitMessage ? (
             <Text className="font-jetbrain text-[13px] mt-3" style={{ color: ExploreTheme.secondaryText }}>
               {submitMessage}
+            </Text>
+          ) : null}
+          {submitError ? (
+            <Text className="font-jetbrain text-[13px] mt-3" style={{ color: ExploreTheme.searchHint }}>
+              {submitError}
             </Text>
           ) : null}
         </ScrollView>

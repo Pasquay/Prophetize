@@ -154,8 +154,49 @@ export type CreateMarketPayload = {
     imageUrl?: string;
 };
 
+const CREATE_MARKET_ERROR_FALLBACK = 'Unable to submit market right now. Please try again.';
+
+const normalizeCreateMarketError = (data: unknown): string => {
+    if (!data || typeof data !== 'object') {
+        return CREATE_MARKET_ERROR_FALLBACK;
+    }
+
+    const payload = data as Record<string, unknown>;
+    const rawError = payload.error;
+
+    if (typeof rawError === 'string') {
+        const trimmed = rawError.trim();
+        if (!trimmed) {
+            return CREATE_MARKET_ERROR_FALLBACK;
+        }
+
+        // Never surface raw html/transport payloads in user-facing messages.
+        if (trimmed.startsWith('<') || trimmed.toLowerCase().includes('syntaxerror')) {
+            return CREATE_MARKET_ERROR_FALLBACK;
+        }
+
+        return trimmed;
+    }
+
+    return CREATE_MARKET_ERROR_FALLBACK;
+};
+
 export const createMarket = async (payload: CreateMarketPayload) => {
-    return post('/markets/create', payload);
+    const response = await post('/markets/create', payload);
+
+    if (!response.ok) {
+        const normalizedError = normalizeCreateMarketError(response.data);
+        const normalizedData = response.data && typeof response.data === 'object'
+            ? { ...(response.data as Record<string, unknown>), error: normalizedError }
+            : { error: normalizedError };
+
+        return {
+            ...response,
+            data: normalizedData,
+        };
+    }
+
+    return response;
 };
 
 export type TradePayload = {
