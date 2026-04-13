@@ -225,12 +225,166 @@ export type TradeResponse = {
     snapshot?: TradeSnapshot;
 };
 
+const TRADE_PAYLOAD_ERROR = 'Received an unexpected trade response. Please try again.';
+
+const parseFiniteNumber = (value: unknown): number | null => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
+const unwrapTradePayload = (payload: unknown): unknown => {
+    if (Array.isArray(payload)) {
+        return payload[0];
+    }
+
+    if (!payload || typeof payload !== 'object') {
+        return payload;
+    }
+
+    const record = payload as Record<string, unknown>;
+    if (!('data' in record)) {
+        return payload;
+    }
+
+    const inner = record.data;
+    if (Array.isArray(inner)) {
+        return inner[0];
+    }
+
+    return inner;
+};
+
+const normalizeTradeResponse = (
+    payload: unknown,
+    fallbackMessage: string
+): { ok: true; data: TradeResponse } | { ok: false; error: string } => {
+    const candidate = unwrapTradePayload(payload);
+    if (!candidate || typeof candidate !== 'object') {
+        return { ok: false, error: TRADE_PAYLOAD_ERROR };
+    }
+
+    const record = candidate as Record<string, unknown>;
+    const tradeRecord = record.trade;
+    if (!tradeRecord || typeof tradeRecord !== 'object') {
+        return { ok: false, error: TRADE_PAYLOAD_ERROR };
+    }
+
+    const trade = tradeRecord as Record<string, unknown>;
+    const side = trade.side === 'buy' || trade.side === 'sell' ? trade.side : null;
+    const optionId = parseFiniteNumber(trade.optionId);
+    const shares = parseFiniteNumber(trade.shares);
+    const price = parseFiniteNumber(trade.price);
+
+    if (!side || optionId === null || shares === null || price === null) {
+        return { ok: false, error: TRADE_PAYLOAD_ERROR };
+    }
+
+    const message = typeof record.message === 'string' && record.message.trim()
+        ? record.message.trim()
+        : fallbackMessage;
+
+    const normalizedTrade: TradeResponse['trade'] = {
+        side,
+        optionId,
+        shares,
+        price,
+    };
+
+    const totalCost = parseFiniteNumber(trade.totalCost);
+    if (totalCost !== null) {
+        normalizedTrade.totalCost = totalCost;
+    }
+
+    const totalReturn = parseFiniteNumber(trade.totalReturn);
+    if (totalReturn !== null) {
+        normalizedTrade.totalReturn = totalReturn;
+    }
+
+    let snapshot: TradeSnapshot | undefined;
+    if (record.snapshot !== undefined) {
+        if (!record.snapshot || typeof record.snapshot !== 'object') {
+            return { ok: false, error: TRADE_PAYLOAD_ERROR };
+        }
+
+        const snapshotRecord = record.snapshot as Record<string, unknown>;
+        const balance = parseFiniteNumber(snapshotRecord.balance);
+        const positionRecord = snapshotRecord.position;
+        if (
+            balance === null ||
+            !positionRecord ||
+            typeof positionRecord !== 'object'
+        ) {
+            return { ok: false, error: TRADE_PAYLOAD_ERROR };
+        }
+
+        const position = positionRecord as Record<string, unknown>;
+        const positionOptionId = parseFiniteNumber(position.optionId);
+        const sharesOwned = parseFiniteNumber(position.sharesOwned);
+        if (positionOptionId === null || sharesOwned === null) {
+            return { ok: false, error: TRADE_PAYLOAD_ERROR };
+        }
+
+        snapshot = {
+            balance,
+            position: {
+                optionId: positionOptionId,
+                sharesOwned,
+            },
+        };
+    }
+
+    return {
+        ok: true,
+        data: {
+            message,
+            trade: normalizedTrade,
+            snapshot,
+        },
+    };
+};
+
 export const buyShares = async (payload: TradePayload) => {
-    return post('/transaction/buy', payload);
+    const response = await post('/transaction/buy', payload);
+    if (!response.ok) {
+        return response;
+    }
+
+    const normalized = normalizeTradeResponse(response.data, 'Purchase successful');
+    if (!normalized.ok) {
+        return {
+            ok: false,
+            data: {
+                error: normalized.error,
+            },
+        };
+    }
+
+    return {
+        ok: true,
+        data: normalized.data,
+    };
 };
 
 export const sellShares = async (payload: TradePayload) => {
-    return post('/transaction/sell', payload);
+    const response = await post('/transaction/sell', payload);
+    if (!response.ok) {
+        return response;
+    }
+
+    const normalized = normalizeTradeResponse(response.data, 'Sale successful');
+    if (!normalized.ok) {
+        return {
+            ok: false,
+            data: {
+                error: normalized.error,
+            },
+        };
+    }
+
+    return {
+        ok: true,
+        data: normalized.data,
+    };
 };
 
 export type NotificationType = 'market' | 'leaderboard' | 'profile';
