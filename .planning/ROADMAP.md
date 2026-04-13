@@ -88,18 +88,20 @@ This roadmap outlines the development phases for the Prophetize prediction marke
 - WebSocket infrastructure (Socket.io already in package.json)
 - Push notification service (Expo Notifications)
 
-**Plans:** 4 plans
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 03-01-PLAN.md — Market creation API + client flow baseline
 - [x] 03-02-PLAN.md — Trading contract hardening and UI integration
 - [x] 03-03-PLAN.md — Realtime socket events and reconnect sync
-- [ ] 03-04-PLAN.md — Notifications + social baseline (follow/comments)
+- [x] 03-04-PLAN.md — Notifications + social baseline (follow/comments)
 
-## Phase 4: Polish & Launch
-**Goal**: Refine UI/UX, performance, accessibility, and prepare for app‑store submission.
+## Phase 4: Frontend Integration & Launch Polish
+**Goal**: Complete frontend experiences for already-implemented backend advanced features, then refine UI/UX and launch readiness.
 
 ### Scope
+- **Advanced feature frontend completion** – complete UI flows for market creation, pending-market visibility rules, trading UX, realtime state sync indicators, notification inbox/actions, and social follow/comment views
+- **Error handling + UX hardening** – clear user-facing errors for backend contract failures and retries
 - **Performance audits** – reduce bundle size, optimize images, memoize components
 - **Accessibility** – screen‑reader support, contrast ratios, focus management
 - **Localization** – support multiple languages
@@ -107,6 +109,8 @@ Plans:
 - **Beta testing** – gather user feedback, fix critical issues
 
 ### Success Criteria
+- All ADV backend capabilities from Phase 03 have corresponding user-testable frontend flows
+- Trade flow no longer returns JSON-shape failure in user path
 - App scores >90 on Lighthouse performance
 - Passes React Native accessibility audit
 - Supports at least English and Spanish
