@@ -21,15 +21,29 @@ const parseShares = (value: unknown): number | null => {
     return parsed;
 };
 
+const isSingleObjectCoercionError = (message: string | undefined) => {
+    if (!message) {
+        return false;
+    }
+
+    return message.toLowerCase().includes('cannot coerce') || message.toLowerCase().includes('json object requested');
+};
+
 const getTradeSnapshot = async (userId: string, optionId: number) => {
-    const { data: profile, error: profileError } = await supabase
+    const profileQuery = supabase
         .from('profiles')
         .select('balance')
-        .eq('id', userId)
-        .single();
+        .eq('id', userId);
 
-    if (profileError || !profile) {
-        throw new Error(profileError?.message || 'Failed to fetch user profile');
+    const profileResult = typeof (profileQuery as any).maybeSingle === 'function'
+        ? await (profileQuery as any).maybeSingle()
+        : await (profileQuery as any).single();
+
+    const profile = profileResult?.data ?? null;
+    const profileError = profileResult?.error ?? null;
+
+    if (profileError && !isSingleObjectCoercionError(profileError.message)) {
+        throw new Error('Failed to fetch user profile');
     }
 
     const { data: position, error: positionError } = await supabase
@@ -44,7 +58,7 @@ const getTradeSnapshot = async (userId: string, optionId: number) => {
     }
 
     return {
-        balance: Number(profile.balance ?? 0),
+        balance: Number(profile?.balance ?? 0),
         position: {
             optionId,
             sharesOwned: Number(position?.shares_owned ?? 0),

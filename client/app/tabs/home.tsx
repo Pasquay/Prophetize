@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Alert, ScrollView, FlatList, Text } from 'react-native';
+import { View, Alert, ScrollView, FlatList, Text, TouchableOpacity } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import NoMarkets from "@/components/home/no-markets";
@@ -74,6 +75,12 @@ export default function HomeScreen() {
         getMarketData(activeCategory);
     }, [activeCategory, getMarketData]);
 
+    useFocusEffect(
+        useCallback(() => {
+            void getMarketData(activeCategory);
+        }, [activeCategory, getMarketData])
+    );
+
     useEffect(() => {
         const unsubscribe = subscribeRealtime({
             channels: ['market.updated', 'portfolio.updated'],
@@ -86,6 +93,7 @@ export default function HomeScreen() {
                 const portfolioPayload = payload as PortfolioUpdatedPayload;
                 if (event === 'portfolio.updated' && portfolioPayload.userId === String(userData?.id ?? '')) {
                     setBalanceFromSnapshot(portfolioPayload.balance);
+                    void getMarketData(activeCategory);
                 }
             },
             onReconnect: () => {
@@ -100,6 +108,10 @@ export default function HomeScreen() {
 
     const goMarketDetails = useCallback((id:number) => {
         router.push({ pathname: '/marketDetails', params: {id} });
+    }, [router]);
+
+    const openCreateMarket = useCallback(() => {
+        router.push({ pathname: '/marketDetails', params: { mode: 'create' } });
     }, [router]);
 
 
@@ -117,7 +129,7 @@ export default function HomeScreen() {
                 >
                     <HomeHeader
                         balance={userData?.balance ?? 0}
-                        onCreatePress={() => router.push({ pathname: '/marketDetails', params: { mode: 'create' } })}
+                        onCreatePress={openCreateMarket}
                         onNotificationPress={() => router.push('/notifications')}
                     />
                     <Text className="font-jetbrain text-[11px] mt-2" style={{ color: realtimeStatus.color }}>
@@ -148,7 +160,21 @@ export default function HomeScreen() {
                     <HomeListSkeleton count={5} />
                 ) : (
                     noMarket ? (
-                        <NoMarkets/>
+                        <View className="gap-3">
+                            <NoMarkets/>
+                            <TouchableOpacity
+                                onPress={openCreateMarket}
+                                accessibilityRole="button"
+                                accessibilityLabel="Create market"
+                                accessibilityHint="Opens create market form"
+                                className="rounded-full self-center px-4 py-2"
+                                style={{ backgroundColor: UI_COLORS.surfaceSoft, borderWidth: 1, borderColor: UI_COLORS.borderSoft }}
+                            >
+                                <Text className="font-jetbrain-bold text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
+                                    Propose first market
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     ) : (
                         <FlatList
                             data={predictions}
@@ -166,6 +192,7 @@ export default function HomeScreen() {
                     )
                 )}
             </View>
+
         </View>
     );
 }

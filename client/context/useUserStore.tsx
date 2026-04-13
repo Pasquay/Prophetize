@@ -4,7 +4,7 @@ import {User} from "../.expo/types/model";
 
 interface UserStore {
     userData:User|null;
-    fetchUserData:()=>Promise<void>;
+    fetchUserData:()=>Promise<User | null>;
     setBalanceFromSnapshot:(balance:number)=>void;
 }
 
@@ -12,12 +12,12 @@ export const useUserStore = create<UserStore>((set) => ({
     userData: null,
     fetchUserData: async () => {
         const {ok, data} = await api.get("/auth/profile");
-        if(ok){
-            set({userData:data});
-            console.log(data.id);
-        } else {
-            console.log("Profile fetch failed:", data);
+        if(ok && data){
+            const profile = data as User;
+            set({userData:profile});
+            return profile;
         }
+        return null;
     },
     setBalanceFromSnapshot: (balance:number) => {
         set((state) => {

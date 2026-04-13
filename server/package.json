@@ -5,7 +5,9 @@
   "scripts": {
     "test": "vitest run",
     "dev": "npx nodemon src/index.ts",
-    "test:contracts": "vitest run server/tests/contracts"
+    "test:contracts": "vitest run tests/contracts",
+    "typecheck": "tsc --noEmit",
+    "lint": "npm run typecheck"
   },
   "keywords": [],
   "author": "",

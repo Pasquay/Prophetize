@@ -120,6 +120,32 @@ Plans:
 - **Estimate**: 2‑3 weeks
 - **Status**: Future
 
+## Phase 5: Market Detail Experience Refresh
+**Goal**: Refresh the market detail screen UI to a cleaner, screenshot-inspired presentation while keeping backend-driven trading options and existing behavior intact.
+
+**Requirements:** [MD-UI-01, MD-UI-02, MD-UI-03, MD-UI-04]
+
+### Scope
+- Rework market detail visual hierarchy (header/hero/chart/metrics/activity/action areas) using current design tokens
+- Keep trade actions and option labels sourced from backend market options (no static option substitution)
+- Improve information density and readability for probability, metrics, and activity feed
+- Preserve deterministic trade and comment flow behavior from prior phases
+
+### Success Criteria
+- Market detail layout feels modern and closer to reference style without pixel-perfect duplication
+- Trade option surfaces (chips/buttons) are backend-driven and synchronized with selected option state
+- Metrics and activity sections remain complete with loading/error/empty handling
+- Client static checks pass (or any pre-existing unrelated issues are documented)
+
+### Timeline
+- **Estimate**: 1-2 days
+- **Status**: Planned
+
+**Plans:** 1/1 plans complete
+
+Plans:
+- [x] 05-01-PLAN.md — Redesign market detail hierarchy and backend-driven option action UX
+
 ## Notes
 - Phase 1 is the immediate priority and aligns with the user’s request.
 - Future phases may be reprioritized based on user feedback and business needs.

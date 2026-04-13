@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState, useCallback } from 'react';
-import { Text, View, Alert, TextInput, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { Text, View, Alert, TextInput, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as api from '../utils/api';
 import {Prediction} from "../.expo/types/model";
@@ -8,13 +8,15 @@ import LoadingScreen from '@/components/common/loading-screen';
 import MarketDetailsHeader from "@/components/market/market-detail-header";
 import MarketDetailBalance from "@/components/market/market-detail-balance";
 import MarketDetailSummary from "@/components/market/market-detail-summary";
+import MarketDetailTrendChart from "@/components/market/market-detail-trend-chart";
 import { ExploreTheme } from "../constants/explore-theme";
 import { useUserStore } from '@/context/useUserStore';
-import { UI_COLORS } from '@/constants/ui-tokens';
+import { UI_COLORS, UI_SHADOWS } from '@/constants/ui-tokens';
 import { EmptyState } from '@/components/common/empty-state';
 
 const CREATE_MARKET_CATEGORIES = ['SPORTS', 'CRYPTO', 'POLITICS', 'CULTURE', 'TECHNOLOGY'];
-type CreateFieldKey = 'title' | 'description' | 'category' | 'resolutionDate' | 'options';
+const QUICK_SHARE_PRESETS = ['1', '5', '10'];
+type CreateFieldKey = 'title' | 'description' | 'category' | 'resolutionDate';
 
 type CommentSubmissionState =
   | { type: 'success'; message: string }
@@ -36,6 +38,33 @@ const toSafeMessage = (value: unknown, fallback: string): string => {
 
   const normalized = sanitizeDisplayText(value);
   return normalized || fallback;
+};
+
+const normalizeProbability = (value: number) => {
+  const normalized = value > 1 ? value / 100 : value;
+  return Math.max(0, Math.min(1, normalized));
+};
+
+const formatOptionLabel = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const formatRelativeTime = (value: string): string => {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return 'Now';
+  }
+
+  const diffMs = Date.now() - parsed.getTime();
+  if (diffMs < 60_000) return 'Now';
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 };
 
 
@@ -68,29 +97,33 @@ export default function DetailsScreen() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('SPORTS');
   const [resolutionDate, setResolutionDate] = useState('');
-  const [optionOne, setOptionOne] = useState('Yes');
-  const [optionTwo, setOptionTwo] = useState('No');
   const [createErrors, setCreateErrors] = useState<Partial<Record<CreateFieldKey, string>>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const tradeOptions = useMemo(() => {
+    if (!prediction?.options?.length) return [];
+    return prediction.options;
+  }, [prediction]);
+
+  const loadMarketData = useCallback(async () => {
     if (isCreateMode || marketID === null || Number.isNaN(marketID)) {
       setMarketLoading(false);
       return;
     }
 
-    const getMarketData = async (marketID:number) => {
-        setMarketLoading(true);
-        const {ok, data} = await api.get("/markets/"+marketID);
-        if(ok){
-            setPrediction(data?.data ?? null);
-        } else {
-            Alert.alert('Something wrong happened when fetching for predictions!');
-        }
-        setMarketLoading(false);
-      };
-      getMarketData(marketID); 
-    }, [isCreateMode, marketID]);
+    setMarketLoading(true);
+    const { ok, data } = await api.get(`/markets/${marketID}`);
+    if (ok) {
+      setPrediction(data?.data ?? null);
+    } else {
+      Alert.alert('Something wrong happened when fetching for predictions!');
+    }
+    setMarketLoading(false);
+  }, [isCreateMode, marketID]);
+
+  useEffect(() => {
+    void loadMarketData();
+    }, [loadMarketData]);
 
   useEffect(() => {
     if (!isCreateMode) {
@@ -158,7 +191,6 @@ export default function DetailsScreen() {
 
   const validateCreateForm = useCallback(() => {
     const normalizedCategory = category.trim().toUpperCase();
-    const optionValues = [optionOne.trim(), optionTwo.trim()].filter(Boolean);
     const nextErrors: Partial<Record<CreateFieldKey, string>> = {};
 
     if (!title.trim()) {
@@ -186,10 +218,6 @@ export default function DetailsScreen() {
       nextErrors.resolutionDate = 'Use ISO date format, for example 2026-12-31T00:00:00.000Z';
     }
 
-    if (optionValues.length < 2) {
-      nextErrors.options = 'Please provide at least two options.';
-    }
-
     setCreateErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) {
@@ -199,9 +227,9 @@ export default function DetailsScreen() {
     return {
       normalizedCategory,
       parsedDate,
-      optionValues,
+      optionValues: ['Yes', 'No'],
     };
-  }, [category, description, optionOne, optionTwo, resolutionDate, title]);
+  }, [category, description, resolutionDate, title]);
 
   const handleCreateMarket = useCallback(async () => {
     const validated = validateCreateForm();
@@ -233,13 +261,11 @@ export default function DetailsScreen() {
     setDescription('');
     setCategory('SPORTS');
     setResolutionDate('');
-    setOptionOne('Yes');
-    setOptionTwo('No');
     setCreateErrors({});
     setSubmitError(null);
   }, [title, description, validateCreateForm]);
 
-  const handleTrade = useCallback(async (side: 'buy' | 'sell') => {
+  const handleBuyTrade = useCallback(async (optionIdOverride?: number) => {
     if (!prediction) {
       return;
     }
@@ -248,7 +274,9 @@ export default function DetailsScreen() {
       return;
     }
 
-    if (!selectedOptionId) {
+    const optionIdToUse = optionIdOverride ?? selectedOptionId;
+
+    if (!optionIdToUse) {
       Alert.alert('Missing option', 'Please select an option before placing a trade.');
       return;
     }
@@ -264,9 +292,8 @@ export default function DetailsScreen() {
     setTradeError(null);
 
     try {
-      const tradeFn = side === 'buy' ? api.buyShares : api.sellShares;
-      const { ok, data } = await tradeFn({
-        optionId: selectedOptionId,
+      const { ok, data } = await api.buyShares({
+        optionId: optionIdToUse,
         shares,
       });
 
@@ -288,17 +315,91 @@ export default function DetailsScreen() {
       }
 
       setTradeMessage(data?.message ?? 'Trade submitted successfully.');
-      await fetchUserData();
-      setTradeBalanceSnapshot(null);
+      const refreshedProfile = await fetchUserData();
+      if (typeof refreshedProfile?.balance === 'number') {
+        setTradeBalanceSnapshot(null);
+      } else {
+        setTradeError('Trade succeeded. Account refresh is delayed, showing snapshot balance.');
+      }
+
+      await loadMarketData();
     } catch {
       setTradeError('Trade completed, but account refresh is delayed. Pull to refresh and try again.');
     } finally {
       setTradeLoading(false);
     }
-  }, [prediction, tradeLoading, selectedOptionId, shareInput, setBalanceFromSnapshot, fetchUserData]);
+  }, [prediction, tradeLoading, selectedOptionId, shareInput, setBalanceFromSnapshot, fetchUserData, loadMarketData]);
 
   const parsedShares = Number(shareInput);
   const hasValidShares = Number.isFinite(parsedShares) && parsedShares > 0;
+
+  const selectedOption = useMemo(() => {
+    if (!prediction || !selectedOptionId) return null;
+    return prediction.options.find((option) => option.id === selectedOptionId) ?? null;
+  }, [prediction, selectedOptionId]);
+
+  const pricePerShare = useMemo(() => {
+    const raw = Number(selectedOption?.probability);
+    if (!Number.isFinite(raw)) return null;
+    return raw > 1 ? raw / 100 : raw;
+  }, [selectedOption]);
+
+  const estimatedCost = useMemo(() => {
+    if (!hasValidShares || pricePerShare === null) return null;
+    return parsedShares * pricePerShare;
+  }, [hasValidShares, parsedShares, pricePerShare]);
+
+  const estimatedWinnings = useMemo(() => {
+    if (!hasValidShares || estimatedCost === null) {
+      return null;
+    }
+
+    return Math.max(0, parsedShares - estimatedCost);
+  }, [hasValidShares, parsedShares, estimatedCost]);
+
+  const leadingOption = useMemo(() => {
+    if (!tradeOptions.length) {
+      return null;
+    }
+
+    return tradeOptions.reduce((top, option) => {
+      const topProb = normalizeProbability(Number(top.probability));
+      const optionProb = normalizeProbability(Number(option.probability));
+      return optionProb > topProb ? option : top;
+    });
+  }, [tradeOptions]);
+
+  const impliedProbability = useMemo(() => {
+    if (!leadingOption) {
+      return null;
+    }
+
+    return normalizeProbability(Number(leadingOption.probability)) * 100;
+  }, [leadingOption]);
+
+  const selectedProbability = useMemo(() => {
+    if (!selectedOption) {
+      return null;
+    }
+
+    return normalizeProbability(Number(selectedOption.probability)) * 100;
+  }, [selectedOption]);
+
+  const tradeActionLabel = useMemo(() => {
+    if (!selectedOption?.name) {
+      return 'Buy Option';
+    }
+
+    return `Buy ${formatOptionLabel(selectedOption.name)}`;
+  }, [selectedOption]);
+
+  const chartSeries = useMemo(() => {
+    const anchor = impliedProbability ?? selectedProbability ?? 52;
+    const deltas = [-14, -9, -6, -1, 5, 8, 12];
+    return deltas.map((delta) => Math.max(6, Math.min(95, Math.round(anchor + delta))));
+  }, [impliedProbability, selectedProbability]);
+
+  const chartLabels = ['9 AM', '12 PM', '3 PM', '6 PM', 'Now'];
 
   const handlePostComment = useCallback(async () => {
     if (!marketID || Number.isNaN(marketID)) {
@@ -420,31 +521,17 @@ export default function DetailsScreen() {
               {createErrors.resolutionDate}
             </Text>
           ) : null}
-          <TextInput
-            value={optionOne}
-            onChangeText={(value) => {
-              setOptionOne(value);
-              setCreateErrors((prev) => ({ ...prev, options: undefined }));
-            }}
-            placeholder="Option 1"
-            className="bg-white rounded-xl px-4 py-3 mb-3 font-jetbrain"
-            style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, color: ExploreTheme.titleText }}
-          />
-          <TextInput
-            value={optionTwo}
-            onChangeText={(value) => {
-              setOptionTwo(value);
-              setCreateErrors((prev) => ({ ...prev, options: undefined }));
-            }}
-            placeholder="Option 2"
-            className="bg-white rounded-xl px-4 py-3 mb-4 font-jetbrain"
-            style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, color: ExploreTheme.titleText }}
-          />
-          {createErrors.options ? (
-            <Text className="font-jetbrain text-[12px] mt-[-10px] mb-4" style={{ color: ExploreTheme.searchHint }}>
-              {createErrors.options}
+          <View
+            className="rounded-xl px-4 py-3 mb-4"
+            style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, backgroundColor: UI_COLORS.surfaceSoft }}
+          >
+            <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
+              Outcome format
             </Text>
-          ) : null}
+            <Text className="font-jetbrain-bold text-[13px] mt-1" style={{ color: ExploreTheme.titleText }}>
+              Binary market (Yes / No)
+            </Text>
+          </View>
 
           <TouchableOpacity
             disabled={submitLoading}
@@ -474,7 +561,7 @@ export default function DetailsScreen() {
 
 
   return (
-    <View className="flex-1 gap-2" style={{ backgroundColor: ExploreTheme.pageBg }}>
+    <View className="flex-1" style={{ backgroundColor: ExploreTheme.pageBg }}>
       <SafeAreaView edges={['top']} className="bg-white">
           <View
             className="bg-white"
@@ -486,34 +573,113 @@ export default function DetailsScreen() {
             }}
           >
             <MarketDetailsHeader
-              title={prediction ? prediction.title : "undefined"}
+              title={prediction ? prediction.title : 'Market details'}
             />
           </View>   
       </SafeAreaView>
       {marketLoading ? (
         <LoadingScreen />
       ) : prediction ? (
-      <View>
-        <MarketDetailBalance balanceOverride={tradeBalanceSnapshot} />
-        <MarketDetailSummary prediction={prediction} userPosition={userPosition} />
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 34 }}>
+        <View className="px-4 pt-3">
+          <MarketDetailBalance balanceOverride={tradeBalanceSnapshot} />
+        </View>
+
+        <View
+          className="mx-4 mt-3 rounded-3xl p-4"
+          style={{
+            backgroundColor: UI_COLORS.surface,
+            borderWidth: 1,
+            borderColor: UI_COLORS.borderSoft,
+            ...UI_SHADOWS.soft,
+          }}
+        >
+          <View className="flex-row items-start justify-between">
+            <View className="flex-1 pr-3">
+              <Text className="font-jetbrain text-[11px] tracking-widest" style={{ color: ExploreTheme.secondaryText }}>
+                CURRENT PRICE
+              </Text>
+              <View className="flex-row items-end mt-1 gap-2">
+                <Text className="font-grotesk-bold text-[40px] leading-[44px]" style={{ color: ExploreTheme.titleText }}>
+                  {selectedProbability !== null ? `${selectedProbability.toFixed(0)}%` : '--'}
+                </Text>
+                <Text className="font-jetbrain text-[12px] mb-1" style={{ color: UI_COLORS.success }}>
+                  {selectedOption ? formatOptionLabel(selectedOption.name) : 'No option selected'}
+                </Text>
+              </View>
+            </View>
+
+            <Text className="font-jetbrain text-[11px] mt-2" style={{ color: UI_COLORS.textMuted }}>
+              {tradeLoading ? 'Submitting...' : formatRelativeTime(prediction.endDate)}
+            </Text>
+          </View>
+        </View>
+
+        <View className="mx-4 mt-3 flex-row items-center gap-2">
+          <View
+            className="rounded-full px-3 py-1"
+            style={{ backgroundColor: UI_COLORS.surfaceSoft, borderWidth: 1, borderColor: UI_COLORS.borderSoft }}
+          >
+            <Text className="font-jetbrain text-[11px]" style={{ color: ExploreTheme.secondaryText }}>
+              {prediction.category}
+            </Text>
+          </View>
+          <View
+            className="rounded-full px-3 py-1"
+            style={{ backgroundColor: UI_COLORS.surfaceSoft, borderWidth: 1, borderColor: UI_COLORS.borderSoft }}
+          >
+            <Text className="font-jetbrain text-[11px]" style={{ color: ExploreTheme.secondaryText }}>
+              {prediction.status}
+            </Text>
+          </View>
+        </View>
+
+        <View className="mt-3">
+          <MarketDetailTrendChart values={chartSeries} labels={chartLabels} />
+        </View>
+
+        <View className="mt-7 mb-7 items-center justify-center">
+          <Text className="font-jetbrain text-[11px] tracking-widest" style={{ color: ExploreTheme.secondaryText }}>
+            IMPLIED PROBABILITY
+          </Text>
+          <Text className="font-grotesk-bold text-[56px] leading-[62px] mt-1" style={{ color: ExploreTheme.titleText }}>
+            {impliedProbability !== null ? `${impliedProbability.toFixed(0)}%` : '--'}
+          </Text>
+          <Text className="font-jetbrain text-[11px] mt-1" style={{ color: UI_COLORS.textMuted }}>
+            {leadingOption ? `Leading option: ${formatOptionLabel(leadingOption.name)}` : 'Leading option unavailable'}
+          </Text>
+        </View>
+
+        <View className="mt-3">
+          <MarketDetailSummary prediction={prediction} userPosition={userPosition} />
+        </View>
+
         <View
           className="mx-4 mt-3 rounded-2xl p-4"
           style={{
             backgroundColor: UI_COLORS.surface,
             borderWidth: 1,
-            borderColor: ExploreTheme.headerBorder,
+            borderColor: UI_COLORS.borderSoft,
+            ...UI_SHADOWS.soft,
           }}
         >
-          <Text className="font-grotesk-bold text-[16px] mb-2" style={{ color: ExploreTheme.titleText }}>
-            Trade
-          </Text>
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className="font-grotesk-bold text-[16px]" style={{ color: ExploreTheme.titleText }}>
+              Trade Desk
+            </Text>
+            <Text className="font-jetbrain text-[11px]" style={{ color: ExploreTheme.secondaryText }}>
+              {tradeLoading ? 'Submitting...' : selectedOption ? formatOptionLabel(selectedOption.name) : 'Ready'}
+            </Text>
+          </View>
+
           <Text className="font-jetbrain text-[12px] mb-3" style={{ color: ExploreTheme.secondaryText }}>
-            Select an option, enter shares, then buy or sell.
+            Select backend option below. Price and action update from selected option state.
           </Text>
 
           <View className="flex-row flex-wrap gap-2 mb-3">
-            {prediction.options.map((option) => {
+            {tradeOptions.map((option, index) => {
               const isSelected = option.id === selectedOptionId;
+              const probability = normalizeProbability(Number(option.probability)) * 100;
               return (
                 <TouchableOpacity
                   key={option.id}
@@ -529,16 +695,16 @@ export default function DetailsScreen() {
                   className="rounded-full px-3 py-2"
                   style={{
                     borderWidth: 1,
-                    borderColor: ExploreTheme.headerBorder,
-                    backgroundColor: isSelected ? ExploreTheme.titleText : UI_COLORS.surface,
+                    borderColor: isSelected ? UI_COLORS.accent : UI_COLORS.borderSoft,
+                    backgroundColor: isSelected ? UI_COLORS.accentSoft : UI_COLORS.surface,
                     opacity: tradeLoading ? 0.6 : 1,
                   }}
                 >
                   <Text
-                    className="font-jetbrain text-[12px]"
-                    style={{ color: isSelected ? UI_COLORS.surface : ExploreTheme.titleText }}
+                    className="font-jetbrain-bold text-[12px]"
+                    style={{ color: isSelected ? UI_COLORS.accent : ExploreTheme.titleText }}
                   >
-                    {option.name}
+                    {`${formatOptionLabel(option.name)} ${probability.toFixed(0)}%`}
                   </Text>
                 </TouchableOpacity>
               );
@@ -559,35 +725,91 @@ export default function DetailsScreen() {
             style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, color: ExploreTheme.titleText }}
           />
 
-          <View className="flex-row gap-2">
-            <TouchableOpacity
-              disabled={tradeLoading || !hasValidShares || !selectedOptionId}
-              onPress={() => handleTrade('buy')}
-              accessibilityRole="button"
-              accessibilityLabel="Buy shares"
-              accessibilityHint="Submits a buy order for the selected option"
-              className="flex-1 rounded-xl py-3 items-center"
-              style={{ backgroundColor: tradeLoading ? ExploreTheme.headerBorder : UI_COLORS.success }}
-            >
-              <Text className="font-grotesk-bold text-[14px]" style={{ color: UI_COLORS.surface }}>
-                {tradeLoading ? 'Processing...' : 'Buy'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              disabled={tradeLoading || !hasValidShares || !selectedOptionId}
-              onPress={() => handleTrade('sell')}
-              accessibilityRole="button"
-              accessibilityLabel="Sell shares"
-              accessibilityHint="Submits a sell order for the selected option"
-              className="flex-1 rounded-xl py-3 items-center"
-              style={{ backgroundColor: tradeLoading ? ExploreTheme.headerBorder : UI_COLORS.danger }}
-            >
-              <Text className="font-grotesk-bold text-[14px]" style={{ color: UI_COLORS.surface }}>
-                {tradeLoading ? 'Processing...' : 'Sell'}
-              </Text>
-            </TouchableOpacity>
+          <View className="flex-row gap-2 mb-3">
+            {QUICK_SHARE_PRESETS.map((preset) => {
+              const active = shareInput === preset;
+              return (
+                <TouchableOpacity
+                  key={preset}
+                  disabled={tradeLoading}
+                  onPress={() => {
+                    setShareInput(preset);
+                    setTradeMessage(null);
+                    setTradeError(null);
+                  }}
+                  className="rounded-full px-3 py-1"
+                  style={{
+                    borderWidth: 1,
+                    borderColor: active ? UI_COLORS.accentBorder : UI_COLORS.borderSoft,
+                    backgroundColor: active ? UI_COLORS.accentSoft : UI_COLORS.surfaceSoft,
+                    opacity: tradeLoading ? 0.6 : 1,
+                  }}
+                >
+                  <Text className="font-jetbrain text-[11px]" style={{ color: ExploreTheme.secondaryText }}>
+                    {preset} share{preset === '1' ? '' : 's'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
+
+          <View
+            className="rounded-xl px-3 py-2 mb-3"
+            style={{ backgroundColor: UI_COLORS.surfaceSoft, borderWidth: 1, borderColor: UI_COLORS.borderSoft }}
+          >
+            <Text className="font-jetbrain text-[11px]" style={{ color: ExploreTheme.secondaryText }}>
+              Estimated cost
+            </Text>
+            <View className="flex-row items-center gap-2 mt-1">
+              <Image
+                source={require('../assets/app-icons/p-coin.png')}
+                style={{ width: 16, height: 16 }}
+                resizeMode="contain"
+              />
+              <Text className="font-jetbrain-bold text-[14px]" style={{ color: ExploreTheme.titleText }}>
+                {estimatedCost !== null ? estimatedCost.toFixed(2) : 'Enter shares and pick option'}
+              </Text>
+            </View>
+          </View>
+
+          <View
+            className="rounded-xl px-3 py-2 mb-3"
+            style={{ backgroundColor: UI_COLORS.surfaceSoft, borderWidth: 1, borderColor: UI_COLORS.borderSoft }}
+          >
+            <Text className="font-jetbrain text-[11px]" style={{ color: ExploreTheme.secondaryText }}>
+              Estimated winnings
+            </Text>
+            <View className="flex-row items-center gap-2 mt-1">
+              <Image
+                source={require('../assets/app-icons/p-coin.png')}
+                style={{ width: 16, height: 16 }}
+                resizeMode="contain"
+              />
+              <Text className="font-jetbrain-bold text-[14px]" style={{ color: UI_COLORS.success }}>
+                {estimatedWinnings !== null ? `+${estimatedWinnings.toFixed(2)}` : 'Enter shares and pick option'}
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.9}
+            disabled={tradeLoading || !hasValidShares || !selectedOptionId}
+            onPress={() => {
+              void handleBuyTrade();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={tradeActionLabel}
+            accessibilityHint="Submits a buy order for the selected option"
+            className="rounded-xl py-3 items-center"
+            style={{
+              backgroundColor: UI_COLORS.success,
+              opacity: tradeLoading || !hasValidShares || !selectedOptionId ? 0.6 : 1,
+            }}
+          >
+            <Text className="font-grotesk-bold text-[14px]" style={{ color: UI_COLORS.surface }}>
+              {tradeLoading ? 'Processing buy...' : tradeActionLabel}
+            </Text>
+          </TouchableOpacity>
 
           {tradeMessage ? (
             <Text className="font-jetbrain text-[12px] mt-3" style={{ color: ExploreTheme.secondaryText }}>
@@ -604,13 +826,14 @@ export default function DetailsScreen() {
         <View
           className="mx-4 mt-3 rounded-2xl p-4"
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: UI_COLORS.surface,
             borderWidth: 1,
-            borderColor: ExploreTheme.headerBorder,
+            borderColor: UI_COLORS.borderSoft,
+            ...UI_SHADOWS.soft,
           }}
         >
           <Text className="font-grotesk-bold text-[16px] mb-2" style={{ color: ExploreTheme.titleText }}>
-            Comments
+            Recent Activity
           </Text>
           <TextInput
             value={commentInput}
@@ -697,18 +920,43 @@ export default function DetailsScreen() {
             />
           ) : (
             comments.map((item) => (
-              <View key={item.id} className="mb-3 pb-3" style={{ borderBottomWidth: 1, borderBottomColor: ExploreTheme.headerBorder }}>
-                <Text className="font-jetbrain text-[11px] mb-1" style={{ color: ExploreTheme.secondaryText }}>
-                  {sanitizeDisplayText(item.user_id) || 'Anonymous'}
-                </Text>
-                <Text className="font-jetbrain text-[13px]" style={{ color: ExploreTheme.titleText }}>
+              <View key={item.id} className="mb-3 rounded-xl p-3" style={{ backgroundColor: UI_COLORS.surfaceSoft, borderWidth: 1, borderColor: UI_COLORS.borderSoft }}>
+                <View className="flex-row items-center justify-between mb-1">
+                  <View className="flex-row items-center gap-2">
+                    <View
+                      className="w-6 h-6 rounded-full items-center justify-center"
+                      style={{ backgroundColor: UI_COLORS.accentSoft }}
+                    >
+                      <Text className="font-jetbrain-bold text-[10px]" style={{ color: ExploreTheme.titleText }}>
+                        {(sanitizeDisplayText(item.user_id) || 'A').charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View>
+                      <Text className="font-jetbrain text-[11px]" style={{ color: ExploreTheme.secondaryText }}>
+                        {sanitizeDisplayText(item.user_id) || 'Anonymous'}
+                      </Text>
+                      <Text className="font-jetbrain text-[10px]" style={{ color: UI_COLORS.textMuted }}>
+                        Bought {selectedOption ? formatOptionLabel(selectedOption.name) : 'option'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View
+                    className="rounded-full px-2 py-1"
+                    style={{ backgroundColor: UI_COLORS.surface, borderWidth: 1, borderColor: UI_COLORS.borderSoft }}
+                  >
+                    <Text className="font-jetbrain text-[10px]" style={{ color: UI_COLORS.textMuted }}>
+                      {formatRelativeTime(item.created_at)}
+                    </Text>
+                  </View>
+                </View>
+                <Text className="font-jetbrain text-[13px]" style={{ color: ExploreTheme.titleText, lineHeight: 18 }}>
                   {sanitizeDisplayText(item.content)}
                 </Text>
               </View>
             ))
           )}
         </View>
-      </View>
+      </ScrollView>
       ) : null}
     </View>
   )

@@ -186,3 +186,79 @@ This addendum is now canonical for backend integration planning tied to leaderbo
   - Backend exposes follow/comment contracts with auth checks.
   - Client can render and submit comments for a market thread.
   - Follow state is persisted and queryable for profile/social views.
+
+## Addendum: Phase 4 Frontend Completion Requirements (2026-04-13)
+
+### ADV-FE-01: Market Creation Entry and Pending Status UX
+- **ID**: ADV-FE-01
+- **Description**: Users can reach and complete market creation from app navigation and receive clear pending-review messaging.
+- **Acceptance Criteria**:
+  - Create-market entrypoint exists from at least one primary navigation surface.
+  - Required-field validation is shown before submit and backend validation errors are human-readable.
+  - Success state clearly communicates admin approval is required before visibility/trading.
+
+### ADV-FE-02: Trading UX Reliability
+- **ID**: ADV-FE-02
+- **Description**: Trading flow is fully usable from client and robust to backend response shape edge cases.
+- **Acceptance Criteria**:
+  - Buy/sell actions show deterministic loading, success, and error states.
+  - Client handles single-row/single-object backend responses without JSON coercion failures.
+  - Balance/position values visibly refresh after successful trade.
+
+### ADV-FE-03: Realtime Transparency and Recovery
+- **ID**: ADV-FE-03
+- **Description**: Users can see realtime updates and recover cleanly after reconnect.
+- **Acceptance Criteria**:
+  - Home/Leaderboard reflect server push updates without manual refresh.
+  - Reconnect does not duplicate events or spam refresh loops.
+  - UX indicates temporary stale/reconnecting state when socket disconnects.
+
+### ADV-FE-04: Notification and Deep-Link Inbox UX
+- **ID**: ADV-FE-04
+- **Description**: Notification experiences are discoverable and route users safely to supported targets.
+- **Acceptance Criteria**:
+  - Notifications screen is reachable from active tab surfaces.
+  - Tapping notification routes to supported target screens (market/leaderboard/profile).
+  - Unsupported or invalid targets fail safely with user feedback.
+
+### ADV-FE-05: Social Follow/Comment Surface Completion
+- **ID**: ADV-FE-05
+- **Description**: Follow and comment features are complete in user-facing views.
+- **Acceptance Criteria**:
+  - Follow/unfollow state is visible and actionable where social context exists.
+  - Market comments list and post flow work with sanitized display and error states.
+  - Empty, loading, and failure states are implemented for social surfaces.
+
+## Addendum: Phase 5 Market Detail Experience Refresh (2026-04-13)
+
+### MD-UI-01: Screenshot-Inspired Market Detail Hierarchy
+- **ID**: MD-UI-01
+- **Description**: Market detail screen should adopt a cleaner single-column hierarchy inspired by reference mock while preserving existing app design tokens.
+- **Acceptance Criteria**:
+  - Header, probability hero, chart area, stats cards, activity feed, and sticky action area are visually separated and readable.
+  - Layout remains responsive on common mobile widths and respects safe-area spacing.
+  - No new hard-coded hex colors are introduced; styling uses existing UI token/theme files.
+
+### MD-UI-02: Backend-Driven Option Actions
+- **ID**: MD-UI-02
+- **Description**: Trade action labels and selection state must be sourced from backend market options rather than static labels.
+- **Acceptance Criteria**:
+  - Action buttons and option chips render names from `prediction.options`.
+  - Default selected option resolves from first valid backend option.
+  - Cost preview and buy action always reflect currently selected backend option.
+
+### MD-UI-03: Stats and Recent Activity Presentation
+- **ID**: MD-UI-03
+- **Description**: Market metrics and recent activity should be presented in compact cards similar to reference information density.
+- **Acceptance Criteria**:
+  - Volume, expiration, position, and P/L remain visible and readable in a dedicated card block.
+  - Recent activity/comments section shows loading, empty, error, and populated states.
+  - Activity rows are visually scannable with user identifier, action text, and timestamp context.
+
+### MD-UI-04: Regression and Verification Coverage
+- **ID**: MD-UI-04
+- **Description**: Refresh must preserve existing trade/comment behavior and pass static validation checks.
+- **Acceptance Criteria**:
+  - Trade submit flow still enforces deterministic loading/success/error feedback.
+  - Comment submission and retry behavior continue to work after UI changes.
+  - `npm run lint` and `npx tsc --noEmit` pass in client workspace (or only known pre-existing issues remain documented).

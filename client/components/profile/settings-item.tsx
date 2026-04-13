@@ -4,7 +4,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { UI_COLORS } from '@/constants/ui-tokens';
 
 type SettingsItemProps = {
-  icon: string;
+  icon: keyof typeof MaterialIcons.glyphMap;
   label: string;
   value?: string;
   showChevron?: boolean;
@@ -38,7 +38,7 @@ export function SettingsItem({
           className="w-10 h-10 rounded-full items-center justify-center"
           style={{ backgroundColor: UI_COLORS.accentSoft }}
         >
-          <MaterialIcons name={icon as any} size={20} color={iconColor} />
+          <MaterialIcons name={icon} size={20} color={iconColor} />
         </View>
 
         {/* Label */}
