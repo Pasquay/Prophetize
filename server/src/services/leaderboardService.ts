@@ -8,10 +8,45 @@ type LeaderboardRow = {
   user_id: string;
   wins: number;
   profit_pct: number;
-  profiles: {
-    username: string;
-    avatar_url: string | null;
-  } | null;
+  profiles:
+    | {
+        username: string;
+        avatar_url: string | null;
+      }
+    | {
+        username: string;
+        avatar_url: string | null;
+      }[]
+    | null;
+};
+
+type LeaderboardMeRow = {
+  rank: number;
+  wins: number;
+  profit_pct: number;
+  profiles:
+    | {
+        username: string;
+        avatar_url: string | null;
+      }
+    | {
+        username: string;
+        avatar_url: string | null;
+      }[]
+    | null;
+};
+
+type ProfileShape = {
+  username: string;
+  avatar_url: string | null;
+};
+
+const getProfile = (rawProfile: LeaderboardRow["profiles"] | LeaderboardMeRow["profiles"]): ProfileShape | null => {
+  if (!rawProfile) {
+    return null;
+  }
+
+  return Array.isArray(rawProfile) ? rawProfile[0] ?? null : rawProfile;
 };
 
 export type LeaderboardItem = {
@@ -32,15 +67,19 @@ export type LeaderboardMeta = {
   total_pages: number;
 };
 
-const mapRow = (row: LeaderboardRow): LeaderboardItem => ({
-  rank: row.rank,
-  user_id: row.user_id,
-  username: row.profiles?.username ?? "unknown",
-  avatar_url: row.profiles?.avatar_url ?? null,
-  wins: row.wins,
-  profit_pct: row.profit_pct,
-  is_current_user: false,
-});
+const mapRow = (row: LeaderboardRow): LeaderboardItem => {
+  const profile = getProfile(row.profiles);
+
+  return {
+    rank: row.rank,
+    user_id: row.user_id,
+    username: profile?.username ?? "unknown",
+    avatar_url: profile?.avatar_url ?? null,
+    wins: row.wins,
+    profit_pct: row.profit_pct,
+    is_current_user: false,
+  };
+};
 
 export const getLeaderboardPage = async (
   period: LeaderboardPeriod,
@@ -102,12 +141,13 @@ export const getMyLeaderboardPosition = async (
     return null;
   }
 
-  const row = data as LeaderboardRow;
+  const row = data as LeaderboardMeRow;
+  const profile = getProfile(row.profiles);
 
   return {
     position: row.rank,
-    username: row.profiles?.username ?? "unknown",
-    avatar_url: row.profiles?.avatar_url ?? null,
+    username: profile?.username ?? "unknown",
+    avatar_url: profile?.avatar_url ?? null,
     wins: row.wins,
     profit_pct: row.profit_pct,
   };
