@@ -523,6 +523,9 @@ export default function DetailsScreen() {
                     setTradeMessage(null);
                     setTradeError(null);
                   }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select ${option.name}`}
+                  accessibilityHint="Sets the market option for your next trade"
                   className="rounded-full px-3 py-2"
                   style={{
                     borderWidth: 1,
@@ -560,6 +563,9 @@ export default function DetailsScreen() {
             <TouchableOpacity
               disabled={tradeLoading || !hasValidShares || !selectedOptionId}
               onPress={() => handleTrade('buy')}
+              accessibilityRole="button"
+              accessibilityLabel="Buy shares"
+              accessibilityHint="Submits a buy order for the selected option"
               className="flex-1 rounded-xl py-3 items-center"
               style={{ backgroundColor: tradeLoading ? ExploreTheme.headerBorder : UI_COLORS.success }}
             >
@@ -571,6 +577,9 @@ export default function DetailsScreen() {
             <TouchableOpacity
               disabled={tradeLoading || !hasValidShares || !selectedOptionId}
               onPress={() => handleTrade('sell')}
+              accessibilityRole="button"
+              accessibilityLabel="Sell shares"
+              accessibilityHint="Submits a sell order for the selected option"
               className="flex-1 rounded-xl py-3 items-center"
               style={{ backgroundColor: tradeLoading ? ExploreTheme.headerBorder : UI_COLORS.danger }}
             >
@@ -620,6 +629,9 @@ export default function DetailsScreen() {
           <TouchableOpacity
             disabled={commentSubmitting}
             onPress={handlePostComment}
+            accessibilityRole="button"
+            accessibilityLabel="Post comment"
+            accessibilityHint="Publishes your comment to this market discussion"
             className="rounded-xl py-3 items-center mb-3"
             style={{ backgroundColor: commentSubmitting ? ExploreTheme.headerBorder : ExploreTheme.titleText }}
           >
@@ -646,6 +658,9 @@ export default function DetailsScreen() {
             <TouchableOpacity
               disabled={commentSubmitting || !sanitizeDisplayText(commentInput)}
               onPress={handlePostComment}
+              accessibilityRole="button"
+              accessibilityLabel="Retry posting comment"
+              accessibilityHint="Attempts to post your comment again"
               className="rounded-xl py-2 items-center mb-3"
               style={{
                 borderWidth: 1,
@@ -662,13 +677,13 @@ export default function DetailsScreen() {
 
           {commentsLoading ? (
             <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
-              Loading comments...
+              Loading comments. This should only take a moment.
             </Text>
           ) : commentsError ? (
             <EmptyState
               icon="error-outline"
               title="Could not load comments"
-              description={commentsError}
+              description={`${commentsError} Please try again.`}
               actionLabel="Retry"
               onAction={() => {
                 void loadComments();

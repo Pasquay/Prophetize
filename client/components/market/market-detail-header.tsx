@@ -1,6 +1,6 @@
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Feather from '@expo/vector-icons/Feather';
-import { Text, View, Pressable } from 'react-native';
+import { Alert, Text, View, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ExploreTheme } from '@/constants/explore-theme';
 
@@ -15,6 +15,9 @@ export default function MarketDetailHeader({title}:Props) {
             <Pressable
                 onPress={() => router.back()}
                 hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Go back"
+                accessibilityHint="Returns to the previous screen"
                 style={({ pressed }) => ({
                     opacity: pressed ? 0.85 : 1,
                     transform: [{ scale: pressed ? 0.92 : 1 }],
@@ -28,9 +31,12 @@ export default function MarketDetailHeader({title}:Props) {
                 </Text>
             </View>
             <Pressable
-                onPress={() => null}
+                onPress={() => Alert.alert('Share coming soon', 'Sharing this market will be available in a future update.')}
                 className="ml-auto"
                 hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Share market"
+                accessibilityHint="Opens the share action for this market"
                 style={({ pressed }) => ({
                     opacity: pressed ? 0.85 : 1,
                     transform: [{ scale: pressed ? 0.92 : 1 }],

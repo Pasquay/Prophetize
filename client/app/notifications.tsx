@@ -171,6 +171,9 @@ export default function NotificationsScreen() {
             </Text>
             <Pressable
               onPress={() => void loadNotifications()}
+              accessibilityRole="button"
+              accessibilityLabel="Retry notifications"
+              accessibilityHint="Attempts to load notifications again"
               className="px-3 py-2 rounded-lg mt-3 self-start"
               style={{ backgroundColor: UI_COLORS.accent }}
             >
@@ -198,7 +201,7 @@ export default function NotificationsScreen() {
               No notifications yet
             </Text>
             <Text className="font-jetbrain text-[12px] mt-1" style={{ color: ExploreTheme.secondaryText }}>
-              Updates about markets, rankings, and profile activity will appear here.
+              Updates about markets, rankings, and profile activity will appear here once available.
             </Text>
           </View>
         ) : null}
@@ -227,6 +230,9 @@ export default function NotificationsScreen() {
               <View className="flex-row gap-2 mt-3">
                 <Pressable
                   onPress={() => handlePress(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open notification"
+                  accessibilityHint="Navigates to the destination linked to this notification"
                   className="px-3 py-2 rounded-lg"
                   style={{ backgroundColor: UI_COLORS.accent }}
                 >
@@ -240,6 +246,9 @@ export default function NotificationsScreen() {
                     <Pressable
                       onPress={() => handleFollowFromNotification(item)}
                       disabled={profileLoading}
+                      accessibilityRole="button"
+                      accessibilityLabel={profileFollowing ? 'Unfollow profile' : 'Follow profile'}
+                      accessibilityHint="Toggles follow state for this profile"
                       className="px-3 py-2 rounded-lg"
                       style={{
                         backgroundColor: profileFollowing ? UI_COLORS.textMuted : UI_COLORS.success,
