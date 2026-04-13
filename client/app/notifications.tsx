@@ -7,6 +7,15 @@ import { ExploreTheme } from '@/constants/explore-theme';
 import { UI_COLORS } from '@/constants/ui-tokens';
 import * as api from '@/utils/api';
 
+const toFollowErrorMessage = (value: unknown): string => {
+  if (typeof value !== 'string') {
+    return 'Unable to update follow status.';
+  }
+
+  const normalized = value.replace(/[\u0000-\u001F\u007F]/g, '').trim();
+  return normalized || 'Unable to update follow status.';
+};
+
 export default function NotificationsScreen() {
   const router = useRouter();
   const [items, setItems] = useState<api.NotificationInboxItem[]>([]);
@@ -15,6 +24,7 @@ export default function NotificationsScreen() {
   const [inboxFallbackMessage, setInboxFallbackMessage] = useState<string | null>(null);
   const [followingProfiles, setFollowingProfiles] = useState<Record<string, boolean>>({});
   const [followLoading, setFollowLoading] = useState<Record<string, boolean>>({});
+  const [followErrorMessage, setFollowErrorMessage] = useState<Record<string, string>>({});
 
   const loadNotifications = useCallback(async () => {
     setIsLoading(true);
@@ -56,6 +66,18 @@ export default function NotificationsScreen() {
       return;
     }
 
+    if (target.pathname === '/tabs/profile' && target.params?.userId) {
+      const userId = target.params.userId;
+      router.push({
+        pathname: '/tabs/profile',
+        params: {
+          userId,
+          initialFollowing: followingProfiles[userId] ? '1' : '0',
+        },
+      } as never);
+      return;
+    }
+
     router.push(target as never);
   };
 
@@ -68,14 +90,36 @@ export default function NotificationsScreen() {
       return;
     }
 
+    if (followLoading[targetUserId]) {
+      return;
+    }
+
     const isFollowing = Boolean(followingProfiles[targetUserId]);
+    const optimisticFollowing = !isFollowing;
+
+    setFollowingProfiles((current) => ({
+      ...current,
+      [targetUserId]: optimisticFollowing,
+    }));
+    setFollowErrorMessage((current) => ({ ...current, [targetUserId]: '' }));
     setFollowLoading((current) => ({ ...current, [targetUserId]: true }));
+
     const action: api.FollowAction = isFollowing ? 'unfollow' : 'follow';
     const { ok, data } = await api.followUser(targetUserId, action);
     setFollowLoading((current) => ({ ...current, [targetUserId]: false }));
 
     if (!ok) {
-      Alert.alert('Follow action failed', data?.error ?? 'Unable to update follow status.');
+      setFollowingProfiles((current) => ({
+        ...current,
+        [targetUserId]: isFollowing,
+      }));
+
+      const message = toFollowErrorMessage(data?.error);
+      setFollowErrorMessage((current) => ({
+        ...current,
+        [targetUserId]: message,
+      }));
+      Alert.alert('Follow action failed', message);
       return;
     }
 
@@ -83,6 +127,7 @@ export default function NotificationsScreen() {
       ...current,
       [targetUserId]: Boolean(data?.relationship?.following),
     }));
+    setFollowErrorMessage((current) => ({ ...current, [targetUserId]: '' }));
   };
 
   return (
@@ -164,6 +209,7 @@ export default function NotificationsScreen() {
             profileTarget?.pathname === '/tabs/profile' ? profileTarget.params?.userId : undefined;
           const profileLoading = profileUserId ? Boolean(followLoading[profileUserId]) : false;
           const profileFollowing = profileUserId ? Boolean(followingProfiles[profileUserId]) : false;
+          const profileError = profileUserId ? followErrorMessage[profileUserId] : '';
 
           return (
             <View
@@ -190,16 +236,26 @@ export default function NotificationsScreen() {
                 </Pressable>
 
                 {item.type === 'profile' && (
-                  <Pressable
-                    onPress={() => handleFollowFromNotification(item)}
-                    disabled={profileLoading}
-                    className="px-3 py-2 rounded-lg"
-                    style={{ backgroundColor: profileFollowing ? UI_COLORS.textMuted : UI_COLORS.success }}
-                  >
-                    <Text className="font-jetbrain text-[11px]" style={{ color: UI_COLORS.surface }}>
-                      {profileLoading ? 'Updating...' : profileFollowing ? 'Following' : 'Follow'}
-                    </Text>
-                  </Pressable>
+                  <View>
+                    <Pressable
+                      onPress={() => handleFollowFromNotification(item)}
+                      disabled={profileLoading}
+                      className="px-3 py-2 rounded-lg"
+                      style={{
+                        backgroundColor: profileFollowing ? UI_COLORS.textMuted : UI_COLORS.success,
+                        opacity: profileLoading ? 0.7 : 1,
+                      }}
+                    >
+                      <Text className="font-jetbrain text-[11px]" style={{ color: UI_COLORS.surface }}>
+                        {profileLoading ? 'Updating...' : profileFollowing ? 'Following' : 'Follow'}
+                      </Text>
+                    </Pressable>
+                    {profileError ? (
+                      <Text className="font-jetbrain text-[11px] mt-2" style={{ color: ExploreTheme.searchHint }}>
+                        {profileError}
+                      </Text>
+                    ) : null}
+                  </View>
                 )}
               </View>
             </View>
