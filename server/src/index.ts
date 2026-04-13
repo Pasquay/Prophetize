@@ -4,6 +4,7 @@ import userRoutes from "../src/routes/userRoutes";
 import marketRoutes from "../src/routes/marketRoutes";
 import transactionRoutes from "../src/routes/transactionRoutes";
 import portfolioRoutes from '../src/routes/portfolioRoutes';
+import leaderboardRoutes from '../src/routes/leaderboardRoutes';
 
 // Server
 const app = express();
@@ -19,6 +20,7 @@ app.use("/auth", userRoutes);
 app.use("/markets", marketRoutes);
 app.use("/transaction", transactionRoutes);
 app.use('/portfolio', portfolioRoutes);
+app.use('/leaderboard', leaderboardRoutes);
 
 // Starting server
 const PORT = process.env.PORT || 3000;
