@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 04-02-PLAN.md
-last_updated: "2026-04-13T13:50:19.793Z"
+stopped_at: Completed 04-03-PLAN.md
+last_updated: "2026-04-13T14:03:50.790Z"
 last_activity: 2026-04-13
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 10
-  completed_plans: 8
-  percent: 80
+  completed_plans: 9
+  percent: 90
 ---
 
 # Project State
@@ -56,6 +56,8 @@ Progress: [██░░░░░░░░] 25%
 | Phase 03 P04 | 18 | 2 tasks | 13 files |
 | Phase 04 P01 | 10 min | 2 tasks | 4 files |
 | Phase 04 P02 | 24m | 2 tasks | 3 files |
+| Phase 04 P03 | 10m | 2 tasks | 5 files |
+| Phase 04 P03 | 10m | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -76,6 +78,11 @@ Progress: [██░░░░░░░░] 25%
 - [Phase 04]: Normalize create-market API errors in api.ts so user messages stay safe and readable.
 - [Phase 04]: Normalize trade payload envelopes in API layer before UI mutation.
 - [Phase 04]: Use tokenized UI colors for buy/sell and explicit trade status feedback.
+- [Phase 04]: Expose realtime connection state via shared subscribeRealtime callbacks to keep singleton listener binding bounded.
+- [Phase 04]: Use backend-first notification inbox fetch with explicit unsupported-endpoint fallback instead of demo data.
+- [Phase 04]: Expose realtime connection state via shared subscribeRealtime callbacks to keep singleton listener binding bounded.
+- [Phase 04]: Use backend-first notification inbox fetch with explicit unsupported-endpoint fallback instead of demo data.
+- [Phase 04]: Use backend-first notification inbox fetch with explicit unsupported-endpoint fallback instead of demo data.
 
 ### Pending Todos
 
@@ -87,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-13T13:50:19.787Z
-Stopped at: Completed 04-02-PLAN.md
+Last session: 2026-04-13T14:03:50.784Z
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None
