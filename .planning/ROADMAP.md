@@ -67,14 +67,14 @@ This roadmap outlines the development phases for the Prophetize prediction marke
 **Goal**: Implement core prediction‑market functionality beyond the profile page.
 
 ### Scope
-- **Market creation** – allow users to create new prediction markets
+- **Market creation** – allow users to create new prediction markets (admin approval required before public visibility/trading)
 - **Trading interface** – buy/sell shares in markets
 - **Real‑time updates** – live odds, balance, activity via WebSockets
 - **Notifications** – push notifications for market resolution, price alerts
 - **Social features** – following, leaderboard, comments
 
 ### Success Criteria
-- Users can create a market with title, description, resolution date
+- Users can create a market with title, description, resolution date and see pending-approval status
 - Users can trade shares with fake currency
 - Real‑time updates work across tabs
 - Notifications are delivered and actionable

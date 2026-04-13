@@ -150,7 +150,9 @@ This addendum is now canonical for backend integration planning tied to leaderbo
 - **Acceptance Criteria**:
   - Market creation form supports title, description, category, and resolution date.
   - Backend validates required fields and returns 4xx for invalid input.
-  - Created market is queryable from existing market listing/detail endpoints.
+  - Created market enters `pending`/review state and is NOT publicly listed until admin approval.
+  - Admin approval endpoint transitions market to approved/active visibility state.
+  - Only admin-approved markets are queryable from public listing/detail endpoints.
 
 ### ADV-02: Trading Interface
 - **ID**: ADV-02

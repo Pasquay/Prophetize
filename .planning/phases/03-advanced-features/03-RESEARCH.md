@@ -26,7 +26,9 @@ This keeps each plan under context budget and allows earlier user-visible value.
 ### Market Creation
 - Add dedicated create-market contract in route/controller with validation.
 - Reuse category constants and existing market table shape.
-- Return normalized market payload used by existing card/detail components.
+- New user-created markets must enter pending review status.
+- Admin approval step must gate public listing/detail visibility and trading eligibility.
+- Return normalized market payload used by existing card/detail components after approval path constraints.
 
 ### Trading
 - Keep buy/sell logic in transaction controller/service boundary.
@@ -53,6 +55,7 @@ This keeps each plan under context budget and allows earlier user-visible value.
 - Keep auth required for mutation endpoints.
 - Avoid exposing sensitive profile fields in social/leaderboard joins.
 - Add rate limiting candidate for comment and trade endpoints.
+- Enforce role-based approval endpoint for market publication transition.
 
 ## Open Questions (RESOLVED)
 
@@ -83,3 +86,4 @@ This keeps each plan under context budget and allows earlier user-visible value.
 - Feature coupling across client screens can grow quickly; keep contracts explicit.
 - Realtime + notifications introduce operational complexity; ship with fallback polling path.
 - Social endpoints can inflate abuse surface; enforce auth + payload limits from day one.
+- Missing approval gate can leak unreviewed markets into public feeds; treat as blocker risk.
