@@ -8,6 +8,7 @@ import { UI_COLORS } from '@/constants/ui-tokens';
 type Props = {
     balance: number;
     hasNotification?: boolean;
+    onCreatePress?: () => void;
     onNotificationPress?: () => void;
 }
 
@@ -62,7 +63,7 @@ function AnimatedBalance({ value }: { value: number }) {
     );
 }
 
-export default function HomeHeader({ balance, hasNotification = true, onNotificationPress }: Props) {
+export default function HomeHeader({ balance, hasNotification = true, onCreatePress, onNotificationPress }: Props) {
     return (
         <View className="h-auto w-full flex-row items-center gap-2">
             <View className="flex-row items-center gap-3 flex-1 p-2 inline-flex">
@@ -73,6 +74,30 @@ export default function HomeHeader({ balance, hasNotification = true, onNotifica
                 />
                 <AnimatedBalance value={balance} />
             </View>
+
+            <Pressable
+                onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    onCreatePress?.();
+                }}
+                hitSlop={10}
+                accessibilityLabel="Create market"
+                accessibilityRole="button"
+                accessibilityHint="Opens create market form"
+                style={({ pressed }) => ({
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                    opacity: pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.97 : 1 }],
+                    backgroundColor: pressed ? UI_COLORS.accentPressed : UI_COLORS.accent,
+                })}
+                className="rounded-full flex-row items-center gap-1"
+            >
+                <Ionicons name="add-circle-outline" size={16} color={UI_COLORS.surface} />
+                <Text className="font-jetbrain-bold text-[12px]" style={{ color: UI_COLORS.surface }}>
+                    Create
+                </Text>
+            </Pressable>
 
             <Pressable
                 onPress={() => {

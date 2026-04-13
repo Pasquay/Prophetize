@@ -98,6 +98,7 @@ export default function HomeScreen() {
                 >
                     <HomeHeader
                         balance={userData?.balance ?? 0}
+                        onCreatePress={() => router.push({ pathname: '/marketDetails', params: { mode: 'create' } })}
                         onNotificationPress={() => router.push('/notifications')}
                     />
                  </View>   
