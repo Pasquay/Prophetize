@@ -145,3 +145,16 @@ export const getMyLeaderboardPosition = async (period: LeaderboardPeriod) => {
     return get(`/leaderboard/me?${params.toString()}`);
 };
 
+export type CreateMarketPayload = {
+    title: string;
+    description: string;
+    category: string;
+    endDate: string;
+    options: string[];
+    imageUrl?: string;
+};
+
+export const createMarket = async (payload: CreateMarketPayload) => {
+    return post('/markets/create', payload);
+};
+
