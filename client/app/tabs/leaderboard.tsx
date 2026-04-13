@@ -9,6 +9,7 @@ import LeaderboardSegment, { LeaderboardPeriod } from '@/components/leaderboard/
 import LeaderboardSkeletonList from '@/components/leaderboard/leaderboard-skeleton-list';
 import { ExploreTheme } from '@/constants/explore-theme';
 import { useAuth } from '@/context/AuthContext';
+import { subscribeRealtime } from '@/context/realtimeClient';
 import {
     LeaderboardApiEntry,
     MyLeaderboardPositionResponse,
@@ -136,6 +137,20 @@ export default function LeaderboardScreen() {
     useEffect(() => {
         loadInitialPage(period);
     }, [period, loadInitialPage]);
+
+    useEffect(() => {
+        const unsubscribe = subscribeRealtime({
+            channels: ['leaderboard.updated'],
+            onEvent: () => {
+                void loadInitialPage(period);
+            },
+            onReconnect: () => {
+                void loadInitialPage(period);
+            },
+        });
+
+        return unsubscribe;
+    }, [loadInitialPage, period]);
 
     return (
         <View className="flex-1" style={{ backgroundColor: ExploreTheme.pageBg }}>
