@@ -10,6 +10,7 @@ import MarketDetailBalance from "@/components/market/market-detail-balance";
 import MarketDetailSummary from "@/components/market/market-detail-summary";
 import { ExploreTheme } from "../constants/explore-theme";
 import { useUserStore } from '@/context/useUserStore';
+import { UI_COLORS } from '@/constants/ui-tokens';
 
 const CREATE_MARKET_CATEGORIES = ['SPORTS', 'CRYPTO', 'POLITICS', 'CULTURE', 'TECHNOLOGY'];
 type CreateFieldKey = 'title' | 'description' | 'category' | 'resolutionDate' | 'options';
@@ -26,8 +27,10 @@ export default function DetailsScreen() {
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const [tradeLoading, setTradeLoading] = useState(false);
   const [tradeMessage, setTradeMessage] = useState<string | null>(null);
+  const [tradeError, setTradeError] = useState<string | null>(null);
   const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
   const [shareInput, setShareInput] = useState('1');
+  const [tradeBalanceSnapshot, setTradeBalanceSnapshot] = useState<number | null>(null);
   const [userPosition, setUserPosition] = useState<number | null>(null);
   const [comments, setComments] = useState<api.CommentItem[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
@@ -204,32 +207,44 @@ export default function DetailsScreen() {
 
     setTradeLoading(true);
     setTradeMessage(null);
+    setTradeError(null);
 
-    const tradeFn = side === 'buy' ? api.buyShares : api.sellShares;
-    const { ok, data } = await tradeFn({
-      optionId: selectedOptionId,
-      shares,
-    });
+    try {
+      const tradeFn = side === 'buy' ? api.buyShares : api.sellShares;
+      const { ok, data } = await tradeFn({
+        optionId: selectedOptionId,
+        shares,
+      });
 
-    setTradeLoading(false);
+      if (!ok) {
+        const message = data?.error ?? 'Unable to execute trade right now.';
+        setTradeError(message);
+        Alert.alert('Trade failed', message);
+        return;
+      }
 
-    if (!ok) {
-      Alert.alert('Trade failed', data?.error ?? 'Unable to execute trade right now.');
-      return;
+      if (typeof data?.snapshot?.balance === 'number') {
+        setBalanceFromSnapshot(data.snapshot.balance);
+        setTradeBalanceSnapshot(data.snapshot.balance);
+      }
+
+      const sharesOwned = Number(data?.snapshot?.position?.sharesOwned);
+      if (Number.isFinite(sharesOwned)) {
+        setUserPosition(sharesOwned);
+      }
+
+      setTradeMessage(data?.message ?? 'Trade submitted successfully.');
+      await fetchUserData();
+      setTradeBalanceSnapshot(null);
+    } catch {
+      setTradeError('Trade completed, but account refresh is delayed. Pull to refresh and try again.');
+    } finally {
+      setTradeLoading(false);
     }
-
-    if (typeof data?.snapshot?.balance === 'number') {
-      setBalanceFromSnapshot(data.snapshot.balance);
-    }
-
-    const sharesOwned = Number(data?.snapshot?.position?.sharesOwned);
-    if (Number.isFinite(sharesOwned)) {
-      setUserPosition(sharesOwned);
-    }
-
-    setTradeMessage(data?.message ?? 'Trade submitted successfully.');
-    await fetchUserData();
   }, [prediction, tradeLoading, selectedOptionId, shareInput, setBalanceFromSnapshot, fetchUserData]);
+
+  const parsedShares = Number(shareInput);
+  const hasValidShares = Number.isFinite(parsedShares) && parsedShares > 0;
 
   const handlePostComment = useCallback(async () => {
     if (!marketID || Number.isNaN(marketID)) {
@@ -415,7 +430,7 @@ export default function DetailsScreen() {
         <LoadingScreen />
       ) : prediction ? (
       <View>
-        <MarketDetailBalance />
+        <MarketDetailBalance balanceOverride={tradeBalanceSnapshot} />
         <MarketDetailSummary prediction={prediction} userPosition={userPosition} />
         <View
           className="mx-4 mt-3 rounded-2xl p-4"
@@ -438,17 +453,23 @@ export default function DetailsScreen() {
               return (
                 <TouchableOpacity
                   key={option.id}
-                  onPress={() => setSelectedOptionId(option.id)}
+                  disabled={tradeLoading}
+                  onPress={() => {
+                    setSelectedOptionId(option.id);
+                    setTradeMessage(null);
+                    setTradeError(null);
+                  }}
                   className="rounded-full px-3 py-2"
                   style={{
                     borderWidth: 1,
                     borderColor: ExploreTheme.headerBorder,
-                    backgroundColor: isSelected ? ExploreTheme.titleText : '#FFFFFF',
+                    backgroundColor: isSelected ? ExploreTheme.titleText : UI_COLORS.surface,
+                    opacity: tradeLoading ? 0.6 : 1,
                   }}
                 >
                   <Text
                     className="font-jetbrain text-[12px]"
-                    style={{ color: isSelected ? '#FFFFFF' : ExploreTheme.titleText }}
+                    style={{ color: isSelected ? UI_COLORS.surface : ExploreTheme.titleText }}
                   >
                     {option.name}
                   </Text>
@@ -459,7 +480,12 @@ export default function DetailsScreen() {
 
           <TextInput
             value={shareInput}
-            onChangeText={setShareInput}
+            onChangeText={(value) => {
+              setShareInput(value);
+              setTradeMessage(null);
+              setTradeError(null);
+            }}
+            editable={!tradeLoading}
             keyboardType="decimal-pad"
             placeholder="Shares"
             className="bg-white rounded-xl px-4 py-3 mb-3 font-jetbrain"
@@ -468,23 +494,23 @@ export default function DetailsScreen() {
 
           <View className="flex-row gap-2">
             <TouchableOpacity
-              disabled={tradeLoading}
+              disabled={tradeLoading || !hasValidShares || !selectedOptionId}
               onPress={() => handleTrade('buy')}
               className="flex-1 rounded-xl py-3 items-center"
-              style={{ backgroundColor: tradeLoading ? ExploreTheme.headerBorder : '#0F8A5F' }}
+              style={{ backgroundColor: tradeLoading ? ExploreTheme.headerBorder : UI_COLORS.success }}
             >
-              <Text className="font-grotesk-bold text-[14px]" style={{ color: '#FFFFFF' }}>
+              <Text className="font-grotesk-bold text-[14px]" style={{ color: UI_COLORS.surface }}>
                 {tradeLoading ? 'Processing...' : 'Buy'}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              disabled={tradeLoading}
+              disabled={tradeLoading || !hasValidShares || !selectedOptionId}
               onPress={() => handleTrade('sell')}
               className="flex-1 rounded-xl py-3 items-center"
-              style={{ backgroundColor: tradeLoading ? ExploreTheme.headerBorder : '#CC3A3A' }}
+              style={{ backgroundColor: tradeLoading ? ExploreTheme.headerBorder : UI_COLORS.danger }}
             >
-              <Text className="font-grotesk-bold text-[14px]" style={{ color: '#FFFFFF' }}>
+              <Text className="font-grotesk-bold text-[14px]" style={{ color: UI_COLORS.surface }}>
                 {tradeLoading ? 'Processing...' : 'Sell'}
               </Text>
             </TouchableOpacity>
@@ -493,6 +519,11 @@ export default function DetailsScreen() {
           {tradeMessage ? (
             <Text className="font-jetbrain text-[12px] mt-3" style={{ color: ExploreTheme.secondaryText }}>
               {tradeMessage}
+            </Text>
+          ) : null}
+          {tradeError ? (
+            <Text className="font-jetbrain text-[12px] mt-3" style={{ color: ExploreTheme.searchHint }}>
+              {tradeError}
             </Text>
           ) : null}
         </View>
