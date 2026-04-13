@@ -3,6 +3,8 @@ import backendUrl from '@/constants/backendUrl';
 
 export type RealtimeEventName = 'market.updated' | 'portfolio.updated' | 'leaderboard.updated';
 
+export type RealtimeConnectionState = 'connected' | 'reconnecting' | 'stale' | 'disconnected';
+
 export type MarketUpdatedPayload = {
     marketId: number;
     optionId: number;
@@ -36,17 +38,46 @@ type Subscription = {
     channels: RealtimeEventName[];
     onEvent: <T extends RealtimeEventName>(event: T, payload: RealtimePayloadMap[T]) => void;
     onReconnect?: () => void;
+    onConnectionState?: (state: RealtimeConnectionState) => void;
     lastReconnectAt: number;
 };
 
 const SOCKET_EVENTS: RealtimeEventName[] = ['market.updated', 'portfolio.updated', 'leaderboard.updated'];
 const RECONNECT_RESYNC_COOLDOWN_MS = 3000;
+const STALE_STATE_DELAY_MS = 12000;
 
 let socket: Socket | null = null;
 let nextSubscriptionId = 1;
 let hasConnectedOnce = false;
 let listenersBound = false;
+let staleTimer: ReturnType<typeof setTimeout> | null = null;
+let connectionState: RealtimeConnectionState = 'disconnected';
 const subscriptions = new Map<number, Subscription>();
+
+const clearStaleTimer = () => {
+    if (staleTimer) {
+        clearTimeout(staleTimer);
+        staleTimer = null;
+    }
+};
+
+const notifyConnectionState = (nextState: RealtimeConnectionState) => {
+    if (connectionState === nextState) {
+        return;
+    }
+
+    connectionState = nextState;
+    for (const subscription of subscriptions.values()) {
+        subscription.onConnectionState?.(connectionState);
+    }
+};
+
+const scheduleStaleState = () => {
+    clearStaleTimer();
+    staleTimer = setTimeout(() => {
+        notifyConnectionState('stale');
+    }, STALE_STATE_DELAY_MS);
+};
 
 const notifyEvent = <T extends RealtimeEventName>(event: T, payload: RealtimePayloadMap[T]) => {
     for (const subscription of subscriptions.values()) {
@@ -107,6 +138,8 @@ const ensureSocket = () => {
 
     if (!listenersBound) {
         socket.on('connect', () => {
+            clearStaleTimer();
+            notifyConnectionState('connected');
             emitCurrentSubscriptions();
 
             if (hasConnectedOnce) {
@@ -128,6 +161,21 @@ const ensureSocket = () => {
             notifyEvent('leaderboard.updated', payload);
         });
 
+        socket.on('disconnect', () => {
+            notifyConnectionState('reconnecting');
+            scheduleStaleState();
+        });
+
+        socket.io.on('reconnect_attempt', () => {
+            notifyConnectionState('reconnecting');
+            scheduleStaleState();
+        });
+
+        socket.io.on('reconnect_failed', () => {
+            notifyConnectionState('stale');
+            clearStaleTimer();
+        });
+
         listenersBound = true;
     }
 
@@ -138,6 +186,7 @@ export const subscribeRealtime = (subscription: {
     channels: RealtimeEventName[];
     onEvent: Subscription['onEvent'];
     onReconnect?: () => void;
+    onConnectionState?: Subscription['onConnectionState'];
 }) => {
     const client = ensureSocket();
 
@@ -151,8 +200,11 @@ export const subscribeRealtime = (subscription: {
         channels: normalizedChannels,
         onEvent: subscription.onEvent,
         onReconnect: subscription.onReconnect,
+        onConnectionState: subscription.onConnectionState,
         lastReconnectAt: 0,
     });
+
+    subscription.onConnectionState?.(connectionState);
 
     if (client.connected && normalizedChannels.length > 0) {
         client.emit('subscribe', normalizedChannels);
@@ -167,6 +219,8 @@ export const subscribeRealtime = (subscription: {
         }
 
         if (subscriptions.size === 0 && socket) {
+            clearStaleTimer();
+            notifyConnectionState('disconnected');
             socket.disconnect();
             socket = null;
             listenersBound = false;

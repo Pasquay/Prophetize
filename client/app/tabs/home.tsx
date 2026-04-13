@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Alert, ScrollView, FlatList } from 'react-native';
+import { View, Alert, ScrollView, FlatList, Text } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -15,6 +15,7 @@ import { useUserStore } from '../../context/useUserStore';
 import { PortfolioUpdatedPayload, subscribeRealtime } from '../../context/realtimeClient';
 import categories from "../../constants/categories";
 import { ExploreTheme } from "../../constants/explore-theme";
+import { UI_COLORS } from '@/constants/ui-tokens';
 
 export default function HomeScreen() {
 
@@ -26,6 +27,23 @@ export default function HomeScreen() {
     const [activeCategory, setActiveCategory] = useState("trending"); 
     const [marketsLoading, setMarketsLoading] = useState(false);
     const [noMarket, setNoMarket] = useState(true);
+    const [connectionState, setConnectionState] = useState<'connected' | 'reconnecting' | 'stale' | 'disconnected'>('disconnected');
+
+    const realtimeStatus = useMemo(() => {
+        if (connectionState === 'connected') {
+            return { label: 'Live updates connected', color: UI_COLORS.success };
+        }
+
+        if (connectionState === 'reconnecting') {
+            return { label: 'Reconnecting live updates...', color: UI_COLORS.warning };
+        }
+
+        if (connectionState === 'stale') {
+            return { label: 'Live updates are stale. Retrying...', color: UI_COLORS.danger };
+        }
+
+        return { label: 'Live updates disconnected', color: ExploreTheme.secondaryText };
+    }, [connectionState]);
 
     const canClaimAllowance = useMemo(() => {
         if (!userData) return false;
@@ -74,6 +92,7 @@ export default function HomeScreen() {
                 void getMarketData(activeCategory);
                 void fetchUserData();
             },
+            onConnectionState: setConnectionState,
         });
 
         return unsubscribe;
@@ -101,6 +120,9 @@ export default function HomeScreen() {
                         onCreatePress={() => router.push({ pathname: '/marketDetails', params: { mode: 'create' } })}
                         onNotificationPress={() => router.push('/notifications')}
                     />
+                    <Text className="font-jetbrain text-[11px] mt-2" style={{ color: realtimeStatus.color }}>
+                        {realtimeStatus.label}
+                    </Text>
                  </View>   
             </SafeAreaView>
 
