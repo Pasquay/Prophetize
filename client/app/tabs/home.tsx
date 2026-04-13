@@ -96,7 +96,10 @@ export default function HomeScreen() {
                         paddingVertical: 14,
                     }}
                 >
-                    <HomeHeader balance={userData?.balance ?? 0}/>
+                    <HomeHeader
+                        balance={userData?.balance ?? 0}
+                        onNotificationPress={() => router.push('/notifications')}
+                    />
                  </View>   
             </SafeAreaView>
 

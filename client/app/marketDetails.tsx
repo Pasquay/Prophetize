@@ -28,6 +28,10 @@ export default function DetailsScreen() {
   const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
   const [shareInput, setShareInput] = useState('1');
   const [userPosition, setUserPosition] = useState<number | null>(null);
+  const [comments, setComments] = useState<api.CommentItem[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentInput, setCommentInput] = useState('');
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
 
   const { fetchUserData, setBalanceFromSnapshot } = useUserStore();
 
@@ -71,6 +75,26 @@ export default function DetailsScreen() {
 
     setSelectedOptionId(prediction.options[0].id);
   }, [prediction]);
+
+  const loadComments = useCallback(async () => {
+    if (!marketID || Number.isNaN(marketID)) {
+      setComments([]);
+      return;
+    }
+
+    setCommentsLoading(true);
+    const { ok, data } = await api.getComments(marketID);
+    if (ok) {
+      setComments(Array.isArray(data?.data) ? data.data : []);
+    }
+    setCommentsLoading(false);
+  }, [marketID]);
+
+  useEffect(() => {
+    if (!isCreateMode) {
+      void loadComments();
+    }
+  }, [isCreateMode, loadComments]);
 
   const handleCreateMarket = useCallback(async () => {
     const normalizedCategory = category.trim().toUpperCase();
@@ -172,6 +196,29 @@ export default function DetailsScreen() {
     setTradeMessage(data?.message ?? 'Trade submitted successfully.');
     await fetchUserData();
   }, [prediction, tradeLoading, selectedOptionId, shareInput, setBalanceFromSnapshot, fetchUserData]);
+
+  const handlePostComment = useCallback(async () => {
+    if (!marketID || Number.isNaN(marketID)) {
+      return;
+    }
+
+    if (!commentInput.trim()) {
+      Alert.alert('Comment required', 'Write a short comment before posting.');
+      return;
+    }
+
+    setCommentSubmitting(true);
+    const { ok, data } = await api.createComment(marketID, commentInput.trim());
+    setCommentSubmitting(false);
+
+    if (!ok) {
+      Alert.alert('Comment failed', data?.error ?? 'Unable to post your comment right now.');
+      return;
+    }
+
+    setCommentInput('');
+    await loadComments();
+  }, [commentInput, loadComments, marketID]);
 
   if (isCreateMode) {
     return (
@@ -366,6 +413,59 @@ export default function DetailsScreen() {
               {tradeMessage}
             </Text>
           ) : null}
+        </View>
+
+        <View
+          className="mx-4 mt-3 rounded-2xl p-4"
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderWidth: 1,
+            borderColor: ExploreTheme.headerBorder,
+          }}
+        >
+          <Text className="font-grotesk-bold text-[16px] mb-2" style={{ color: ExploreTheme.titleText }}>
+            Comments
+          </Text>
+          <TextInput
+            value={commentInput}
+            onChangeText={setCommentInput}
+            placeholder="Share your take..."
+            multiline
+            maxLength={280}
+            className="bg-white rounded-xl px-4 py-3 mb-3 font-jetbrain"
+            style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, color: ExploreTheme.titleText, minHeight: 84 }}
+          />
+          <TouchableOpacity
+            disabled={commentSubmitting}
+            onPress={handlePostComment}
+            className="rounded-xl py-3 items-center mb-3"
+            style={{ backgroundColor: commentSubmitting ? ExploreTheme.headerBorder : ExploreTheme.titleText }}
+          >
+            <Text className="font-grotesk-bold text-[14px]" style={{ color: '#FFFFFF' }}>
+              {commentSubmitting ? 'Posting...' : 'Post Comment'}
+            </Text>
+          </TouchableOpacity>
+
+          {commentsLoading ? (
+            <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
+              Loading comments...
+            </Text>
+          ) : comments.length === 0 ? (
+            <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
+              No comments yet.
+            </Text>
+          ) : (
+            comments.map((item) => (
+              <View key={item.id} className="mb-3 pb-3" style={{ borderBottomWidth: 1, borderBottomColor: ExploreTheme.headerBorder }}>
+                <Text className="font-jetbrain text-[11px] mb-1" style={{ color: ExploreTheme.secondaryText }}>
+                  {item.user_id}
+                </Text>
+                <Text className="font-jetbrain text-[13px]" style={{ color: ExploreTheme.titleText }}>
+                  {item.content}
+                </Text>
+              </View>
+            ))
+          )}
         </View>
       </View>
       ) : null}

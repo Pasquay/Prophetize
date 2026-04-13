@@ -192,3 +192,97 @@ export const sellShares = async (payload: TradePayload) => {
     return post('/transaction/sell', payload);
 };
 
+export type NotificationType = 'market' | 'leaderboard' | 'profile';
+
+export type NotificationPayload = {
+    type: NotificationType;
+    recipient_user_id: string;
+    title: string;
+    body: string;
+    target_path: string;
+    target_signature: string;
+};
+
+export type NotificationRouteTarget =
+    | { pathname: '/marketDetails'; params: { id: string } }
+    | { pathname: '/tabs/leaderboard' }
+    | { pathname: '/tabs/profile'; params?: { userId: string } };
+
+export type NotificationPlatform = 'ios' | 'android' | 'web';
+
+export const registerNotificationChannel = async (
+    deviceToken: string,
+    platform: NotificationPlatform
+) => {
+    return post('/notifications/register', {
+        deviceToken,
+        platform,
+    });
+};
+
+type TriggerNotificationPayload = {
+    type: NotificationType;
+    recipientUserId: string;
+    title: string;
+    body: string;
+    marketId?: number;
+    profileUserId?: string;
+};
+
+export const triggerNotification = async (payload: TriggerNotificationPayload) => {
+    return post('/notifications/trigger', payload);
+};
+
+export type FollowAction = 'follow' | 'unfollow';
+
+export const followUser = async (targetUserId: string, action: FollowAction = 'follow') => {
+    return post('/social/follow', { targetUserId, action });
+};
+
+export type CommentItem = {
+    id: string;
+    market_id: number;
+    user_id: string;
+    content: string;
+    created_at: string;
+};
+
+export const getComments = async (marketId: number) => {
+    return get(`/social/comments/${marketId}`);
+};
+
+export const createComment = async (marketId: number, content: string) => {
+    return post('/social/comments', { marketId, content });
+};
+
+const parseTargetPath = (path: string) => {
+    const [pathname, queryString = ''] = path.split('?');
+    const query = new URLSearchParams(queryString);
+    return { pathname, query };
+};
+
+export const resolveNotificationTarget = (
+    payload: Pick<NotificationPayload, 'type' | 'target_path'>
+): NotificationRouteTarget | null => {
+    const { pathname, query } = parseTargetPath(payload.target_path);
+
+    if (payload.type === 'market' && pathname === '/marketDetails') {
+        const id = query.get('id');
+        if (!id) return null;
+        return { pathname: '/marketDetails', params: { id } };
+    }
+
+    if (payload.type === 'leaderboard' && pathname === '/tabs/leaderboard') {
+        return { pathname: '/tabs/leaderboard' };
+    }
+
+    if (payload.type === 'profile' && pathname === '/tabs/profile') {
+        const userId = query.get('userId') || undefined;
+        return userId
+            ? { pathname: '/tabs/profile', params: { userId } }
+            : { pathname: '/tabs/profile' };
+    }
+
+    return null;
+};
+
