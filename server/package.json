@@ -3,8 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "npx nodemon src/index.ts"
+    "test": "vitest run",
+    "dev": "npx nodemon src/index.ts",
+    "test:contracts": "vitest run tests/contracts",
+    "typecheck": "tsc --noEmit",
+    "lint": "npm run typecheck"
   },
   "keywords": [],
   "author": "",
@@ -20,8 +23,11 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^25.3.3",
+    "@types/supertest": "^6.0.3",
     "nodemon": "^1.0.2",
+    "supertest": "^7.1.4",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   }
 }

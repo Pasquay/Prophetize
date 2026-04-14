@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { Text, View, Alert, ScrollView, FlatList } from 'react-native';
+import { View, Alert, ScrollView, FlatList, Text, TouchableOpacity } from 'react-native';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import NoMarkets from "@/components/home/no-markets";
@@ -12,19 +13,38 @@ import HomeHeader from "@/components/home/home-header";
 import ClaimAllowance from "@/components/home/claim-allowance";
 import HomeListSkeleton from '@/components/home/home-list-skeleton';
 import { useUserStore } from '../../context/useUserStore';
+import { PortfolioUpdatedPayload, subscribeRealtime } from '../../context/realtimeClient';
 import categories from "../../constants/categories";
 import { ExploreTheme } from "../../constants/explore-theme";
+import { UI_COLORS } from '@/constants/ui-tokens';
 
 export default function HomeScreen() {
 
     const router = useRouter();
     const tabBarHeight = useBottomTabBarHeight();
-    const { userData, fetchUserData } = useUserStore();
+    const { userData, fetchUserData, setBalanceFromSnapshot } = useUserStore();
 
     const [predictions, setPrediction] = useState<Prediction[]>([]);
     const [activeCategory, setActiveCategory] = useState("trending"); 
     const [marketsLoading, setMarketsLoading] = useState(false);
     const [noMarket, setNoMarket] = useState(true);
+    const [connectionState, setConnectionState] = useState<'connected' | 'reconnecting' | 'stale' | 'disconnected'>('disconnected');
+
+    const realtimeStatus = useMemo(() => {
+        if (connectionState === 'connected') {
+            return { label: 'Live updates connected', color: UI_COLORS.success };
+        }
+
+        if (connectionState === 'reconnecting') {
+            return { label: 'Reconnecting live updates...', color: UI_COLORS.warning };
+        }
+
+        if (connectionState === 'stale') {
+            return { label: 'Live updates are stale. Retrying...', color: UI_COLORS.danger };
+        }
+
+        return { label: 'Live updates disconnected', color: ExploreTheme.secondaryText };
+    }, [connectionState]);
 
     const canClaimAllowance = useMemo(() => {
         if (!userData) return false;
@@ -35,27 +55,63 @@ export default function HomeScreen() {
                Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate());
     }, [userData]);
 
-    useEffect(() => {
-        const getMarketData = async (endpoint:string) => {
-            setMarketsLoading(true);
-            const {ok, data} = await api.get("/markets/"+endpoint);
-            if(ok){
-                const normalizedPredictions = Array.isArray(data)
-                    ? data.filter(i => i && i.id)
-                    : (Array.isArray(data.data) ? data.data.filter((i: any) => i && i.id) : []);
+    const getMarketData = useCallback(async (endpoint:string) => {
+        setMarketsLoading(true);
+        const {ok, data} = await api.get("/markets/"+endpoint);
+        if(ok){
+            const normalizedPredictions = Array.isArray(data)
+                ? data.filter(i => i && i.id)
+                : (Array.isArray(data.data) ? data.data.filter((i: any) => i && i.id) : []);
 
-                setPrediction(normalizedPredictions);
-                setNoMarket(normalizedPredictions.length === 0);
-            } else {
-                Alert.alert('Something wrong happened when fetching for predictions!');
-            }
-            setMarketsLoading(false);
-        };
-        getMarketData(activeCategory); 
-    }, [activeCategory]);
+            setPrediction(normalizedPredictions);
+            setNoMarket(normalizedPredictions.length === 0);
+        } else {
+            Alert.alert('Something wrong happened when fetching for predictions!');
+        }
+        setMarketsLoading(false);
+    }, []);
+
+    useEffect(() => {
+        getMarketData(activeCategory);
+    }, [activeCategory, getMarketData]);
+
+    useFocusEffect(
+        useCallback(() => {
+            void getMarketData(activeCategory);
+        }, [activeCategory, getMarketData])
+    );
+
+    useEffect(() => {
+        const unsubscribe = subscribeRealtime({
+            channels: ['market.updated', 'portfolio.updated'],
+            onEvent: (event, payload) => {
+                if (event === 'market.updated') {
+                    void getMarketData(activeCategory);
+                    return;
+                }
+
+                const portfolioPayload = payload as PortfolioUpdatedPayload;
+                if (event === 'portfolio.updated' && portfolioPayload.userId === String(userData?.id ?? '')) {
+                    setBalanceFromSnapshot(portfolioPayload.balance);
+                    void getMarketData(activeCategory);
+                }
+            },
+            onReconnect: () => {
+                void getMarketData(activeCategory);
+                void fetchUserData();
+            },
+            onConnectionState: setConnectionState,
+        });
+
+        return unsubscribe;
+    }, [activeCategory, fetchUserData, getMarketData, setBalanceFromSnapshot, userData?.id]);
 
     const goMarketDetails = useCallback((id:number) => {
         router.push({ pathname: '/marketDetails', params: {id} });
+    }, [router]);
+
+    const openCreateMarket = useCallback(() => {
+        router.push({ pathname: '/marketDetails', params: { mode: 'create' } });
     }, [router]);
 
 
@@ -71,7 +127,14 @@ export default function HomeScreen() {
                         paddingVertical: 14,
                     }}
                 >
-                    <HomeHeader balance={userData?.balance ?? 0}/>
+                    <HomeHeader
+                        balance={userData?.balance ?? 0}
+                        onCreatePress={openCreateMarket}
+                        onNotificationPress={() => router.push('/notifications')}
+                    />
+                    <Text className="font-jetbrain text-[11px] mt-2" style={{ color: realtimeStatus.color }}>
+                        {realtimeStatus.label}
+                    </Text>
                  </View>   
             </SafeAreaView>
 
@@ -97,7 +160,21 @@ export default function HomeScreen() {
                     <HomeListSkeleton count={5} />
                 ) : (
                     noMarket ? (
-                        <NoMarkets/>
+                        <View className="gap-3">
+                            <NoMarkets/>
+                            <TouchableOpacity
+                                onPress={openCreateMarket}
+                                accessibilityRole="button"
+                                accessibilityLabel="Create market"
+                                accessibilityHint="Opens create market form"
+                                className="rounded-full self-center px-4 py-2"
+                                style={{ backgroundColor: UI_COLORS.surfaceSoft, borderWidth: 1, borderColor: UI_COLORS.borderSoft }}
+                            >
+                                <Text className="font-jetbrain-bold text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
+                                    Propose first market
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     ) : (
                         <FlatList
                             data={predictions}
@@ -115,6 +192,7 @@ export default function HomeScreen() {
                     )
                 )}
             </View>
+
         </View>
     );
 }

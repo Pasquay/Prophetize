@@ -148,6 +148,7 @@ export default function ExploreScreen() {
                     <SearchHeader
                         balance={userData?.balance ?? 0}
                         onSearchSubmit={goSearchResults}
+                        onNotificationPress={() => router.push('/notifications')}
                     />
                     {searchHint && (
                         <View

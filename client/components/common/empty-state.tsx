@@ -4,7 +4,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { UI_COLORS } from '@/constants/ui-tokens';
 
 type EmptyStateProps = {
-  icon?: string;  // Icon name from MaterialIcons
+  icon?: keyof typeof MaterialIcons.glyphMap;  // Icon name from MaterialIcons
   title: string;
   description?: string;
   actionLabel?: string;

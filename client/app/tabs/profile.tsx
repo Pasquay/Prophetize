@@ -1,17 +1,20 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl, Alert, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
 
 import { useAuth } from '../../context/AuthContext';
 import { useUserStore } from '../../context/useUserStore';
-import * as api from '../../utils/api';
+
 import { UI_COLORS } from '@/constants/ui-tokens';
+import { ExploreTheme } from '@/constants/explore-theme';
+import * as api from '@/utils/api';
 
 import { ProfileAvatar } from '@/components/profile/profile-avatar';
-import { BalanceCard } from '@/components/profile/balance-card';
+
 import { StatCard } from '@/components/profile/stat-card';
 import { ActivityItem } from '@/components/profile/activity-item';
 import { SettingsItem } from '@/components/profile/settings-item';
@@ -26,7 +29,7 @@ type UserStats = {
 
 type Activity = {
   id: string;
-  icon: string;
+  icon: keyof typeof MaterialIcons.glyphMap;
   title: string;
   result: 'won' | 'lost' | 'pending';
   amount: string;
@@ -36,13 +39,32 @@ type Activity = {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { logout, isLoading: authLoading, user } = useAuth();
+  const { userId: routeUserId, initialFollowing } = useLocalSearchParams<{ userId?: string; initialFollowing?: string }>();
+  const { logout, user } = useAuth();
   const { userData, fetchUserData } = useUserStore();
+  const tabBarHeight = useBottomTabBarHeight();
 
   const [stats, setStats] = useState<UserStats | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(initialFollowing === '1');
+  const [followLoading, setFollowLoading] = useState(false);
+  const [followErrorMessage, setFollowErrorMessage] = useState<string | null>(null);
+
+  const viewedUserId = typeof routeUserId === 'string' ? routeUserId.trim() : '';
+  const isOwnProfile = !viewedUserId || viewedUserId === String(user?.id ?? '');
+
+  useEffect(() => {
+    if (isOwnProfile) {
+      setIsFollowing(false);
+      setFollowErrorMessage(null);
+      return;
+    }
+
+    setIsFollowing(initialFollowing === '1');
+    setFollowErrorMessage(null);
+  }, [initialFollowing, isOwnProfile, viewedUserId]);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -72,7 +94,7 @@ export default function ProfileScreen() {
       setActivities([
         {
           id: '1',
-          icon: 'currency-bitcoin',
+          icon: 'attach-money',
           title: 'Bitcoin > $100k by Q4',
           result: 'won',
           amount: '+500.00',
@@ -81,7 +103,7 @@ export default function ProfileScreen() {
         },
         {
           id: '2',
-          icon: 'rocket-launch',
+          icon: 'computer',
           title: 'SpaceX Launch Success',
           result: 'lost',
           amount: '-200.00',
@@ -90,7 +112,7 @@ export default function ProfileScreen() {
         },
         {
           id: '3',
-          icon: 'sports-soccer',
+          icon: 'sports-basketball',
           title: 'Miami vs Kansas City',
           result: 'won',
           amount: '+120.50',
@@ -122,6 +144,33 @@ export default function ProfileScreen() {
     await fetchProfileData();
     setRefreshing(false);
   }, [fetchProfileData]);
+
+  const handleFollowToggle = useCallback(async () => {
+    if (isOwnProfile || !viewedUserId || followLoading) {
+      return;
+    }
+
+    const previous = isFollowing;
+    const action: api.FollowAction = previous ? 'unfollow' : 'follow';
+    setIsFollowing(!previous);
+    setFollowErrorMessage(null);
+    setFollowLoading(true);
+
+    const { ok, data } = await api.followUser(viewedUserId, action);
+    setFollowLoading(false);
+
+    if (!ok) {
+      setIsFollowing(previous);
+      const message = typeof data?.error === 'string' && data.error.trim()
+        ? data.error.trim()
+        : 'Unable to update follow status.';
+      setFollowErrorMessage(message);
+      Alert.alert('Follow action failed', message);
+      return;
+    }
+
+    setIsFollowing(Boolean(data?.relationship?.following));
+  }, [followLoading, isFollowing, isOwnProfile, viewedUserId]);
 
   const handleLogout = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -166,7 +215,34 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1" style={{ backgroundColor: UI_COLORS.pageBg }}>
+    <View className="flex-1" style={{ backgroundColor: UI_COLORS.pageBg }}>
+      {/* White header with border */}
+      <SafeAreaView edges={['top']} className="bg-white">
+        <View
+          className="px-5 bg-white"
+          style={{
+            borderBottomWidth: 1,
+            borderBottomColor: ExploreTheme.headerBorder,
+            paddingVertical: 14,
+          }}
+        >
+          <View className="flex-row items-center justify-between">
+            <Text className="text-xl font-grotesk-bold" style={{ color: UI_COLORS.textPrimary }}>
+              Profile
+            </Text>
+            <Pressable
+              onPress={handleEditProfile}
+              hitSlop={10}
+              accessibilityLabel="Edit profile"
+              accessibilityRole="button"
+              className="px-3 py-2"
+            >
+              <MaterialIcons name="edit" size={20} color={UI_COLORS.link} />
+            </Pressable>
+          </View>
+        </View>
+      </SafeAreaView>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -176,31 +252,15 @@ export default function ProfileScreen() {
             tintColor={UI_COLORS.accent}
           />
         }
+        contentContainerStyle={{ paddingBottom: tabBarHeight + 16 }}
       >
-        {/* Header */}
-        <View className="flex-row items-center justify-between px-5 py-3">
-          <Text className="text-xl font-grotesk-bold" style={{ color: UI_COLORS.textPrimary }}>
-            Profile
-          </Text>
-          <Pressable
-            onPress={handleEditProfile}
-            hitSlop={10}
-            accessibilityLabel="Edit profile"
-            accessibilityRole="button"
-            className="px-3 py-1.5"
-          >
-            <Text className="text-sm font-inter" style={{ color: UI_COLORS.link }}>
-              Edit
-            </Text>
-          </Pressable>
-        </View>
 
         {/* Avatar Section - Compact */}
-        <View className="items-center py-4 px-5">
+        <View className="items-center py-6 px-5">
           <ProfileAvatar
             imageUrl={user?.avatar_url}
             username={user?.username || 'User'}
-            size="sm"
+            size="md"
             editable
             onEditPress={handleEditProfile}
           />
@@ -211,14 +271,53 @@ export default function ProfileScreen() {
             {user?.username || 'User'}
           </Text>
           {user?.created_at && (
-            <Text className="text-xs font-inter" style={{ color: UI_COLORS.textSecondary }}>
+            <Text className="text-xs font-inter mb-3" style={{ color: UI_COLORS.textSecondary }}>
               Joined {formatDate(user.created_at)}
             </Text>
           )}
+          
+          {/* Net Worth Pill */}
+          <View
+            className="mt-3 px-4 py-1.5 rounded-full"
+            style={{
+              backgroundColor: UI_COLORS.accentSoft,
+              borderWidth: 1,
+              borderColor: UI_COLORS.accentBorder,
+            }}
+          >
+            <Text className="text-sm font-jetbrain-bold" style={{ color: UI_COLORS.accent }}>
+              Net Worth: ${userData?.balance?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}
+            </Text>
+          </View>
+
+          {!isOwnProfile ? (
+            <View className="mt-4 items-center">
+              <Pressable
+                onPress={() => {
+                  void handleFollowToggle();
+                }}
+                disabled={followLoading}
+                className="px-4 py-2 rounded-full"
+                style={{
+                  backgroundColor: isFollowing ? UI_COLORS.textMuted : UI_COLORS.success,
+                  opacity: followLoading ? 0.7 : 1,
+                }}
+              >
+                <Text className="font-jetbrain-bold text-[12px]" style={{ color: UI_COLORS.surface }}>
+                  {followLoading ? 'Updating...' : isFollowing ? 'Following' : 'Follow'}
+                </Text>
+              </Pressable>
+              {followErrorMessage ? (
+                <Text className="font-jetbrain text-[11px] mt-2" style={{ color: ExploreTheme.searchHint }}>
+                  {followErrorMessage}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
         </View>
 
         {/* Stats Grid - THE HERO - placed right after avatar */}
-        <View className="flex-row gap-3 px-5 mb-4">
+        <View className="flex-row gap-3 px-5 mb-6">
           <StatCard
             label="Win Rate"
             value={`${stats?.winRate ?? 0}%`}
@@ -232,18 +331,12 @@ export default function ProfileScreen() {
           />
         </View>
 
-        {/* Balance Card - Compact, secondary */}
-        <View className="px-5 mb-6">
-          <BalanceCard balance={userData?.balance ?? 0} />
-        </View>
+
 
         {/* Recent Activity */}
         <View className="px-5 mb-6">
-          <View className="flex-row items-center justify-between mb-2">
-            <Text
-              className="text-xs font-inter uppercase tracking-wide"
-              style={{ color: UI_COLORS.textMuted, letterSpacing: 0.5 }}
-            >
+          <View className="flex-row items-center justify-between mb-3">
+            <Text className="font-grotesk-bold text-[18px] flex-1" style={{ color: ExploreTheme.titleText }}>
               Recent Activity
             </Text>
             <Pressable
@@ -251,10 +344,12 @@ export default function ProfileScreen() {
               hitSlop={10}
               accessibilityLabel="View all activity"
               accessibilityRole="button"
+              className="flex-row items-center gap-1"
             >
-              <Text className="text-sm font-inter" style={{ color: UI_COLORS.link }}>
+              <Text className="font-jetbrain text-[13px]" style={{ color: ExploreTheme.linkText }}>
                 View All
               </Text>
+              <MaterialIcons name="arrow-forward-ios" size={12} color={ExploreTheme.linkText} />
             </Pressable>
           </View>
 
@@ -293,10 +388,7 @@ export default function ProfileScreen() {
 
         {/* Settings Menu */}
         <View className="px-5 mb-6">
-          <Text
-            className="text-xs font-inter uppercase tracking-wide mb-2"
-            style={{ color: UI_COLORS.textMuted, letterSpacing: 0.5 }}
-          >
+          <Text className="font-grotesk-bold text-[18px] mb-3" style={{ color: ExploreTheme.titleText }}>
             Settings
           </Text>
 
@@ -339,6 +431,6 @@ export default function ProfileScreen() {
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

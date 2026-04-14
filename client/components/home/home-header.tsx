@@ -8,6 +8,7 @@ import { UI_COLORS } from '@/constants/ui-tokens';
 type Props = {
     balance: number;
     hasNotification?: boolean;
+    onCreatePress?: () => void;
     onNotificationPress?: () => void;
 }
 
@@ -62,7 +63,7 @@ function AnimatedBalance({ value }: { value: number }) {
     );
 }
 
-export default function HomeHeader({ balance, hasNotification = true, onNotificationPress }: Props) {
+export default function HomeHeader({ balance, hasNotification = true, onCreatePress, onNotificationPress }: Props) {
     return (
         <View className="h-auto w-full flex-row items-center gap-2">
             <View className="flex-row items-center gap-3 flex-1 p-2 inline-flex">
@@ -74,41 +75,74 @@ export default function HomeHeader({ balance, hasNotification = true, onNotifica
                 <AnimatedBalance value={balance} />
             </View>
 
-            <Pressable
-                onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    onNotificationPress?.();
-                }}
-                hitSlop={10}
-                accessibilityLabel="Notifications"
-                accessibilityRole="button"
-                accessibilityHint="Opens notifications"
-                style={({ pressed }) => ({
-                    padding: 12,
-                    opacity: pressed ? 0.85 : 1,
-                    transform: [{ scale: pressed ? 0.92 : 1 }],
-                })}
-                className="rounded-full"
-            >
-                <View>
-                    <Ionicons name="notifications-outline" size={26} color={ExploreTheme.titleText} />
-                    {hasNotification && (
-                        <View
-                            style={{
-                                position: 'absolute',
-                                top: 0,
-                                right: 0,
-                                width: 9,
-                                height: 9,
-                                borderRadius: 5,
-                                backgroundColor: UI_COLORS.accent,
-                                borderWidth: 1.5,
-                                borderColor: UI_COLORS.surface,
-                            }}
-                        />
-                    )}
-                </View>
-            </Pressable>
+            <View className="flex-row items-center gap-2">
+                <Pressable
+                    onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        onCreatePress?.();
+                    }}
+                    hitSlop={10}
+                    accessibilityLabel="Create market"
+                    accessibilityRole="button"
+                    accessibilityHint="Opens create market form (secondary action)"
+                    style={({ pressed }) => ({
+                        width: 40,
+                        height: 40,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: pressed ? 0.9 : 1,
+                        transform: [{ scale: pressed ? 0.96 : 1 }],
+                        backgroundColor: pressed ? UI_COLORS.surfaceMuted : UI_COLORS.surfaceSoft,
+                        borderWidth: 1,
+                        borderColor: UI_COLORS.borderSoft,
+                    })}
+                    className="rounded-full"
+                >
+                    <Ionicons name="add" size={18} color={ExploreTheme.titleText} />
+                </Pressable>
+
+                <Pressable
+                    onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        onNotificationPress?.();
+                    }}
+                    hitSlop={10}
+                    accessibilityLabel="Notifications"
+                    accessibilityRole="button"
+                    accessibilityHint="Opens notifications"
+                    style={({ pressed }) => ({
+                        width: 40,
+                        height: 40,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: pressed ? 0.9 : 1,
+                        transform: [{ scale: pressed ? 0.96 : 1 }],
+                        backgroundColor: pressed ? UI_COLORS.surfaceMuted : UI_COLORS.surfaceSoft,
+                        borderWidth: 1,
+                        borderColor: UI_COLORS.borderSoft,
+                    })}
+                    className="rounded-full"
+                >
+                    <View>
+                        <Ionicons name="notifications-outline" size={20} color={ExploreTheme.titleText} />
+                        {hasNotification && (
+                            <View
+                                style={{
+                                    position: 'absolute',
+                                    top: 1,
+                                    right: 1,
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: 4,
+                                    backgroundColor: UI_COLORS.accent,
+                                    borderWidth: 1,
+                                    borderColor: UI_COLORS.surface,
+                                }}
+                            />
+                        )}
+                    </View>
+                </Pressable>
+            </View>
         </View>
     );
 }

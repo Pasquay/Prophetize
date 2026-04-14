@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import { UI_COLORS } from '@/constants/ui-tokens';
+import { UI_COLORS, UI_SHADOWS } from '@/constants/ui-tokens';
 
 type StatCardProps = {
   label: string;
@@ -32,6 +32,7 @@ export function StatCard({
         borderRadius: 12,
         borderWidth: 1,
         borderColor: UI_COLORS.border,
+        ...UI_SHADOWS.soft,
       }}
     >
       {/* Label */}

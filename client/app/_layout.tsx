@@ -5,9 +5,11 @@ import { InterTight_400Regular, InterTight_700Bold } from '@expo-google-fonts/in
 import { JetBrainsMono_400Regular, JetBrainsMono_700Bold } from '@expo-google-fonts/jetbrains-mono';
 import { usePathname, useRootNavigationState, useRouter, Stack } from 'expo-router';
 import React, { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import LoadingScreen from '@/components/common/loading-screen';
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
+import * as api from '@/utils/api';
 
 export default function Layout() {
     return (
@@ -40,6 +42,21 @@ function RootLayout() {
     }
   }, [token, isLoading, pathname, router, rootNavState?.key]);
 
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+
+    const platform: api.NotificationPlatform = Platform.OS === 'ios'
+      ? 'ios'
+      : Platform.OS === 'android'
+      ? 'android'
+      : 'web';
+
+    const channelToken = `local-${platform}-${token.slice(0, 12)}`;
+    void api.registerNotificationChannel(channelToken, platform);
+  }, [token]);
+
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_400Regular,
     SpaceGrotesk_700Bold,
@@ -61,6 +78,7 @@ function RootLayout() {
       <Stack.Screen name="marketDetails" options={{ title: 'marketDetails', headerShown: false }}/>
       <Stack.Screen name="explore-details" options={{ title: 'Explore', headerShown: false, presentation: 'modal' }}/>
       <Stack.Screen name="categories" options={{ title: 'Categories', headerShown: false }}/>
+      <Stack.Screen name="notifications" options={{ title: 'Notifications', headerShown: false }}/>
       <Stack.Screen name="tabs" options={{ title: 'tabs', headerShown: false }}/>
     </Stack>
   );

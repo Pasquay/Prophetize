@@ -10,8 +10,12 @@ interface Props {
 }
 
 function formatCountdown(endDate: string): string {
+    if (!endDate) return 'TBD';
+
     const now = new Date();
     const end = new Date(endDate);
+    if (Number.isNaN(end.getTime())) return 'TBD';
+
     const diffMs = end.getTime() - now.getTime();
     if (diffMs <= 0) return 'Ended';
     const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -35,7 +39,6 @@ export default function MarketDetailSummary({ prediction, userPosition = null, u
         const interval = setInterval(() => {
             setCountdown(formatCountdown(prediction.endDate));
         }, 60000);
-        console.log(prediction);
         return () => clearInterval(interval);
     }, [prediction.endDate]);
 
@@ -43,7 +46,7 @@ export default function MarketDetailSummary({ prediction, userPosition = null, u
 
     return (
         <View
-            className="mx-4 rounded-2xl overflow-hidden"
+            className="mx-4 rounded-3xl overflow-hidden"
             style={{
                 backgroundColor: UI_COLORS.surface,
                 ...UI_SHADOWS.soft,
@@ -56,7 +59,7 @@ export default function MarketDetailSummary({ prediction, userPosition = null, u
                 {/* VOLUME */}
                 <View className="flex-1 p-4" style={{ borderRightWidth: 1, borderRightColor: UI_COLORS.borderSoft }}>
                     <Text
-                        className="text-[10px] tracking-widest mb-2"
+                        className="text-[10px] tracking-widest mb-1"
                         style={{ color: UI_COLORS.textSecondary, fontFamily: UI_FONTS.bodyBold }}
                     >
                         VOLUME
@@ -75,7 +78,7 @@ export default function MarketDetailSummary({ prediction, userPosition = null, u
                 {/* EXPIRATION */}
                 <View className="flex-1 p-4">
                     <Text
-                        className="text-[10px] tracking-widest mb-2"
+                        className="text-[10px] tracking-widest mb-1"
                         style={{ color: UI_COLORS.textSecondary, fontFamily: UI_FONTS.bodyBold }}
                     >
                         EXPIRATION
@@ -94,7 +97,7 @@ export default function MarketDetailSummary({ prediction, userPosition = null, u
                 {/* YOUR POSITION */}
                 <View className="flex-1 p-4" style={{ borderRightWidth: 1, borderRightColor: UI_COLORS.borderSoft }}>
                     <Text
-                        className="text-[10px] tracking-widest mb-2"
+                        className="text-[10px] tracking-widest mb-1"
                         style={{ color: UI_COLORS.textSecondary, fontFamily: UI_FONTS.bodyBold }}
                     >
                         YOUR POSITION
@@ -113,7 +116,7 @@ export default function MarketDetailSummary({ prediction, userPosition = null, u
                 {/* P/L */}
                 <View className="flex-1 p-4">
                     <Text
-                        className="text-[10px] tracking-widest mb-2"
+                        className="text-[10px] tracking-widest mb-1"
                         style={{ color: UI_COLORS.textSecondary, fontFamily: UI_FONTS.bodyBold }}
                     >
                         P/L

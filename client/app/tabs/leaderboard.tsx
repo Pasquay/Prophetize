@@ -9,6 +9,8 @@ import LeaderboardSegment, { LeaderboardPeriod } from '@/components/leaderboard/
 import LeaderboardSkeletonList from '@/components/leaderboard/leaderboard-skeleton-list';
 import { ExploreTheme } from '@/constants/explore-theme';
 import { useAuth } from '@/context/AuthContext';
+import { subscribeRealtime } from '@/context/realtimeClient';
+import { UI_COLORS } from '@/constants/ui-tokens';
 import {
     LeaderboardApiEntry,
     MyLeaderboardPositionResponse,
@@ -59,6 +61,7 @@ export default function LeaderboardScreen() {
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [connectionState, setConnectionState] = useState<'connected' | 'reconnecting' | 'stale' | 'disconnected'>('disconnected');
 
     const requestIdRef = useRef(0);
 
@@ -68,6 +71,21 @@ export default function LeaderboardScreen() {
     );
     const topThree = useMemo(() => allEntries.slice(0, 3), [allEntries]);
     const listEntries = useMemo(() => allEntries.slice(3), [allEntries]);
+    const connectionStatus = useMemo(() => {
+        if (connectionState === 'connected') {
+            return { label: 'Live leaderboard connected', color: UI_COLORS.success };
+        }
+
+        if (connectionState === 'reconnecting') {
+            return { label: 'Reconnecting leaderboard...', color: UI_COLORS.warning };
+        }
+
+        if (connectionState === 'stale') {
+            return { label: 'Leaderboard updates are stale. Retrying...', color: UI_COLORS.danger };
+        }
+
+        return { label: 'Live leaderboard disconnected', color: ExploreTheme.secondaryText };
+    }, [connectionState]);
 
     const loadInitialPage = useCallback(async (selectedPeriod: LeaderboardPeriod) => {
         const requestId = requestIdRef.current + 1;
@@ -137,6 +155,21 @@ export default function LeaderboardScreen() {
         loadInitialPage(period);
     }, [period, loadInitialPage]);
 
+    useEffect(() => {
+        const unsubscribe = subscribeRealtime({
+            channels: ['leaderboard.updated'],
+            onEvent: () => {
+                void loadInitialPage(period);
+            },
+            onReconnect: () => {
+                void loadInitialPage(period);
+            },
+            onConnectionState: setConnectionState,
+        });
+
+        return unsubscribe;
+    }, [loadInitialPage, period]);
+
     return (
         <View className="flex-1" style={{ backgroundColor: ExploreTheme.pageBg }}>
             <SafeAreaView edges={['top']} className="bg-white">
@@ -154,6 +187,9 @@ export default function LeaderboardScreen() {
                         </Text>
                         <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
                             {subtitle}
+                        </Text>
+                        <Text className="font-jetbrain text-[11px] mt-1" style={{ color: connectionStatus.color }}>
+                            {connectionStatus.label}
                         </Text>
                     </View>
 

@@ -145,3 +145,462 @@ export const getMyLeaderboardPosition = async (period: LeaderboardPeriod) => {
     return get(`/leaderboard/me?${params.toString()}`);
 };
 
+export type CreateMarketPayload = {
+    title: string;
+    description: string;
+    category: string;
+    endDate: string;
+    options: string[];
+    imageUrl?: string;
+};
+
+const CREATE_MARKET_ERROR_FALLBACK = 'Unable to submit market right now. Please try again.';
+
+const normalizeCreateMarketError = (data: unknown): string => {
+    if (!data || typeof data !== 'object') {
+        return CREATE_MARKET_ERROR_FALLBACK;
+    }
+
+    const payload = data as Record<string, unknown>;
+    const rawError = payload.error;
+
+    if (typeof rawError === 'string') {
+        const trimmed = rawError.trim();
+        if (!trimmed) {
+            return CREATE_MARKET_ERROR_FALLBACK;
+        }
+
+        // Never surface raw html/transport payloads in user-facing messages.
+        if (trimmed.startsWith('<') || trimmed.toLowerCase().includes('syntaxerror')) {
+            return CREATE_MARKET_ERROR_FALLBACK;
+        }
+
+        return trimmed;
+    }
+
+    return CREATE_MARKET_ERROR_FALLBACK;
+};
+
+export const createMarket = async (payload: CreateMarketPayload) => {
+    const response = await post('/markets/create', payload);
+
+    if (!response.ok) {
+        const normalizedError = normalizeCreateMarketError(response.data);
+        const normalizedData = response.data && typeof response.data === 'object'
+            ? { ...(response.data as Record<string, unknown>), error: normalizedError }
+            : { error: normalizedError };
+
+        return {
+            ...response,
+            data: normalizedData,
+        };
+    }
+
+    return response;
+};
+
+export type TradePayload = {
+    optionId: number;
+    shares: number;
+};
+
+export type TradeSnapshot = {
+    balance: number;
+    position: {
+        optionId: number;
+        sharesOwned: number;
+    };
+};
+
+export type TradeResponse = {
+    message: string;
+    trade: {
+        side: 'buy' | 'sell';
+        optionId: number;
+        shares: number;
+        price: number;
+        totalCost?: number;
+        totalReturn?: number;
+    };
+    snapshot?: TradeSnapshot;
+};
+
+const TRADE_PAYLOAD_ERROR = 'Received an unexpected trade response. Please try again.';
+
+const parseFiniteNumber = (value: unknown): number | null => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
+const unwrapTradePayload = (payload: unknown): unknown => {
+    if (Array.isArray(payload)) {
+        return payload[0];
+    }
+
+    if (!payload || typeof payload !== 'object') {
+        return payload;
+    }
+
+    const record = payload as Record<string, unknown>;
+    if (!('data' in record)) {
+        return payload;
+    }
+
+    const inner = record.data;
+    if (Array.isArray(inner)) {
+        return inner[0];
+    }
+
+    return inner;
+};
+
+const normalizeTradeResponse = (
+    payload: unknown,
+    fallbackMessage: string
+): { ok: true; data: TradeResponse } | { ok: false; error: string } => {
+    const candidate = unwrapTradePayload(payload);
+    if (!candidate || typeof candidate !== 'object') {
+        return { ok: false, error: TRADE_PAYLOAD_ERROR };
+    }
+
+    const record = candidate as Record<string, unknown>;
+    const tradeRecord = record.trade;
+    if (!tradeRecord || typeof tradeRecord !== 'object') {
+        return { ok: false, error: TRADE_PAYLOAD_ERROR };
+    }
+
+    const trade = tradeRecord as Record<string, unknown>;
+    const side = trade.side === 'buy' || trade.side === 'sell' ? trade.side : null;
+    const optionId = parseFiniteNumber(trade.optionId);
+    const shares = parseFiniteNumber(trade.shares);
+    const price = parseFiniteNumber(trade.price);
+
+    if (!side || optionId === null || shares === null || price === null) {
+        return { ok: false, error: TRADE_PAYLOAD_ERROR };
+    }
+
+    const message = typeof record.message === 'string' && record.message.trim()
+        ? record.message.trim()
+        : fallbackMessage;
+
+    const normalizedTrade: TradeResponse['trade'] = {
+        side,
+        optionId,
+        shares,
+        price,
+    };
+
+    const totalCost = parseFiniteNumber(trade.totalCost);
+    if (totalCost !== null) {
+        normalizedTrade.totalCost = totalCost;
+    }
+
+    const totalReturn = parseFiniteNumber(trade.totalReturn);
+    if (totalReturn !== null) {
+        normalizedTrade.totalReturn = totalReturn;
+    }
+
+    let snapshot: TradeSnapshot | undefined;
+    if (record.snapshot !== undefined) {
+        if (!record.snapshot || typeof record.snapshot !== 'object') {
+            return { ok: false, error: TRADE_PAYLOAD_ERROR };
+        }
+
+        const snapshotRecord = record.snapshot as Record<string, unknown>;
+        const balance = parseFiniteNumber(snapshotRecord.balance);
+        const positionRecord = snapshotRecord.position;
+        if (
+            balance === null ||
+            !positionRecord ||
+            typeof positionRecord !== 'object'
+        ) {
+            return { ok: false, error: TRADE_PAYLOAD_ERROR };
+        }
+
+        const position = positionRecord as Record<string, unknown>;
+        const positionOptionId = parseFiniteNumber(position.optionId);
+        const sharesOwned = parseFiniteNumber(position.sharesOwned);
+        if (positionOptionId === null || sharesOwned === null) {
+            return { ok: false, error: TRADE_PAYLOAD_ERROR };
+        }
+
+        snapshot = {
+            balance,
+            position: {
+                optionId: positionOptionId,
+                sharesOwned,
+            },
+        };
+    }
+
+    return {
+        ok: true,
+        data: {
+            message,
+            trade: normalizedTrade,
+            snapshot,
+        },
+    };
+};
+
+export const buyShares = async (payload: TradePayload) => {
+    const response = await post('/transaction/buy', payload);
+    if (!response.ok) {
+        return response;
+    }
+
+    const normalized = normalizeTradeResponse(response.data, 'Purchase successful');
+    if (!normalized.ok) {
+        return {
+            ok: false,
+            data: {
+                error: normalized.error,
+            },
+        };
+    }
+
+    return {
+        ok: true,
+        data: normalized.data,
+    };
+};
+
+export const sellShares = async (payload: TradePayload) => {
+    const response = await post('/transaction/sell', payload);
+    if (!response.ok) {
+        return response;
+    }
+
+    const normalized = normalizeTradeResponse(response.data, 'Sale successful');
+    if (!normalized.ok) {
+        return {
+            ok: false,
+            data: {
+                error: normalized.error,
+            },
+        };
+    }
+
+    return {
+        ok: true,
+        data: normalized.data,
+    };
+};
+
+export type NotificationType = 'market' | 'leaderboard' | 'profile';
+
+export type NotificationPayload = {
+    type: NotificationType;
+    recipient_user_id: string;
+    title: string;
+    body: string;
+    target_path: string;
+    target_signature: string;
+};
+
+export type NotificationInboxSource = 'backend' | 'fallback';
+
+export type NotificationInboxItem = NotificationPayload & {
+    id: string;
+    created_at: string;
+};
+
+export type NotificationRouteTarget =
+    | { pathname: '/marketDetails'; params: { id: string } }
+    | { pathname: '/tabs/leaderboard' }
+    | { pathname: '/tabs/profile'; params?: { userId: string } };
+
+export type NotificationPlatform = 'ios' | 'android' | 'web';
+
+export const registerNotificationChannel = async (
+    deviceToken: string,
+    platform: NotificationPlatform
+) => {
+    return post('/notifications/register', {
+        deviceToken,
+        platform,
+    });
+};
+
+type TriggerNotificationPayload = {
+    type: NotificationType;
+    recipientUserId: string;
+    title: string;
+    body: string;
+    marketId?: number;
+    profileUserId?: string;
+};
+
+export const triggerNotification = async (payload: TriggerNotificationPayload) => {
+    return post('/notifications/trigger', payload);
+};
+
+const normalizeNotificationItem = (raw: unknown): NotificationInboxItem | null => {
+    if (!raw || typeof raw !== 'object') {
+        return null;
+    }
+
+    const record = raw as Record<string, unknown>;
+    const type = typeof record.type === 'string' ? record.type : '';
+    const recipientUserId = typeof record.recipient_user_id === 'string' ? record.recipient_user_id : '';
+    const title = typeof record.title === 'string' ? record.title : '';
+    const body = typeof record.body === 'string' ? record.body : '';
+    const targetPath = typeof record.target_path === 'string' ? record.target_path : '';
+    const targetSignature = typeof record.target_signature === 'string' ? record.target_signature : '';
+
+    if (
+        (type !== 'market' && type !== 'leaderboard' && type !== 'profile') ||
+        !recipientUserId ||
+        !title ||
+        !body ||
+        !targetPath ||
+        !targetSignature
+    ) {
+        return null;
+    }
+
+    const createdAt = typeof record.created_at === 'string' && record.created_at
+        ? record.created_at
+        : new Date().toISOString();
+    const id = typeof record.id === 'string' && record.id
+        ? record.id
+        : `${type}:${recipientUserId}:${targetPath}:${createdAt}`;
+
+    return {
+        id,
+        created_at: createdAt,
+        type,
+        recipient_user_id: recipientUserId,
+        title,
+        body,
+        target_path: targetPath,
+        target_signature: targetSignature,
+    };
+};
+
+const extractNotifications = (payload: unknown): NotificationInboxItem[] => {
+    if (Array.isArray(payload)) {
+        return payload.map(normalizeNotificationItem).filter((item): item is NotificationInboxItem => Boolean(item));
+    }
+
+    if (!payload || typeof payload !== 'object') {
+        return [];
+    }
+
+    const record = payload as Record<string, unknown>;
+    const candidate = Array.isArray(record.notifications)
+        ? record.notifications
+        : Array.isArray(record.data)
+            ? record.data
+            : [];
+
+    return candidate.map(normalizeNotificationItem).filter((item): item is NotificationInboxItem => Boolean(item));
+};
+
+export const getNotifications = async (): Promise<{
+    ok: boolean;
+    data: { items: NotificationInboxItem[]; source: NotificationInboxSource; message?: string } | { error: string };
+}> => {
+    const token = await getToken();
+
+    const doRequest = () => fetch(baseUrl + '/notifications', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+
+    const initial = await doRequest();
+    if (initial.status === 404) {
+        return {
+            ok: true,
+            data: {
+                items: [],
+                source: 'fallback',
+                message: 'Notification inbox endpoint is not available yet.',
+            },
+        };
+    }
+
+    const handled = await handleResponse(initial, doRequest);
+    if (!handled.ok) {
+        return {
+            ok: false,
+            data: {
+                error: (handled.data as Record<string, unknown>)?.error as string || 'Unable to load notifications right now.',
+            },
+        };
+    }
+
+    return {
+        ok: true,
+        data: {
+            items: extractNotifications(handled.data),
+            source: 'backend',
+        },
+    };
+};
+
+export type FollowAction = 'follow' | 'unfollow';
+
+export const followUser = async (targetUserId: string, action: FollowAction = 'follow') => {
+    return post('/social/follow', { targetUserId, action });
+};
+
+export type CommentItem = {
+    id: string;
+    market_id: number;
+    user_id: string;
+    content: string;
+    created_at: string;
+};
+
+export const getComments = async (marketId: number) => {
+    return get(`/social/comments/${marketId}`);
+};
+
+export const createComment = async (marketId: number, content: string) => {
+    return post('/social/comments', { marketId, content });
+};
+
+const parseTargetPath = (path: string) => {
+    if (!path.startsWith('/')) {
+        return null;
+    }
+
+    const [pathname, queryString = ''] = path.split('?');
+    const query = new URLSearchParams(queryString);
+    return { pathname, query };
+};
+
+export const resolveNotificationTarget = (
+    payload: Pick<NotificationPayload, 'type' | 'target_path'>
+): NotificationRouteTarget | null => {
+    const parsedTarget = parseTargetPath(payload.target_path);
+    if (!parsedTarget) {
+        return null;
+    }
+
+    const { pathname, query } = parsedTarget;
+
+    if (payload.type === 'market' && pathname === '/marketDetails') {
+        const id = query.get('id');
+        if (!id) return null;
+        return { pathname: '/marketDetails', params: { id } };
+    }
+
+    if (payload.type === 'leaderboard' && pathname === '/tabs/leaderboard') {
+        return { pathname: '/tabs/leaderboard' };
+    }
+
+    if (payload.type === 'profile' && pathname === '/tabs/profile') {
+        const userId = query.get('userId') || undefined;
+        return userId
+            ? { pathname: '/tabs/profile', params: { userId } }
+            : { pathname: '/tabs/profile' };
+    }
+
+    return null;
+};
+

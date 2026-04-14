@@ -4,7 +4,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { UI_COLORS } from '@/constants/ui-tokens';
 
 type ActivityItemProps = {
-  icon: string;
+  icon: keyof typeof MaterialIcons.glyphMap;
   title: string;
   result: 'won' | 'lost' | 'pending';
   amount: string;
@@ -61,7 +61,7 @@ export function ActivityItem({
         className="w-10 h-10 rounded-full items-center justify-center"
         style={{ backgroundColor: UI_COLORS.surfaceMuted }}
       >
-        <MaterialIcons name={icon as any} size={18} color={UI_COLORS.textSecondary} />
+        <MaterialIcons name={icon} size={18} color={UI_COLORS.textSecondary} />
       </View>
 
       {/* Title and Result */}
