@@ -53,7 +53,7 @@ const getTradeSnapshot = async (userId: string, optionId: number) => {
         .eq('market_option_id', optionId)
         .maybeSingle();
 
-    if (positionError) {
+    if (positionError && !isSingleObjectCoercionError(positionError.message)) {
         throw new Error(positionError.message || 'Failed to fetch user position');
     }
 
