@@ -54,6 +54,19 @@ export interface ActivityTransaction {
   market_title: string;
 }
 
+export interface MarketOptionPosition {
+  option_id: string;
+  option_name: string;
+  shares_owned: number;
+}
+
+export interface MarketPositionSnapshot {
+  market_id: string;
+  total_shares: number;
+  options: MarketOptionPosition[];
+  updated_at: string | null;
+}
+
 // --- Query param union types ---
 export type PositionTab = "active" | "closed";
 export type SortBy = "value" | "pl" | "newest";

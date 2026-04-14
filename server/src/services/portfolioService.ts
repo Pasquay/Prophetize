@@ -6,6 +6,7 @@ import { supabase } from '../config/supabaseClient';
 import {
   ActivityTransaction,
   EnrichedPosition,
+  MarketPositionSnapshot,
   NetWorthPoint,
   PortfolioSummary,
   PositionTab,
@@ -271,6 +272,109 @@ export async function getPositions(
   }
 
   return enriched;
+}
+
+export async function getMarketPosition(
+  userId: string,
+  marketId: string
+): Promise<MarketPositionSnapshot> {
+  const parsedMarketId = Number(marketId);
+  if (!Number.isInteger(parsedMarketId) || parsedMarketId <= 0) {
+    return {
+      market_id: String(marketId),
+      total_shares: 0,
+      options: [],
+      updated_at: null,
+    };
+  }
+
+  const { data: optionsData, error: optionsError } = await supabase
+    .from('market_options')
+    .select('id, name')
+    .eq('market_id', parsedMarketId);
+
+  if (optionsError) throw new Error(optionsError.message);
+
+  const marketOptions = (optionsData || []) as Array<{ id: number | string; name: string | null }>;
+  if (marketOptions.length === 0) {
+    return {
+      market_id: String(parsedMarketId),
+      total_shares: 0,
+      options: [],
+      updated_at: null,
+    };
+  }
+
+  const optionIds = marketOptions
+    .map((option) => Number(option.id))
+    .filter((optionId) => Number.isInteger(optionId) && optionId > 0);
+
+  if (optionIds.length === 0) {
+    return {
+      market_id: String(parsedMarketId),
+      total_shares: 0,
+      options: [],
+      updated_at: null,
+    };
+  }
+
+  const optionNameById = new Map<string, string>();
+  for (const option of marketOptions) {
+    const optionId = Number(option.id);
+    if (!Number.isInteger(optionId) || optionId <= 0) {
+      continue;
+    }
+
+    optionNameById.set(String(optionId), String(option.name ?? 'Unknown'));
+  }
+
+  const { data: positionsData, error: positionsError } = await supabase
+    .from('user_positions')
+    .select('market_option_id, shares_owned, updated_at')
+    .eq('user_id', userId)
+    .in('market_option_id', optionIds);
+
+  if (positionsError) throw new Error(positionsError.message);
+
+  const optionTotals = new Map<string, { option_name: string; shares_owned: number }>();
+  let latestUpdatedAt: string | null = null;
+
+  for (const row of (positionsData || []) as Array<{ market_option_id: number | string; shares_owned: number | string; updated_at: string | null }>) {
+    const optionId = String(row.market_option_id ?? '');
+    if (!optionId) {
+      continue;
+    }
+
+    const optionName = optionNameById.get(optionId) ?? 'Unknown';
+    const sharesOwned = Number(row.shares_owned ?? 0);
+    const safeShares = Number.isFinite(sharesOwned) ? sharesOwned : 0;
+    const existing = optionTotals.get(optionId);
+
+    optionTotals.set(optionId, {
+      option_name: optionName,
+      shares_owned: (existing?.shares_owned ?? 0) + safeShares,
+    });
+
+    const updatedAt = typeof row.updated_at === 'string' ? row.updated_at : null;
+    if (updatedAt && (!latestUpdatedAt || new Date(updatedAt) > new Date(latestUpdatedAt))) {
+      latestUpdatedAt = updatedAt;
+    }
+  }
+
+  const options = Array.from(optionTotals.entries()).map(([option_id, value]) => ({
+    option_id,
+    option_name: value.option_name,
+    shares_owned: value.shares_owned,
+  }));
+
+  const totalShares = options.reduce((sum, option) => sum + option.shares_owned, 0);
+
+  return {
+    market_id: String(parsedMarketId),
+    total_shares: totalShares,
+    options,
+    updated_at: latestUpdatedAt,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────

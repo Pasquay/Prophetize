@@ -8,6 +8,7 @@ export type RealtimeConnectionState = 'connected' | 'reconnecting' | 'stale' | '
 export type MarketUpdatedPayload = {
     marketId: number;
     optionId: number;
+    probability: number;
     updatedAt: string;
 };
 

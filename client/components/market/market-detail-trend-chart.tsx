@@ -12,8 +12,26 @@ type Props = {
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
 export default function MarketDetailTrendChart({ values, labels }: Props) {
+  const normalizedValues = useMemo(() => {
+    const normalizedLength = Math.min(values.length, labels.length);
+    if (normalizedLength <= 0) {
+      return [50, 52, 56, 59, 62];
+    }
+
+    return values.slice(0, normalizedLength);
+  }, [labels.length, values]);
+
+  const normalizedLabels = useMemo(() => {
+    const normalizedLength = Math.min(values.length, labels.length);
+    if (normalizedLength <= 0) {
+      return ['--', '--', '--', '--', 'Now'];
+    }
+
+    return labels.slice(0, normalizedLength);
+  }, [labels, values.length]);
+
   const points = useMemo(() => {
-    const safeValues = values.length ? values : [50, 52, 56, 59, 62];
+    const safeValues = normalizedValues.length ? normalizedValues : [50, 52, 56, 59, 62];
     const count = safeValues.length;
     const chartW = 100;
     const chartH = 56;
@@ -25,7 +43,7 @@ export default function MarketDetailTrendChart({ values, labels }: Props) {
       const y = chartH - (normalized / 100) * chartH;
       return { x, y };
     });
-  }, [values]);
+  }, [normalizedValues]);
 
   const linePath = useMemo(() => {
     if (!points.length) return '';
@@ -59,8 +77,8 @@ export default function MarketDetailTrendChart({ values, labels }: Props) {
         <Path d={linePath} stroke={UI_COLORS.accent} strokeWidth={2.5} fill="none" />
       </Svg>
       <View className="flex-row justify-between px-5">
-        {labels.map((label) => (
-          <Text key={label} className="font-jetbrain text-[10px]" style={{ color: ExploreTheme.secondaryText }}>
+        {normalizedLabels.map((label, index) => (
+          <Text key={`${label}-${index}`} className="font-jetbrain text-[10px]" style={{ color: ExploreTheme.secondaryText }}>
             {label}
           </Text>
         ))}

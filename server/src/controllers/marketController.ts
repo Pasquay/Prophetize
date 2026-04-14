@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { supabase } from '../config/supabaseClient';
+import { supabase, supabaseAdmin } from '../config/supabaseClient';
 import { AuthRequest } from '../types/authRequest';
 import { MARKET_CATEGORIES } from '../types/marketCategories';
 import { getPaginationRange } from '../utils/pagination';
@@ -11,6 +11,71 @@ const PUBLIC_MARKET_STATUSES = [
     'disputed',
     'finalized'
 ] as const;
+
+const HISTORY_BUCKET_STEPS = {
+    '5m': 5 * 60 * 1000,
+    '1h': 60 * 60 * 1000,
+    '1d': 24 * 60 * 60 * 1000,
+    '1w': 7 * 24 * 60 * 60 * 1000,
+} as const;
+
+const HISTORY_TARGET_POINTS = 5;
+
+type HistoryTimeframe = keyof typeof HISTORY_BUCKET_STEPS;
+
+const clampProbabilityPercent = (value: number) => {
+    if (!Number.isFinite(value)) {
+        return 0;
+    }
+
+    return Math.max(0, Math.min(100, Number(value.toFixed(2))));
+};
+
+const normalizeProbabilityPercent = (value: unknown): number => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+        return 0;
+    }
+
+    if (parsed <= 1) {
+        return clampProbabilityPercent(parsed * 100);
+    }
+
+    return clampProbabilityPercent(parsed);
+};
+
+const alignToStepFloor = (timestampMs: number, stepMs: number) => {
+    if (!Number.isFinite(timestampMs) || !Number.isFinite(stepMs) || stepMs <= 0) {
+        return timestampMs;
+    }
+
+    return Math.floor(timestampMs / stepMs) * stepMs;
+};
+
+const alignToUtcDayFloor = (timestampMs: number) => {
+    const date = new Date(timestampMs);
+    return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+};
+
+const alignToUtcWeekFloor = (timestampMs: number) => {
+    const dayFloor = alignToUtcDayFloor(timestampMs);
+    const date = new Date(dayFloor);
+    const day = date.getUTCDay();
+    const mondayOffset = (day + 6) % 7;
+    return dayFloor - mondayOffset * 24 * 60 * 60 * 1000;
+};
+
+const getAlignedNowMs = (timeframe: HistoryTimeframe, nowMs: number) => {
+    if (timeframe === '1w') {
+        return alignToUtcWeekFloor(nowMs);
+    }
+
+    if (timeframe === '1d') {
+        return alignToUtcDayFloor(nowMs);
+    }
+
+    return alignToStepFloor(nowMs, HISTORY_BUCKET_STEPS[timeframe]);
+};
 
 // GET /markets/categories
 export const getCategories = (req: Request, res: Response) => {
@@ -212,6 +277,11 @@ export const getMarketByCategory = async(req:Request, res:Response) => {
 export const getMarketById = async(req:Request, res:Response) => {
     try {
         const { id } = req.params;
+        const parsedId = Number(id);
+        if (!Number.isInteger(parsedId) || parsedId <= 0) {
+            return res.status(400).json({ error: 'Invalid market id' });
+        }
+
         const { data, error } = await supabase
             .from('markets')
             .select(`
@@ -220,7 +290,7 @@ export const getMarketById = async(req:Request, res:Response) => {
                     *
                 )
             `)
-            .eq('id', id)
+            .eq('id', parsedId)
             .in('status', [...PUBLIC_MARKET_STATUSES])
             .maybeSingle();
 
@@ -416,6 +486,159 @@ export const reviewMarket = async(req:AuthRequest, res:Response) => {
             market: data
         });
     } catch(error:any){
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+// GET /:id/history?timeframe=5m|1h|1d|1w - Market chart history by timeframe
+export const getMarketHistory = async(req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const parsedId = Number(id);
+        if (!Number.isInteger(parsedId) || parsedId <= 0) {
+            return res.status(400).json({ error: 'Invalid market id' });
+        }
+
+        const optionIdRaw = req.query.optionId;
+        const selectedOptionId = optionIdRaw === undefined || optionIdRaw === null || String(optionIdRaw).trim() === ''
+            ? null
+            : Number(optionIdRaw);
+        if (selectedOptionId !== null && (!Number.isInteger(selectedOptionId) || selectedOptionId <= 0)) {
+            return res.status(400).json({ error: 'Invalid optionId' });
+        }
+
+        const timeframeRaw = String(req.query.timeframe ?? '1d').toLowerCase();
+        if (!(timeframeRaw in HISTORY_BUCKET_STEPS)) {
+            return res.status(400).json({ error: 'Invalid timeframe. Use 5m, 1h, 1d, or 1w.' });
+        }
+
+        const timeframe = timeframeRaw as HistoryTimeframe;
+        const nowMs = Date.now();
+        const alignedNowMs = getAlignedNowMs(timeframe, nowMs);
+        const stepMs = HISTORY_BUCKET_STEPS[timeframe];
+        const rangeDurationMs = stepMs * Math.max(1, HISTORY_TARGET_POINTS - 1);
+        const rangeStartMs = alignedNowMs - rangeDurationMs;
+        const sinceIso = new Date(rangeStartMs).toISOString();
+
+        const { data: optionsData, error: optionsError } = await supabaseAdmin
+            .from('market_options')
+            .select('id, probability, current_price')
+            .eq('market_id', parsedId);
+
+        if (optionsError) {
+            throw optionsError;
+        }
+
+        const optionRows = (optionsData || []) as Array<{ id: number | string; probability: number | null; current_price: number | null }>;
+        if (optionRows.length === 0) {
+            return res.status(404).json({ error: 'Market not found or has no options.' });
+        }
+
+        const optionIds = optionRows
+            .map((row) => Number(row.id))
+            .filter((optionId) => Number.isInteger(optionId) && optionId > 0);
+
+        if (selectedOptionId !== null && !optionIds.includes(selectedOptionId)) {
+            return res.status(404).json({ error: 'Option not found in market.' });
+        }
+
+        const scopedOptionIds = selectedOptionId !== null ? [selectedOptionId] : optionIds;
+
+        const beforeStartQuery = supabaseAdmin
+            .from('transactions')
+            .select('created_at, price_at_time, market_option_id')
+            .in('market_option_id', scopedOptionIds)
+            .lt('created_at', sinceIso)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        const { data: beforeStartData, error: beforeStartError } = await beforeStartQuery;
+        if (beforeStartError) {
+            throw beforeStartError;
+        }
+
+        const { data: transactionsData, error: transactionsError } = await supabaseAdmin
+            .from('transactions')
+            .select('created_at, price_at_time, market_option_id')
+            .in('market_option_id', scopedOptionIds)
+            .gte('created_at', sinceIso)
+            .order('created_at', { ascending: true });
+
+        if (transactionsError) {
+            throw transactionsError;
+        }
+
+        const transactionPoints = ((transactionsData || []) as Array<{ created_at: string | null; price_at_time: number | null; market_option_id: number | string | null }>)
+            .map((row) => {
+                if (!row.created_at) {
+                    return null;
+                }
+
+                const ts = new Date(row.created_at).toISOString();
+                const probability = normalizeProbabilityPercent(row.price_at_time);
+                const timestamp = new Date(ts).getTime();
+                if (Number.isNaN(timestamp)) {
+                    return null;
+                }
+
+                return {
+                    timestamp,
+                    ts,
+                    probability,
+                };
+            })
+            .filter((point): point is { timestamp: number; ts: string; probability: number } => Boolean(point));
+
+        const selectedOptionRow = selectedOptionId !== null
+            ? optionRows.find((row) => Number(row.id) === selectedOptionId)
+            : null;
+        const topOption = optionRows
+            .slice()
+            .sort((a, b) => Number(b.probability ?? 0) - Number(a.probability ?? 0))[0];
+        const baselineSource = selectedOptionRow ?? topOption;
+
+        let currentProbability = normalizeProbabilityPercent(
+            (beforeStartData?.[0] as { price_at_time?: number | null } | undefined)?.price_at_time
+                ?? baselineSource?.probability
+                ?? baselineSource?.current_price
+                ?? 0
+        );
+
+        const bucketedPoints: Array<{ ts: string; probability: number }> = [];
+        let txIndex = 0;
+
+        for (let i = 0; i < HISTORY_TARGET_POINTS; i += 1) {
+            const bucketTime = Math.round(rangeStartMs + stepMs * i);
+
+            while (txIndex < transactionPoints.length) {
+                const currentPoint = transactionPoints[txIndex];
+                if (!currentPoint || currentPoint.timestamp > bucketTime) {
+                    break;
+                }
+
+                currentProbability = normalizeProbabilityPercent(currentPoint.probability);
+                txIndex += 1;
+            }
+
+            bucketedPoints.push({
+                ts: new Date(bucketTime).toISOString(),
+                probability: clampProbabilityPercent(currentProbability),
+            });
+        }
+
+        const points = bucketedPoints.length > 0
+            ? bucketedPoints
+            : [{ ts: new Date(alignedNowMs).toISOString(), probability: clampProbabilityPercent(currentProbability) }];
+
+        return res.status(200).json({
+            data: {
+                market_id: String(parsedId),
+                option_id: selectedOptionId !== null ? String(selectedOptionId) : null,
+                timeframe,
+                points,
+            },
+        });
+    } catch (error: any) {
         return res.status(500).json({ error: error.message });
     }
 };

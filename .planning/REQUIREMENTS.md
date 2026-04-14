@@ -262,3 +262,49 @@ This addendum is now canonical for backend integration planning tied to leaderbo
   - Trade submit flow still enforces deterministic loading/success/error feedback.
   - Comment submission and retry behavior continue to work after UI changes.
   - `npm run lint` and `npx tsc --noEmit` pass in client workspace (or only known pre-existing issues remain documented).
+
+  ## Addendum: Phase 6 Market Detail Reliability Fixes (2026-04-14)
+
+  ### MD-FIX-01: Market Detail Route and Fetch Hardening
+  - **ID**: MD-FIX-01
+  - **Description**: Market detail load path must safely handle invalid/unsupported route IDs and backend fetch failures.
+  - **Acceptance Criteria**:
+    - Invalid `marketId` route values return safe 4xx semantics server-side for market detail endpoint.
+    - Client shows deterministic invalid-link/unavailable states instead of generic crash alerts.
+    - Retry path exists for recoverable fetch failures.
+
+  ### MD-FIX-02: Position and Trade Data Consistency
+  - **ID**: MD-FIX-02
+  - **Description**: User position and related trade context on market details must derive from stable backend contract responses.
+  - **Acceptance Criteria**:
+    - Backend exposes market-specific position snapshot endpoint with validated `marketId` semantics.
+    - Client normalizes snapshot response and computes total shares without NaN/shape regressions.
+    - Position refresh runs after successful trade and reconnect recovery.
+
+  ### MD-FIX-03: Comments Persistence and Fallback Safety
+  - **ID**: MD-FIX-03
+  - **Description**: Market comments create/list flow must work with Supabase persistence and deterministic fallback behavior when comments relation is unavailable.
+  - **Acceptance Criteria**:
+    - Comment create/list use database-first flow with sanitization and auth enforcement.
+    - Unsupported relation/schema-cache paths fall back safely without 5xx for known unsupported cases.
+    - Client comment states support loading/empty/error/success transitions without stale artifacts.
+
+  **Status (2026-04-14):** Deferred by user decision. Ownership moved to DB manager; excluded from Phase 6 execution scope.
+
+  ### MD-FIX-04: Realtime and Trend Visualization Stability
+  - **ID**: MD-FIX-04
+  - **Description**: Market details realtime updates and trend chart state must remain bounded, accurate, and resilient across reconnect events.
+  - **Acceptance Criteria**:
+    - Realtime subscription listens only to relevant channels/events and guards against wrong-market updates.
+    - Trend points are capped and normalized to prevent unbounded growth or mismatched labels/values.
+    - Reconnect triggers controlled reload for market + position data without duplicate side effects.
+
+  ### MD-FIX-05: Polymarket-Style Chart Timeframes and Diagnostic Closure
+  - **ID**: MD-FIX-05
+  - **Description**: Market detail chart must support explicit timeframe toggles (minutes/hours/days style) and provide verified root-cause closure for recurring Your Position mismatch.
+  - **Acceptance Criteria**:
+    - Chart UI includes explicit selectable timeframe controls (at least 4 options spanning minute/hour/day ranges).
+    - Chart data source is timeframe-aware and not hardcoded placeholder deltas.
+    - Chart series receives websocket-driven live updates after initial timeframe load.
+    - Team records root-cause verdict for Your Position mismatch (client-state bug vs backend query bug vs missing DB schema/data issue) with evidence and final fix path.
+    - If persistent comments depend on missing DB table/policies, required schema setup tasks are documented and executed before sign-off.

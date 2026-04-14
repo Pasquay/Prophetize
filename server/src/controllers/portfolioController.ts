@@ -7,6 +7,7 @@ import { AuthRequest } from '../types/authRequest';
 import {
   getPortfolioSummary,
   getNetWorthHistory,
+  getMarketPosition,
   getPositions,
   getTransactionHistory,
 } from '../services/portfolioService';
@@ -99,6 +100,46 @@ export const getActivity = async (req: AuthRequest, res: Response) => {
     const userId = req.user.id;
     const transactions = await getTransactionHistory(userId);
     return res.status(200).json(transactions);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+export const getMarketPositionByMarketId = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user.id;
+    const marketIdRaw = req.params.marketId;
+    const marketId = Number(marketIdRaw);
+
+    if (!Number.isInteger(marketId) || marketId <= 0) {
+      return res.status(400).json({ error: 'Invalid marketId' });
+    }
+
+    const snapshot = await getMarketPosition(userId, String(marketId));
+
+    // Fallback path: if direct aggregation returns zero but active positions exist,
+    // derive total from enriched positions query to avoid false zeros.
+    if (snapshot.total_shares <= 0) {
+      const activePositions = await getPositions(userId, 'active', '', 'newest');
+      const marketPositions = activePositions.filter((position) => String(position.market_id) === String(marketId));
+      if (marketPositions.length > 0) {
+        const totalShares = marketPositions.reduce((sum, position) => sum + Number(position.shares_owned || 0), 0);
+        const latestUpdatedAt = marketPositions
+          .map((position) => position.updated_at)
+          .filter((value): value is string => Boolean(value))
+          .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] ?? null;
+
+        return res.status(200).json({
+          data: {
+            ...snapshot,
+            total_shares: totalShares,
+            updated_at: latestUpdatedAt,
+          },
+        });
+      }
+    }
+
+    return res.status(200).json({ data: snapshot });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }

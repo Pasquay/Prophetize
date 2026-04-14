@@ -13,3 +13,5 @@ docs
 .github
 my-agent-os/
 .planning
+.planning/phases
+planning

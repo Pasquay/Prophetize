@@ -6,6 +6,7 @@ type TradeRealtimePayload = {
     userId: string;
     marketId: number;
     optionId: number;
+    probability: number;
     balance: number;
     sharesOwned: number;
 };
@@ -38,6 +39,7 @@ export const emitTradeRealtimeUpdates = (payload: TradeRealtimePayload) => {
     emitRealtimeEvent("market.updated", {
         marketId: payload.marketId,
         optionId: payload.optionId,
+        probability: payload.probability,
         updatedAt: now,
     });
 

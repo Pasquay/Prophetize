@@ -150,3 +150,15 @@ Plans:
 - Phase 1 is the immediate priority and aligns with the user’s request.
 - Future phases may be reprioritized based on user feedback and business needs.
 - All phases will follow GSD workflow with atomic commits and goal‑backward verification.
+
+### Phase 6: 6
+
+**Goal:** Fix concrete market details regressions reported by user: chart timeframe controls with websocket realtime updates, incorrect Your Position value, and inconsistent button colors. Comments persistence is deferred to DB manager.
+
+**Requirements:** [MD-FIX-01, MD-FIX-02, MD-FIX-04, MD-FIX-05]
+**Depends on:** Phase 5
+**Plans:** 2 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Backend root-cause resolution for position accuracy and websocket-capable chart history contract
+- [ ] 06-02-PLAN.md — Client fixes for chart timeframe buttons + websocket realtime updates, position rendering correctness, and consistent UI button tokens

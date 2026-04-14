@@ -387,6 +387,169 @@ export const sellShares = async (payload: TradePayload) => {
     };
 };
 
+export type MarketPositionSnapshot = {
+    market_id: string;
+    total_shares: number;
+    options: Array<{
+        option_id: string;
+        option_name: string;
+        shares_owned: number;
+    }>;
+    updated_at: string | null;
+};
+
+const normalizeStringId = (value: unknown): string | null => {
+    if (typeof value === 'string') {
+        const normalized = value.trim();
+        return normalized.length > 0 ? normalized : null;
+    }
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return String(value);
+    }
+
+    return null;
+};
+
+const normalizeMarketPositionSnapshot = (raw: unknown): MarketPositionSnapshot | null => {
+    if (!raw || typeof raw !== 'object') {
+        return null;
+    }
+
+    const record = raw as Record<string, unknown>;
+    const marketId = normalizeStringId(record.market_id ?? record.marketId);
+    const optionsRaw = Array.isArray(record.options) ? record.options : [];
+
+    if (!marketId) {
+        return null;
+    }
+
+    const options = optionsRaw
+        .map((item: unknown) => {
+            if (!item || typeof item !== 'object') return null;
+            const optionRecord = item as Record<string, unknown>;
+                        const optionId = normalizeStringId(optionRecord.option_id ?? optionRecord.optionId ?? optionRecord.id);
+                        const optionName =
+                                typeof optionRecord.option_name === 'string'
+                                        ? optionRecord.option_name
+                                        : typeof optionRecord.optionName === 'string'
+                                            ? optionRecord.optionName
+                                            : '';
+            const sharesOwned = Number(optionRecord.shares_owned ?? optionRecord.sharesOwned);
+
+            if (!optionId || !Number.isFinite(sharesOwned)) return null;
+
+            return {
+                option_id: optionId,
+                option_name: optionName,
+                shares_owned: sharesOwned,
+            };
+        })
+        .filter((item): item is { option_id: string; option_name: string; shares_owned: number } => Boolean(item));
+
+    const rawTotalShares = Number(record.total_shares ?? record.totalShares);
+    const totalShares = Number.isFinite(rawTotalShares)
+        ? rawTotalShares
+        : options.reduce((sum, option) => sum + option.shares_owned, 0);
+
+    return {
+        market_id: marketId,
+        total_shares: totalShares,
+        options,
+        updated_at:
+            typeof record.updated_at === 'string'
+                ? record.updated_at
+                : typeof record.updatedAt === 'string'
+                  ? record.updatedAt
+                  : null,
+    };
+};
+
+export const getPortfolioPositionByMarketId = async (marketId: number) => {
+    const response = await get(`/portfolio/position/${marketId}`);
+    if (!response.ok) {
+        return response;
+    }
+
+    const payload = response.data as Record<string, unknown> | unknown[] | null;
+    const nested = payload && !Array.isArray(payload) ? payload.data : payload;
+    const candidate = Array.isArray(nested) ? nested[0] : nested;
+    const snapshot = normalizeMarketPositionSnapshot(candidate);
+    if (!snapshot) {
+        return {
+            ok: false,
+            data: {
+                error: 'Invalid market position response',
+            },
+        };
+    }
+
+    return {
+        ok: true,
+        data: {
+            snapshot,
+        },
+    };
+};
+
+export type MarketHistoryTimeframe = '5m' | '1h' | '1d' | '1w';
+
+export type MarketHistoryPoint = {
+    ts: string;
+    probability: number;
+};
+
+const normalizeMarketHistoryPoint = (value: unknown): MarketHistoryPoint | null => {
+    if (!value || typeof value !== 'object') {
+        return null;
+    }
+
+    const record = value as Record<string, unknown>;
+    const ts = typeof record.ts === 'string' ? record.ts : null;
+    const probability = Number(record.probability);
+    if (!ts || !Number.isFinite(probability)) {
+        return null;
+    }
+
+    return {
+        ts,
+        probability: Math.max(0, Math.min(100, Number(probability.toFixed(2)))),
+    };
+};
+
+export const getMarketHistory = async (
+    marketId: number,
+    timeframe: MarketHistoryTimeframe,
+    optionId?: number | null
+) => {
+    const params = new URLSearchParams({ timeframe });
+    if (typeof optionId === 'number' && Number.isInteger(optionId) && optionId > 0) {
+        params.set('optionId', String(optionId));
+    }
+    const response = await get(`/markets/${marketId}/history?${params.toString()}`);
+    if (!response.ok) {
+        return response;
+    }
+
+    const payload = response.data as Record<string, unknown> | null;
+    const nested = payload && typeof payload === 'object' ? payload.data : null;
+    const pointsRaw = nested && typeof nested === 'object'
+        ? (nested as Record<string, unknown>).points
+        : null;
+    const points = Array.isArray(pointsRaw)
+        ? pointsRaw
+            .map(normalizeMarketHistoryPoint)
+            .filter((item): item is MarketHistoryPoint => Boolean(item))
+        : [];
+
+    return {
+        ok: true,
+        data: {
+            points,
+        },
+    };
+};
+
 export type NotificationType = 'market' | 'leaderboard' | 'profile';
 
 export type NotificationPayload = {

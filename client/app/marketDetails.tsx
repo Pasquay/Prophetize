@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Text, View, Alert, TextInput, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as api from '../utils/api';
@@ -13,15 +13,53 @@ import { ExploreTheme } from "../constants/explore-theme";
 import { useUserStore } from '@/context/useUserStore';
 import { UI_COLORS, UI_SHADOWS } from '@/constants/ui-tokens';
 import { EmptyState } from '@/components/common/empty-state';
+import { MarketUpdatedPayload, PortfolioUpdatedPayload, subscribeRealtime } from '@/context/realtimeClient';
 
 const CREATE_MARKET_CATEGORIES = ['SPORTS', 'CRYPTO', 'POLITICS', 'CULTURE', 'TECHNOLOGY'];
 const QUICK_SHARE_PRESETS = ['1', '5', '10'];
+const TIMEFRAME_OPTIONS: { label: string; value: api.MarketHistoryTimeframe }[] = [
+  { label: '5M', value: '5m' },
+  { label: '1H', value: '1h' },
+  { label: '1D', value: '1d' },
+  { label: '1W', value: '1w' },
+];
+
+const BUTTON_STATE_TOKENS = {
+  active: {
+    backgroundColor: UI_COLORS.accentSoft,
+    borderColor: UI_COLORS.accentBorder,
+    textColor: UI_COLORS.linkPressed,
+  },
+  inactive: {
+    backgroundColor: UI_COLORS.surface,
+    borderColor: UI_COLORS.borderSoft,
+    textColor: ExploreTheme.titleText,
+  },
+  disabledOpacity: 0.6,
+  primary: {
+    backgroundColor: UI_COLORS.accent,
+    textColor: UI_COLORS.surface,
+    disabledBackgroundColor: UI_COLORS.borderMuted,
+  },
+  success: {
+    backgroundColor: UI_COLORS.success,
+    textColor: UI_COLORS.surface,
+    disabledBackgroundColor: UI_COLORS.borderMuted,
+  },
+};
 type CreateFieldKey = 'title' | 'description' | 'category' | 'resolutionDate';
 
 type CommentSubmissionState =
   | { type: 'success'; message: string }
   | { type: 'error'; message: string }
   | null;
+
+type TrendPoint = {
+  value: number;
+  timestamp: number;
+};
+
+const MAX_TREND_POINTS = 60;
 
 const sanitizeDisplayText = (value: unknown): string => {
   if (typeof value !== 'string') {
@@ -67,14 +105,77 @@ const formatRelativeTime = (value: string): string => {
   return `${days}d ago`;
 };
 
+const formatHourMinute = (date: Date) => {
+  const hour24 = date.getHours();
+  const hour12 = hour24 % 12 || 12;
+  const minute = String(date.getMinutes()).padStart(2, '0');
+  return `${hour12}:${minute}`;
+};
+
+const formatTrendLabel = (
+  timestamp: number,
+  timeframe: api.MarketHistoryTimeframe,
+  index: number
+): string => {
+  const date = new Date(timestamp);
+  if (timeframe === '5m') {
+    return formatHourMinute(date);
+  }
+
+  if (timeframe === '1h') {
+    return `${date.getHours() % 12 || 12}:00`;
+  }
+
+  if (timeframe === '1w') {
+    return `Week ${index + 1}`;
+  }
+
+  if (timeframe === '1d') {
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+  }
+
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+};
+
+const getChartPointTarget = (timeframe: api.MarketHistoryTimeframe): number => {
+  return 5;
+};
+
+const sampleTrendPointsForChart = (
+  points: TrendPoint[],
+  timeframe: api.MarketHistoryTimeframe
+): TrendPoint[] => {
+  if (points.length <= 1) {
+    return points;
+  }
+
+  const target = getChartPointTarget(timeframe);
+  if (points.length <= target) {
+    return points;
+  }
+
+  const sampled: TrendPoint[] = [];
+  const maxIndex = points.length - 1;
+  for (let i = 0; i < target; i += 1) {
+    const rawIndex = (i / (target - 1)) * maxIndex;
+    const index = Math.round(rawIndex);
+    sampled.push(points[index]);
+  }
+
+  return sampled;
+};
+
 
 export default function DetailsScreen() {
   const { id, mode } = useLocalSearchParams<{ id?: string; mode?: string }>();
   const marketID = id ? Number(id) : null;
+  const hasRouteId = typeof id === 'string' && id.trim().length > 0;
+  const hasInvalidMarketId = hasRouteId && (marketID === null || Number.isNaN(marketID) || marketID <= 0);
   const isCreateMode = mode === 'create' || !id;
 
   const [marketLoading, setMarketLoading] = useState(true);
   const [prediction, setPrediction] = useState<Prediction>();
+  const [marketError, setMarketError] = useState<string | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const [tradeLoading, setTradeLoading] = useState(false);
@@ -90,8 +191,13 @@ export default function DetailsScreen() {
   const [commentInput, setCommentInput] = useState('');
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentSubmissionState, setCommentSubmissionState] = useState<CommentSubmissionState>(null);
+  const [trendPoints, setTrendPoints] = useState<TrendPoint[]>([]);
+  const [selectedTimeframe, setSelectedTimeframe] = useState<api.MarketHistoryTimeframe>('1d');
+  const [chartLoading, setChartLoading] = useState(false);
+  const [chartError, setChartError] = useState<string | null>(null);
+  const commentSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { fetchUserData, setBalanceFromSnapshot } = useUserStore();
+  const { userData, fetchUserData, setBalanceFromSnapshot } = useUserStore();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -106,17 +212,35 @@ export default function DetailsScreen() {
   }, [prediction]);
 
   const loadMarketData = useCallback(async () => {
-    if (isCreateMode || marketID === null || Number.isNaN(marketID)) {
+    if (isCreateMode) {
+      setMarketLoading(false);
+      setMarketError(null);
+      return;
+    }
+
+    if (marketID === null || Number.isNaN(marketID) || marketID <= 0) {
+      setPrediction(undefined);
+      setMarketError('Invalid market link. Please return and open the market again.');
       setMarketLoading(false);
       return;
     }
 
     setMarketLoading(true);
+    setMarketError(null);
     const { ok, data } = await api.get(`/markets/${marketID}`);
     if (ok) {
-      setPrediction(data?.data ?? null);
+      const nextPrediction = data?.data ?? null;
+      if (!nextPrediction) {
+        setPrediction(undefined);
+        setMarketError('Market details are unavailable right now.');
+      } else {
+        setPrediction(nextPrediction);
+      }
     } else {
-      Alert.alert('Something wrong happened when fetching for predictions!');
+      const nextError = toSafeMessage(data?.error, 'Unable to load market details right now.');
+      setPrediction(undefined);
+      setMarketError(nextError);
+      Alert.alert('Unable to load market', nextError);
     }
     setMarketLoading(false);
   }, [isCreateMode, marketID]);
@@ -137,11 +261,119 @@ export default function DetailsScreen() {
       return;
     }
 
-    setSelectedOptionId(prediction.options[0].id);
+    setSelectedOptionId((prev) => {
+      if (prev && prediction.options.some((option) => option.id === prev)) {
+        return prev;
+      }
+
+      return prediction.options[0].id;
+    });
   }, [prediction]);
 
+  useEffect(() => {
+    if (commentSubmissionState?.type !== 'success') {
+      if (commentSuccessTimerRef.current) {
+        clearTimeout(commentSuccessTimerRef.current);
+        commentSuccessTimerRef.current = null;
+      }
+      return;
+    }
+
+    commentSuccessTimerRef.current = setTimeout(() => {
+      setCommentSubmissionState((current) => (current?.type === 'success' ? null : current));
+      commentSuccessTimerRef.current = null;
+    }, 2500);
+
+    return () => {
+      if (commentSuccessTimerRef.current) {
+        clearTimeout(commentSuccessTimerRef.current);
+        commentSuccessTimerRef.current = null;
+      }
+    };
+  }, [commentSubmissionState]);
+
+  useEffect(() => {
+    setTrendPoints([]);
+    setChartError(null);
+  }, [marketID]);
+
+  const loadUserPosition = useCallback(async () => {
+    if (isCreateMode || marketID === null || Number.isNaN(marketID) || marketID <= 0) {
+      setUserPosition(null);
+      return;
+    }
+
+    try {
+      const { ok, data } = await api.getPortfolioPositionByMarketId(marketID);
+      if (!ok) {
+        setUserPosition(null);
+        return;
+      }
+
+      const snapshot = data?.snapshot;
+      const rawTotalShares = Number(snapshot?.total_shares ?? snapshot?.totalShares);
+      const options = Array.isArray(snapshot?.options) ? snapshot.options : [];
+      const optionsTotal = options.reduce((sum: number, item: unknown) => {
+        if (!item || typeof item !== 'object') {
+          return sum;
+        }
+
+        const optionRecord = item as Record<string, unknown>;
+        const shares = Number(optionRecord.shares_owned ?? optionRecord.sharesOwned);
+        return Number.isFinite(shares) ? sum + shares : sum;
+      }, 0);
+
+      const totalShares = Number.isFinite(rawTotalShares) ? rawTotalShares : optionsTotal;
+      if (Number.isFinite(totalShares)) {
+        setUserPosition(totalShares);
+      } else {
+        setUserPosition(null);
+      }
+    } catch {
+      setUserPosition(null);
+      return;
+    }
+  }, [isCreateMode, marketID]);
+
+  const loadMarketHistory = useCallback(async () => {
+    if (isCreateMode || marketID === null || Number.isNaN(marketID) || marketID <= 0) {
+      setTrendPoints([]);
+      setChartError(null);
+      return;
+    }
+
+    setChartLoading(true);
+    setChartError(null);
+
+    const { ok, data } = await api.getMarketHistory(marketID, selectedTimeframe, selectedOptionId);
+    if (!ok) {
+      setChartError(toSafeMessage((data as Record<string, unknown>)?.error, 'Chart data is temporarily unavailable.'));
+      setChartLoading(false);
+      return;
+    }
+
+    const nextPoints = Array.isArray(data?.points)
+      ? data.points
+          .map((point: api.MarketHistoryPoint) => {
+            const timestamp = new Date(point.ts).getTime();
+            if (Number.isNaN(timestamp)) {
+              return null;
+            }
+
+            return {
+              value: Math.max(0, Math.min(100, Number(point.probability))),
+              timestamp,
+            };
+          })
+          .filter((point: TrendPoint | null): point is TrendPoint => Boolean(point))
+      : [];
+
+    setTrendPoints(nextPoints.slice(-MAX_TREND_POINTS));
+    setChartLoading(false);
+  }, [isCreateMode, marketID, selectedOptionId, selectedTimeframe]);
+
   const loadComments = useCallback(async () => {
-    if (!marketID || Number.isNaN(marketID)) {
+    if (marketID === null || Number.isNaN(marketID) || marketID <= 0) {
       setComments([]);
       setCommentsError(null);
       return;
@@ -175,7 +407,11 @@ export default function DetailsScreen() {
             .filter((item: api.CommentItem | null): item is api.CommentItem => Boolean(item))
         : [];
 
-      setComments(normalizedComments);
+      setComments(
+        normalizedComments.sort(
+          (a: api.CommentItem, b: api.CommentItem) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
+      );
     } else {
       setComments([]);
       setCommentsError(toSafeMessage(data?.error, 'Unable to load comments right now.'));
@@ -188,6 +424,18 @@ export default function DetailsScreen() {
       void loadComments();
     }
   }, [isCreateMode, loadComments]);
+
+  useEffect(() => {
+    if (!isCreateMode) {
+      void loadUserPosition();
+    }
+  }, [isCreateMode, loadUserPosition]);
+
+  useEffect(() => {
+    if (!isCreateMode) {
+      void loadMarketHistory();
+    }
+  }, [isCreateMode, loadMarketHistory]);
 
   const validateCreateForm = useCallback(() => {
     const normalizedCategory = category.trim().toUpperCase();
@@ -323,12 +571,13 @@ export default function DetailsScreen() {
       }
 
       await loadMarketData();
+      await loadUserPosition();
     } catch {
       setTradeError('Trade completed, but account refresh is delayed. Pull to refresh and try again.');
     } finally {
       setTradeLoading(false);
     }
-  }, [prediction, tradeLoading, selectedOptionId, shareInput, setBalanceFromSnapshot, fetchUserData, loadMarketData]);
+  }, [prediction, tradeLoading, selectedOptionId, shareInput, setBalanceFromSnapshot, fetchUserData, loadMarketData, loadUserPosition]);
 
   const parsedShares = Number(shareInput);
   const hasValidShares = Number.isFinite(parsedShares) && parsedShares > 0;
@@ -385,6 +634,10 @@ export default function DetailsScreen() {
     return normalizeProbability(Number(selectedOption.probability)) * 100;
   }, [selectedOption]);
 
+  const liveProbability = useMemo(() => {
+    return selectedProbability ?? impliedProbability;
+  }, [impliedProbability, selectedProbability]);
+
   const tradeActionLabel = useMemo(() => {
     if (!selectedOption?.name) {
       return 'Buy Option';
@@ -393,16 +646,112 @@ export default function DetailsScreen() {
     return `Buy ${formatOptionLabel(selectedOption.name)}`;
   }, [selectedOption]);
 
-  const chartSeries = useMemo(() => {
-    const anchor = impliedProbability ?? selectedProbability ?? 52;
-    const deltas = [-14, -9, -6, -1, 5, 8, 12];
-    return deltas.map((delta) => Math.max(6, Math.min(95, Math.round(anchor + delta))));
-  }, [impliedProbability, selectedProbability]);
+  const chartData = useMemo(() => {
+    const fallback = liveProbability ?? 50;
+    const sampledPoints = sampleTrendPointsForChart(trendPoints, selectedTimeframe);
 
-  const chartLabels = ['9 AM', '12 PM', '3 PM', '6 PM', 'Now'];
+    if (sampledPoints.length <= 1) {
+      return {
+        values: [fallback, fallback, fallback, fallback, fallback],
+        labels: ['--', '--', '--', '--', 'Now'],
+      };
+    }
+
+    return {
+      values: sampledPoints.map((point) => point.value),
+      labels: sampledPoints.map((point, index) => formatTrendLabel(point.timestamp, selectedTimeframe, index)),
+    };
+  }, [liveProbability, selectedTimeframe, trendPoints]);
+
+  const chartSeries = chartData.values;
+  const chartLabels = chartData.labels;
+
+  useEffect(() => {
+    if (isCreateMode || marketID === null || Number.isNaN(marketID) || marketID <= 0) {
+      return;
+    }
+
+    const unsubscribe = subscribeRealtime({
+      channels: ['market.updated', 'portfolio.updated'],
+      onEvent: (event, payload) => {
+        if (event === 'portfolio.updated') {
+          const portfolioPayload = payload as PortfolioUpdatedPayload;
+          if (portfolioPayload.userId !== String(userData?.id ?? '')) {
+            return;
+          }
+
+          setBalanceFromSnapshot(portfolioPayload.balance);
+          void loadUserPosition();
+          return;
+        }
+
+        if (event !== 'market.updated') {
+          return;
+        }
+
+        const marketPayload = payload as MarketUpdatedPayload;
+        if (marketPayload.marketId !== marketID) {
+          return;
+        }
+
+        const nextValue = Number(marketPayload.probability);
+        if (Number.isFinite(nextValue)) {
+          const normalizedValue = Math.max(0, Math.min(100, Number(nextValue.toFixed(2))));
+          const nextTimestamp = (() => {
+            const parsed = new Date(marketPayload.updatedAt).getTime();
+            return Number.isNaN(parsed) ? Date.now() : parsed;
+          })();
+
+          if (!selectedOptionId || marketPayload.optionId === selectedOptionId) {
+            setTrendPoints((prev) => {
+              if (!prev.length) {
+                return [{ value: normalizedValue, timestamp: nextTimestamp }];
+              }
+
+              const lastPoint = prev[prev.length - 1];
+              if (Math.abs(lastPoint.value - normalizedValue) < 0.01) {
+                return prev;
+              }
+
+              return [...prev, { value: normalizedValue, timestamp: nextTimestamp }].slice(-MAX_TREND_POINTS);
+            });
+          }
+
+          setPrediction((prev) => {
+            if (!prev?.options?.length) {
+              return prev;
+            }
+
+            const updatedOptions = prev.options.map((option) => {
+              if (option.id !== marketPayload.optionId) {
+                return option;
+              }
+
+              return {
+                ...option,
+                probability: normalizedValue,
+              };
+            });
+
+            return {
+              ...prev,
+              options: updatedOptions,
+            };
+          });
+        }
+      },
+      onReconnect: () => {
+        void loadMarketData();
+        void loadUserPosition();
+        void loadMarketHistory();
+      },
+    });
+
+    return unsubscribe;
+  }, [isCreateMode, loadMarketData, loadMarketHistory, loadUserPosition, marketID, selectedOptionId, setBalanceFromSnapshot, userData?.id]);
 
   const handlePostComment = useCallback(async () => {
-    if (!marketID || Number.isNaN(marketID)) {
+    if (marketID === null || Number.isNaN(marketID) || marketID <= 0) {
       return;
     }
 
@@ -537,9 +886,13 @@ export default function DetailsScreen() {
             disabled={submitLoading}
             onPress={handleCreateMarket}
             className="rounded-xl py-3 items-center"
-            style={{ backgroundColor: submitLoading ? ExploreTheme.headerBorder : ExploreTheme.titleText }}
+            style={{
+              backgroundColor: submitLoading
+                ? BUTTON_STATE_TOKENS.primary.disabledBackgroundColor
+                : BUTTON_STATE_TOKENS.primary.backgroundColor,
+            }}
           >
-            <Text className="font-grotesk-bold text-[14px]" style={{ color: '#FFFFFF' }}>
+            <Text className="font-grotesk-bold text-[14px]" style={{ color: BUTTON_STATE_TOKENS.primary.textColor }}>
               {submitLoading ? 'Submitting...' : 'Submit For Review'}
             </Text>
           </TouchableOpacity>
@@ -634,6 +987,47 @@ export default function DetailsScreen() {
           </View>
         </View>
 
+        <View className="mx-4 mt-3 flex-row items-center gap-2">
+          {TIMEFRAME_OPTIONS.map((option) => {
+            const isActive = selectedTimeframe === option.value;
+            return (
+              <TouchableOpacity
+                key={option.value}
+                disabled={chartLoading}
+                onPress={() => {
+                  if (selectedTimeframe === option.value) {
+                    return;
+                  }
+
+                  setSelectedTimeframe(option.value);
+                }}
+                className="rounded-full px-3 py-1"
+                style={{
+                  borderWidth: 1,
+                  borderColor: isActive ? BUTTON_STATE_TOKENS.active.borderColor : BUTTON_STATE_TOKENS.inactive.borderColor,
+                  backgroundColor: isActive ? BUTTON_STATE_TOKENS.active.backgroundColor : BUTTON_STATE_TOKENS.inactive.backgroundColor,
+                  opacity: chartLoading ? BUTTON_STATE_TOKENS.disabledOpacity : 1,
+                }}
+              >
+                <Text
+                  className="font-jetbrain text-[11px]"
+                  style={{ color: isActive ? BUTTON_STATE_TOKENS.active.textColor : BUTTON_STATE_TOKENS.inactive.textColor }}
+                >
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {chartError ? (
+          <View className="mx-4 mt-2">
+            <Text className="font-jetbrain text-[11px]" style={{ color: ExploreTheme.searchHint }}>
+              {chartError}
+            </Text>
+          </View>
+        ) : null}
+
         <View className="mt-3">
           <MarketDetailTrendChart values={chartSeries} labels={chartLabels} />
         </View>
@@ -695,14 +1089,14 @@ export default function DetailsScreen() {
                   className="rounded-full px-3 py-2"
                   style={{
                     borderWidth: 1,
-                    borderColor: isSelected ? UI_COLORS.accent : UI_COLORS.borderSoft,
-                    backgroundColor: isSelected ? UI_COLORS.accentSoft : UI_COLORS.surface,
-                    opacity: tradeLoading ? 0.6 : 1,
+                    borderColor: isSelected ? BUTTON_STATE_TOKENS.active.borderColor : BUTTON_STATE_TOKENS.inactive.borderColor,
+                    backgroundColor: isSelected ? BUTTON_STATE_TOKENS.active.backgroundColor : BUTTON_STATE_TOKENS.inactive.backgroundColor,
+                    opacity: tradeLoading ? BUTTON_STATE_TOKENS.disabledOpacity : 1,
                   }}
                 >
                   <Text
                     className="font-jetbrain-bold text-[12px]"
-                    style={{ color: isSelected ? UI_COLORS.accent : ExploreTheme.titleText }}
+                    style={{ color: isSelected ? BUTTON_STATE_TOKENS.active.textColor : BUTTON_STATE_TOKENS.inactive.textColor }}
                   >
                     {`${formatOptionLabel(option.name)} ${probability.toFixed(0)}%`}
                   </Text>
@@ -740,12 +1134,12 @@ export default function DetailsScreen() {
                   className="rounded-full px-3 py-1"
                   style={{
                     borderWidth: 1,
-                    borderColor: active ? UI_COLORS.accentBorder : UI_COLORS.borderSoft,
-                    backgroundColor: active ? UI_COLORS.accentSoft : UI_COLORS.surfaceSoft,
-                    opacity: tradeLoading ? 0.6 : 1,
+                    borderColor: active ? BUTTON_STATE_TOKENS.active.borderColor : BUTTON_STATE_TOKENS.inactive.borderColor,
+                    backgroundColor: active ? BUTTON_STATE_TOKENS.active.backgroundColor : BUTTON_STATE_TOKENS.inactive.backgroundColor,
+                    opacity: tradeLoading ? BUTTON_STATE_TOKENS.disabledOpacity : 1,
                   }}
                 >
-                  <Text className="font-jetbrain text-[11px]" style={{ color: ExploreTheme.secondaryText }}>
+                  <Text className="font-jetbrain text-[11px]" style={{ color: active ? BUTTON_STATE_TOKENS.active.textColor : ExploreTheme.secondaryText }}>
                     {preset} share{preset === '1' ? '' : 's'}
                   </Text>
                 </TouchableOpacity>
@@ -802,11 +1196,14 @@ export default function DetailsScreen() {
             accessibilityHint="Submits a buy order for the selected option"
             className="rounded-xl py-3 items-center"
             style={{
-              backgroundColor: UI_COLORS.success,
-              opacity: tradeLoading || !hasValidShares || !selectedOptionId ? 0.6 : 1,
+              backgroundColor:
+                tradeLoading || !hasValidShares || !selectedOptionId
+                  ? BUTTON_STATE_TOKENS.success.disabledBackgroundColor
+                  : BUTTON_STATE_TOKENS.success.backgroundColor,
+              opacity: tradeLoading || !hasValidShares || !selectedOptionId ? BUTTON_STATE_TOKENS.disabledOpacity : 1,
             }}
           >
-            <Text className="font-grotesk-bold text-[14px]" style={{ color: UI_COLORS.surface }}>
+            <Text className="font-grotesk-bold text-[14px]" style={{ color: BUTTON_STATE_TOKENS.success.textColor }}>
               {tradeLoading ? 'Processing buy...' : tradeActionLabel}
             </Text>
           </TouchableOpacity>
@@ -856,9 +1253,13 @@ export default function DetailsScreen() {
             accessibilityLabel="Post comment"
             accessibilityHint="Publishes your comment to this market discussion"
             className="rounded-xl py-3 items-center mb-3"
-            style={{ backgroundColor: commentSubmitting ? ExploreTheme.headerBorder : ExploreTheme.titleText }}
+            style={{
+              backgroundColor: commentSubmitting
+                ? BUTTON_STATE_TOKENS.primary.disabledBackgroundColor
+                : BUTTON_STATE_TOKENS.primary.backgroundColor,
+            }}
           >
-            <Text className="font-grotesk-bold text-[14px]" style={{ color: UI_COLORS.surface }}>
+            <Text className="font-grotesk-bold text-[14px]" style={{ color: BUTTON_STATE_TOKENS.primary.textColor }}>
               {commentSubmitting ? 'Posting...' : 'Post Comment'}
             </Text>
           </TouchableOpacity>
@@ -887,12 +1288,12 @@ export default function DetailsScreen() {
               className="rounded-xl py-2 items-center mb-3"
               style={{
                 borderWidth: 1,
-                borderColor: ExploreTheme.headerBorder,
-                backgroundColor: UI_COLORS.surface,
-                opacity: commentSubmitting || !sanitizeDisplayText(commentInput) ? 0.6 : 1,
+                borderColor: BUTTON_STATE_TOKENS.inactive.borderColor,
+                backgroundColor: BUTTON_STATE_TOKENS.inactive.backgroundColor,
+                opacity: commentSubmitting || !sanitizeDisplayText(commentInput) ? BUTTON_STATE_TOKENS.disabledOpacity : 1,
               }}
             >
-              <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.titleText }}>
+              <Text className="font-jetbrain text-[12px]" style={{ color: BUTTON_STATE_TOKENS.inactive.textColor }}>
                 Retry Post
               </Text>
             </TouchableOpacity>
@@ -936,7 +1337,7 @@ export default function DetailsScreen() {
                         {sanitizeDisplayText(item.user_id) || 'Anonymous'}
                       </Text>
                       <Text className="font-jetbrain text-[10px]" style={{ color: UI_COLORS.textMuted }}>
-                        Bought {selectedOption ? formatOptionLabel(selectedOption.name) : 'option'}
+                        Market comment
                       </Text>
                     </View>
                   </View>
@@ -957,7 +1358,19 @@ export default function DetailsScreen() {
           )}
         </View>
       </ScrollView>
-      ) : null}
+      ) : (
+        <View className="flex-1 px-4 pt-6">
+          <EmptyState
+            icon="error-outline"
+            title={hasInvalidMarketId ? 'Invalid market link' : 'Market unavailable'}
+            description={marketError ?? 'We could not load this market right now.'}
+            actionLabel="Retry"
+            onAction={() => {
+              void loadMarketData();
+            }}
+          />
+        </View>
+      )}
     </View>
   )
 }

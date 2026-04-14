@@ -21,6 +21,20 @@ const parseShares = (value: unknown): number | null => {
     return parsed;
 };
 
+const normalizeProbabilityForRealtime = (probability: unknown, currentPrice: unknown): number => {
+    const probabilityValue = Number(probability);
+    if (Number.isFinite(probabilityValue)) {
+        return Math.max(0, Math.min(100, Number(probabilityValue.toFixed(2))));
+    }
+
+    const currentPriceValue = Number(currentPrice);
+    if (Number.isFinite(currentPriceValue)) {
+        return Math.max(0, Math.min(100, Number((currentPriceValue * 100).toFixed(2))));
+    }
+
+    return 0;
+};
+
 const isSingleObjectCoercionError = (message: string | undefined) => {
     if (!message) {
         return false;
@@ -69,7 +83,7 @@ const getTradeSnapshot = async (userId: string, optionId: number) => {
 const validateTradableOption = async (optionId: number) => {
     const { data: option, error: optionError } = await supabase
         .from('market_options')
-        .select('id, current_price, market_id')
+        .select('id, current_price, probability, market_id')
         .eq('id', optionId)
         .single();
 
@@ -102,6 +116,7 @@ const validateTradableOption = async (optionId: number) => {
             id: Number(option.id),
             marketId: Number(option.market_id),
             currentPrice,
+            probability: normalizeProbabilityForRealtime(option.probability, option.current_price),
         },
     };
 };
@@ -143,6 +158,7 @@ export const buyShare = async(req:AuthRequest, res:Response) => {
             userId,
             marketId: optionValidation.option.marketId,
             optionId,
+            probability: optionValidation.option.probability,
             balance: snapshot.balance,
             sharesOwned: snapshot.position.sharesOwned,
         });
@@ -200,6 +216,7 @@ export const sellShare = async(req:AuthRequest, res:Response) => {
             userId,
             marketId: optionValidation.option.marketId,
             optionId,
+            probability: optionValidation.option.probability,
             balance: snapshot.balance,
             sharesOwned: snapshot.position.sharesOwned,
         });

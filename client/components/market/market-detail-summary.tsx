@@ -108,7 +108,7 @@ export default function MarketDetailSummary({ prediction, userPosition = null, u
                             className="text-base"
                             style={{ color: UI_COLORS.textPrimary, fontFamily: UI_FONTS.monoBold }}
                         >
-                            {userPosition !== null ? userPosition!.toFixed(2) : '0.00'}
+                            {userPosition !== null ? userPosition!.toFixed(2) : '--'}
                         </Text>
                     </View>
                 </View>
