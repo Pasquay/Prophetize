@@ -12,6 +12,9 @@ docs
 .agent
 .github
 my-agent-os/
+.opencode
+.idea
 .planning
-.planning/phases
-planning
+client/constants/backendUrl.ts
+.planning/
+.planning
