@@ -4,47 +4,11 @@ import { getPaginationRange } from "../utils/pagination";
 export type LeaderboardPeriod = "weekly" | "all_time";
 
 type LeaderboardRow = {
-  user_id: string;
-  wins: number;
-  profit_pct: number;
-  profiles:
-    | {
-        username: string;
-        avatar_url: string | null;
-      }
-    | {
-        username: string;
-        avatar_url: string | null;
-      }[]
-    | null;
-};
-
-type LeaderboardMeRow = {
-  wins: number;
-  profit_pct: number;
-  profiles:
-    | {
-        username: string;
-        avatar_url: string | null;
-      }
-    | {
-        username: string;
-        avatar_url: string | null;
-      }[]
-    | null;
-};
-
-type ProfileShape = {
+  id: string;
   username: string;
   avatar_url: string | null;
-};
-
-const getProfile = (rawProfile: LeaderboardRow["profiles"] | LeaderboardMeRow["profiles"]): ProfileShape | null => {
-  if (!rawProfile) {
-    return null;
-  }
-
-  return Array.isArray(rawProfile) ? rawProfile[0] ?? null : rawProfile;
+  revenue: number;
+  weekly_revenue: number;
 };
 
 export type LeaderboardItem = {
@@ -52,8 +16,7 @@ export type LeaderboardItem = {
   user_id: string;
   username: string;
   avatar_url: string | null;
-  wins: number;
-  profit_pct: number;
+  revenue: number;
   is_current_user: boolean;
 };
 
@@ -65,19 +28,8 @@ export type LeaderboardMeta = {
   total_pages: number;
 };
 
-const mapRow = (row: LeaderboardRow, rank: number): LeaderboardItem => {
-  const profile = getProfile(row.profiles);
-
-  return {
-    rank,
-    user_id: row.user_id,
-    username: profile?.username ?? "unknown",
-    avatar_url: profile?.avatar_url ?? null,
-    wins: row.wins,
-    profit_pct: row.profit_pct,
-    is_current_user: false,
-  };
-};
+const getSortColumn = (period: LeaderboardPeriod) =>
+  period === "weekly" ? "weekly_revenue" : "revenue";
 
 export const getLeaderboardPage = async (
   period: LeaderboardPeriod,
@@ -85,32 +37,35 @@ export const getLeaderboardPage = async (
   limit: number
 ): Promise<{ data: LeaderboardItem[]; meta: LeaderboardMeta }> => {
   const { from, to } = getPaginationRange(page, limit);
+  const sortColumn = getSortColumn(period);
 
   const { data, error, count } = await supabase
-    .from("leaderboard_snapshots")
-    .select("user_id,wins,profit_pct,profiles(username,avatar_url)", {
-      count: "exact",
-    })
-    .eq("period", period)
-    .order("profit_pct", { ascending: false })
-    .order("wins", { ascending: false })
+    .from("profiles")
+    .select("id, username, avatar_url, revenue, weekly_revenue", { count: "exact" })
+    .order(sortColumn, { ascending: false })
     .range(from, to);
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
   const rows = (data as LeaderboardRow[] | null) ?? [];
-  const totalRecords = count ?? rows.length;
+  const totalRecords = Math.min(count ?? rows.length, 100);
+  const totalPages = totalRecords > 0 ? Math.ceil(totalRecords / limit) : 0;
 
   return {
-    data: rows.map((row, index) => mapRow(row, from + index + 1)),
+    data: rows.map((row, index) => ({
+      rank: from + index + 1,
+      user_id: row.id,
+      username: row.username ?? "unknown",
+      avatar_url: row.avatar_url ?? null,
+      revenue: period === "weekly" ? row.weekly_revenue : row.revenue,
+      is_current_user: false,
+    })),
     meta: {
       page,
       limit,
       has_next_page: (page + 1) * limit < totalRecords,
       total_records: totalRecords,
-      total_pages: totalRecords > 0 ? Math.ceil(totalRecords / limit) : 0,
+      total_pages: totalPages,
     },
   };
 };
@@ -122,42 +77,34 @@ export const getMyLeaderboardPosition = async (
   position: number;
   username: string;
   avatar_url: string | null;
-  wins: number;
-  profit_pct: number;
+  revenue: number;
 } | null> => {
-  const { data, error } = await supabase
-    .from("leaderboard_snapshots")
-    .select("wins,profit_pct,profiles(username,avatar_url)")
-    .eq("period", period)
-    .eq("user_id", userId)
+  const sortColumn = getSortColumn(period);
+
+  // Get the user's own revenue
+  const { data: userData, error: userError } = await supabase
+    .from("profiles")
+    .select("username, avatar_url, revenue, weekly_revenue")
+    .eq("id", userId)
     .maybeSingle();
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (userError) throw new Error(userError.message);
+  if (!userData) return null;
 
-  if (!data) {
-    return null;
-  }
+  const userRevenue = period === "weekly" ? userData.weekly_revenue : userData.revenue;
 
-  const { count: higherProfitCount, error: rankError } = await supabase
-    .from("leaderboard_snapshots")
-    .select("user_id", { count: "exact", head: true })
-    .eq("period", period)
-    .gt("profit_pct", data.profit_pct);
+  // Count how many users have higher revenue to determine rank
+  const { count: higherCount, error: rankError } = await supabase
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .gt(sortColumn, userRevenue);
 
-  if (rankError) {
-    throw new Error(rankError.message);
-  }
-
-  const row = data as LeaderboardMeRow;
-  const profile = getProfile(row.profiles);
+  if (rankError) throw new Error(rankError.message);
 
   return {
-    position: (higherProfitCount ?? 0) + 1,
-    username: profile?.username ?? "unknown",
-    avatar_url: profile?.avatar_url ?? null,
-    wins: row.wins,
-    profit_pct: row.profit_pct,
+    position: (higherCount ?? 0) + 1,
+    username: userData.username ?? "unknown",
+    avatar_url: userData.avatar_url ?? null,
+    revenue: userRevenue,
   };
 };
