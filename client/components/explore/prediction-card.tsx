@@ -1,13 +1,13 @@
 import {Prediction} from "../../.expo/types/model";
 import React, { useEffect } from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay, withSpring, interpolate } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay, interpolate } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { categoryIconMap, OPTION_COLORS } from '@/constants/ui-mappings';
 import { ExploreTheme } from '@/constants/explore-theme';
-import { UI_COLORS } from '@/constants/ui-tokens';
+import { UI_COLORS, UI_SHADOWS } from '@/constants/ui-tokens';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -67,29 +67,21 @@ export default function PredictionCard({prediction, onPress, index = 0}:Props) {
     transform: [{ translateY: interpolate(entranceProgress.value, [0, 1], [16, 0]) }],
   }));
 
-  // Press feedback
-  const pressProgress = useSharedValue(0);
-  const pressStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: withSpring(pressProgress.value === 1 ? 0.97 : 1, { damping: 20, stiffness: 300 }) }],
-  }));
-
   const barDelay = index * 80 + 200;
 
     return (
     <AnimatedPressable
       onPress={onPress}
       onPressIn={() => {
-        pressProgress.value = 1;
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }}
-      onPressOut={() => { pressProgress.value = 0; }}
       className="w-full h-auto rounded-[12px] border-[1px]"
-      style={[{ borderColor: ExploreTheme.headerBorder }, entranceStyle, pressStyle]}
+      style={[{ borderColor: ExploreTheme.headerBorder }, entranceStyle]}
       accessibilityLabel={`View market: ${prediction.title}`}
       accessibilityRole="button"
       accessibilityHint="Opens market details"
     >
-      <View className="bg-white rounded-2xl overflow-hidden shadow-sm">
+      <View className="bg-white rounded-2xl overflow-hidden" style={UI_SHADOWS.soft}>
 
         {/* Image with diagonal gradient fade: top-right visible -> bottom-left hidden */}
         {prediction.image ? (

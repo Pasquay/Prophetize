@@ -2,6 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import backendUrl from '../constants/backendUrl';
 
 const baseUrl = backendUrl;
+const NETWORK_ERROR_MESSAGE = 'Network request failed. Check backend server and API URL.';
 
 let _clearAuth: (() => Promise<void>) | null = null;
 
@@ -32,22 +33,32 @@ const handleResponse = async (response: Response, retryFn?: ()=> Promise<Respons
     if (response.status === 401) {
         const refreshToken = await getRefreshToken();
         if(refreshToken){
-            const refreshResponse = await fetch(baseUrl + '/auth/refresh-token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type':'application/json'},
-                body: JSON.stringify({ refresh_token: refreshToken })
-            });
-            if(refreshResponse.ok){
-                const data = await refreshResponse.json();
-                if (data?.access_token) {
-                    await SecureStore.setItemAsync('access_token', data.access_token);
+            try {
+                const refreshResponse = await fetch(baseUrl + '/auth/refresh-token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type':'application/json'},
+                    body: JSON.stringify({ refresh_token: refreshToken })
+                });
+                if(refreshResponse.ok){
+                    const data = await refreshResponse.json();
+                    if (data?.access_token) {
+                        await SecureStore.setItemAsync('access_token', data.access_token);
+                    }
+                    if(retryFn){
+                        try {
+                            const retried = await retryFn();
+                            return { ok: retried.ok, data: await safeJson(retried)};
+                        } catch (error) {
+                            console.error('Retried request failed after token refresh', error);
+                            return { ok: false, data: { error: NETWORK_ERROR_MESSAGE } };
+                        }
+                    }
+                    return { ok: true, data };
                 }
-                if(retryFn){
-                    const retried = await retryFn();
-                    return { ok: retried.ok, data: await safeJson(retried)};
-                }
-                return { ok: true, data };
+            } catch (error) {
+                console.error('Token refresh request failed', error);
+                return { ok: false, data: { error: NETWORK_ERROR_MESSAGE } };
             }
         }
         await _clearAuth?.();
@@ -76,8 +87,13 @@ export const post = async(endpoint:string, body?:object) => {
         },
         body: JSON.stringify(body)
     });
-    const response = await doRequest();
-    return handleResponse(response, doRequest);
+    try {
+        const response = await doRequest();
+        return handleResponse(response, doRequest);
+    } catch (error) {
+        console.error(`POST ${endpoint} failed`, error);
+        return { ok: false, data: { error: NETWORK_ERROR_MESSAGE } };
+    }
 }
 
 export const get = async(endpoint:string) => {
@@ -89,8 +105,13 @@ export const get = async(endpoint:string) => {
             ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }
     });
-    const response = await doRequest();
-    return handleResponse(response, doRequest);
+    try {
+        const response = await doRequest();
+        return handleResponse(response, doRequest);
+    } catch (error) {
+        console.error(`GET ${endpoint} failed`, error);
+        return { ok: false, data: { error: NETWORK_ERROR_MESSAGE } };
+    }
 }
 
 export type LeaderboardPeriod = 'weekly' | 'all_time';
@@ -100,8 +121,9 @@ export type LeaderboardApiEntry = {
     user_id: string;
     username: string;
     avatar_url: string | null;
-    wins: number;
-    profit_pct: number;
+    wins?: number;
+    revenue?: number;
+    profit_pct?: number;
     is_current_user?: boolean;
 };
 
@@ -122,8 +144,9 @@ export type MyLeaderboardPositionResponse = {
     position: number;
     username: string;
     avatar_url: string | null;
-    wins: number;
-    profit_pct: number;
+    wins?: number;
+    revenue?: number;
+    profit_pct?: number;
 };
 
 export const getLeaderboard = async (

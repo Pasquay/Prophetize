@@ -308,3 +308,36 @@ This addendum is now canonical for backend integration planning tied to leaderbo
     - Chart series receives websocket-driven live updates after initial timeframe load.
     - Team records root-cause verdict for Your Position mismatch (client-state bug vs backend query bug vs missing DB schema/data issue) with evidence and final fix path.
     - If persistent comments depend on missing DB table/policies, required schema setup tasks are documented and executed before sign-off.
+
+## Addendum: Phase 7 UI Standards Remediation (2026-04-15)
+
+### UI-STD-01: Leaderboard Color Tokenization
+- **ID**: UI-STD-01
+- **Description**: Replace hardcoded leaderboard visual colors with semantic token-backed values while preserving existing UI style.
+- **Acceptance Criteria**:
+  - Leaderboard rank styles (gold/silver/bronze/self) are sourced from shared semantic tokens.
+  - Podium, rows, skeletons, and my-position card do not introduce new hardcoded theme hex values.
+  - Existing visual hierarchy remains recognizable and consistent with current app language.
+
+### UI-STD-02: Typography Scale Normalization
+- **ID**: UI-STD-02
+- **Description**: Normalize leaderboard and market detail text roles to a constrained shared type scale.
+- **Acceptance Criteria**:
+  - Repeated text roles map to shared size constants or semantic typography roles.
+  - Arbitrary per-element text-size drift is reduced in audited surfaces.
+  - Lint/typecheck pass after typography refactor.
+
+### UI-STD-03: Recovery and Affordance Integrity
+- **ID**: UI-STD-03
+- **Description**: Ensure leaderboard failure and interaction paths are actionable and honest.
+- **Acceptance Criteria**:
+  - Leaderboard error state includes explicit retry action wired to data reload.
+  - Leaderboard rows do not use no-op press handlers.
+  - Row accessibility/interaction semantics match real behavior.
+
+### UI-STD-04: Context-Specific UI Copy for Retry Flows
+- **ID**: UI-STD-04
+- **Description**: Replace generic retry labels in audited market-detail and leaderboard recovery paths with context-specific copy.
+- **Acceptance Criteria**:
+  - Retry labels clearly describe what will be retried.
+  - No generic bare "Retry" remains in targeted audited paths unless technically unavoidable and documented.

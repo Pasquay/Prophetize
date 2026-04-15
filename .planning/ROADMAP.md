@@ -162,3 +162,14 @@ Plans:
 Plans:
 - [ ] 06-01-PLAN.md — Backend root-cause resolution for position accuracy and websocket-capable chart history contract
 - [ ] 06-02-PLAN.md — Client fixes for chart timeframe buttons + websocket realtime updates, position rendering correctness, and consistent UI button tokens
+
+### Phase 7: using the ui audit, fix the following UI to make it according to standards, do not forget to use the given UI already in the app
+
+**Goal:** Raise audited UI quality by remediating token drift, typography inconsistency, and interaction recovery gaps on leaderboard and market detail surfaces while preserving the app's established visual language.
+**Requirements**: [UI-STD-01, UI-STD-02, UI-STD-03, UI-STD-04]
+**Depends on:** Phase 6
+**Plans:** 2 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Tokenize leaderboard colors and normalize shared typography roles
+- [ ] 07-02-PLAN.md — Add retry recovery and truthful row affordance behavior with UX verification

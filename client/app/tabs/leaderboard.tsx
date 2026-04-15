@@ -20,6 +20,17 @@ import {
 
 const PAGE_SIZE = 10;
 
+const toFiniteNumber = (value: unknown, fallback = 0) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const toDisplayName = (value: unknown) => {
+    if (typeof value !== 'string') return 'Unknown';
+    const trimmed = value.trim();
+    return trimmed || 'Unknown';
+};
+
 const getInitials = (username: string) => {
     const trimmed = username.trim();
     if (!trimmed) return 'NA';
@@ -33,20 +44,20 @@ const getInitials = (username: string) => {
 };
 
 const mapApiEntryToRow = (entry: LeaderboardApiEntry): LeaderboardEntry => ({
-    rank: entry.rank,
-    username: entry.username,
-    initials: getInitials(entry.username),
-    wins: entry.wins,
-    profitPct: entry.profit_pct,
+    rank: toFiniteNumber(entry.rank, 0),
+    username: toDisplayName(entry.username),
+    initials: getInitials(toDisplayName(entry.username)),
+    wins: toFiniteNumber(entry.wins, 0),
+    netWorth: toFiniteNumber(entry.revenue ?? entry.profit_pct, 0),
     isCurrentUser: Boolean(entry.is_current_user),
 });
 
 const mapMyPositionToRow = (position: MyLeaderboardPositionResponse): LeaderboardEntry => ({
-    rank: position.position,
-    username: position.username,
-    initials: getInitials(position.username),
-    wins: position.wins,
-    profitPct: position.profit_pct,
+    rank: toFiniteNumber(position.position, 0),
+    username: toDisplayName(position.username),
+    initials: getInitials(toDisplayName(position.username)),
+    wins: toFiniteNumber(position.wins, 0),
+    netWorth: toFiniteNumber(position.revenue ?? position.profit_pct, 0),
     isCurrentUser: true,
 });
 
@@ -66,7 +77,7 @@ export default function LeaderboardScreen() {
     const requestIdRef = useRef(0);
 
     const subtitle = useMemo(
-        () => (period === 'weekly' ? 'Weekly profit leaderboard' : 'All-time profit leaderboard'),
+        () => (period === 'weekly' ? 'Weekly net worth leaderboard' : 'All-time net worth leaderboard'),
         [period]
     );
     const topThree = useMemo(() => allEntries.slice(0, 3), [allEntries]);
@@ -203,7 +214,7 @@ export default function LeaderboardScreen() {
                             PREDICTOR
                         </Text>
                         <Text className="font-jetbrain-bold text-[10px] tracking-[1px]" style={{ color: ExploreTheme.secondaryText }}>
-                            PROFIT
+                            NET WORTH
                         </Text>
                     </View>
                 </View>
@@ -243,7 +254,7 @@ export default function LeaderboardScreen() {
                             onEndReached={handleLoadMore}
                             onEndReachedThreshold={0.4}
                             showsVerticalScrollIndicator={false}
-                            contentContainerStyle={{ gap: 8, paddingBottom: 102 }}
+                            contentContainerStyle={{ gap: 8, paddingBottom: 104 }}
                             ListFooterComponent={
                                 isFetchingMore ? <LeaderboardSkeletonList count={2} compact /> : null
                             }

@@ -139,7 +139,9 @@ export default function HomeScreen() {
             </SafeAreaView>
 
             <View className="px-5 pt-3 gap-3">
-                {canClaimAllowance && <ClaimAllowance onClaimed={fetchUserData}/>}
+                {canClaimAllowance && (
+                    <ClaimAllowance onClaimed={fetchUserData}/>
+                )}
                 <ScrollView horizontal={true} showsHorizontalScrollIndicator={false}>
                         <View className="flex-row gap-2">
                             {categories.map((cat) => (

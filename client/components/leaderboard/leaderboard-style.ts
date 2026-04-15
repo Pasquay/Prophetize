@@ -1,27 +1,33 @@
 export const getTopRankStyle = (rank: number) => {
     if (rank === 1) {
         return {
-            borderColor: '#E8D15A',
-            badgeBg: '#FFF8D8',
-            badgeColor: '#A77900',
-            rankColor: '#C28C00',
-            cardBg: '#FFFEF6',
+            borderColor: '#E7CB62',
+            badgeBg: '#FFF4C9',
+            badgeColor: '#A56E00',
+            rankColor: '#A56E00',
+            cardBg: '#FFFDF2',
+            stripeBg: '#F9EDB5',
+            shadowColor: '#D4A11D',
         };
     }
     if (rank === 2) {
         return {
-            borderColor: '#D7DEE8',
-            badgeBg: '#F5F8FD',
-            badgeColor: '#4B5563',
-            rankColor: '#677388',
-            cardBg: '#F8FAFF',
+            borderColor: '#CAD5E4',
+            badgeBg: '#EEF3FA',
+            badgeColor: '#4C617C',
+            rankColor: '#4C617C',
+            cardBg: '#F7FAFF',
+            stripeBg: '#E5EDF8',
+            shadowColor: '#9BB3CC',
         };
     }
     return {
-        borderColor: '#EDC7A6',
-        badgeBg: '#FFF3E8',
-        badgeColor: '#9A4F00',
-        rankColor: '#AF5500',
-        cardBg: '#FFF8F1',
+        borderColor: '#E7C6AA',
+        badgeBg: '#FFF0E4',
+        badgeColor: '#99540F',
+        rankColor: '#99540F',
+        cardBg: '#FFF9F4',
+        stripeBg: '#FCE3D0',
+        shadowColor: '#D49B6C',
     };
 };
