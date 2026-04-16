@@ -17,8 +17,8 @@ my-agent-os/
 .planning
 client/constants/backendUrl.ts
 .planning/
-.planning\REQUIREMENTS.md
-.planning\ROADMAP.md
-.planning\STATE.md
+.planning/REQUIREMENTS.md
+.planning/ROADMAP.md
+.planning/STATE.md
 .docs
 .planning
