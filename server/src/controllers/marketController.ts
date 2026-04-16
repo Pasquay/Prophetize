@@ -195,7 +195,7 @@ export const getTrendingMarkets = async(req:Request, res:Response) => {
                 category: market.category,
                 endDate: market.end_date,
                 status: market.status,
-                volume: item.volume_24h, 
+                volume: market.total_volume || 0,
                 options: finalOptions
             }
         });

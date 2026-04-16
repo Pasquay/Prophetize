@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import LeaderboardMyPositionCard from '@/components/leaderboard/my-position-card';
@@ -10,7 +10,7 @@ import LeaderboardSkeletonList from '@/components/leaderboard/leaderboard-skelet
 import { ExploreTheme } from '@/constants/explore-theme';
 import { useAuth } from '@/context/AuthContext';
 import { subscribeRealtime } from '@/context/realtimeClient';
-import { UI_COLORS } from '@/constants/ui-tokens';
+import { UI_COLORS, UI_TYPE_SCALE } from '@/constants/ui-tokens';
 import {
     LeaderboardApiEntry,
     MyLeaderboardPositionResponse,
@@ -162,6 +162,11 @@ export default function LeaderboardScreen() {
         setIsFetchingMore(false);
     }, [hasNextPage, isFetchingMore, isInitialLoading, page, period]);
 
+    const handleRetryLoad = useCallback(() => {
+        setErrorMessage(null);
+        void loadInitialPage(period);
+    }, [loadInitialPage, period]);
+
     useEffect(() => {
         loadInitialPage(period);
     }, [period, loadInitialPage]);
@@ -193,13 +198,13 @@ export default function LeaderboardScreen() {
                     }}
                 >
                     <View className="mb-2">
-                        <Text className="font-grotesk-bold text-[22px]" style={{ color: ExploreTheme.titleText }}>
+                        <Text className="font-grotesk-bold text-[22px]" style={{ color: ExploreTheme.titleText, fontSize: UI_TYPE_SCALE.leaderboard.title }}>
                             Top Prophets
                         </Text>
-                        <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
+                        <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText, fontSize: UI_TYPE_SCALE.leaderboard.subtitle }}>
                             {subtitle}
                         </Text>
-                        <Text className="font-jetbrain text-[11px] mt-1" style={{ color: connectionStatus.color }}>
+                        <Text className="font-jetbrain text-[11px] mt-1" style={{ color: connectionStatus.color, fontSize: UI_TYPE_SCALE.leaderboard.status }}>
                             {connectionStatus.label}
                         </Text>
                     </View>
@@ -207,13 +212,13 @@ export default function LeaderboardScreen() {
                     <LeaderboardSegment selected={period} onChange={setPeriod} />
 
                     <View className="flex-row items-center px-2 pt-4">
-                        <Text className="font-jetbrain-bold text-[10px] w-5 tracking-[1px]" style={{ color: ExploreTheme.secondaryText }}>
+                        <Text className="font-jetbrain-bold text-[10px] w-5 tracking-[1px]" style={{ color: ExploreTheme.secondaryText, fontSize: UI_TYPE_SCALE.leaderboard.columnHeader }}>
                             #
                         </Text>
-                        <Text className="font-jetbrain-bold text-[10px] flex-1 ml-3 tracking-[1px]" style={{ color: ExploreTheme.secondaryText }}>
+                        <Text className="font-jetbrain-bold text-[10px] flex-1 ml-3 tracking-[1px]" style={{ color: ExploreTheme.secondaryText, fontSize: UI_TYPE_SCALE.leaderboard.columnHeader }}>
                             PREDICTOR
                         </Text>
-                        <Text className="font-jetbrain-bold text-[10px] tracking-[1px]" style={{ color: ExploreTheme.secondaryText }}>
+                        <Text className="font-jetbrain-bold text-[10px] tracking-[1px]" style={{ color: ExploreTheme.secondaryText, fontSize: UI_TYPE_SCALE.leaderboard.columnHeader }}>
                             NET WORTH
                         </Text>
                     </View>
@@ -236,6 +241,21 @@ export default function LeaderboardScreen() {
                             <Text className="font-jetbrain text-[12px] text-center mt-2" style={{ color: ExploreTheme.secondaryText }}>
                                 {errorMessage}
                             </Text>
+                            <TouchableOpacity
+                                className="rounded-xl px-4 py-2 mt-3"
+                                accessibilityRole="button"
+                                accessibilityLabel="Retry loading leaderboard"
+                                onPress={handleRetryLoad}
+                                style={{
+                                    backgroundColor: UI_COLORS.surface,
+                                    borderWidth: 1,
+                                    borderColor: UI_COLORS.borderSoft,
+                                }}
+                            >
+                                <Text className="font-jetbrain" style={{ color: UI_COLORS.textPrimary }}>
+                                    Retry loading leaderboard
+                                </Text>
+                            </TouchableOpacity>
                         </View>
                     ) : allEntries.length === 0 ? (
                         <View className="flex-1 items-center justify-center px-6">

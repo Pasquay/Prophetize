@@ -22,6 +22,72 @@ export const UI_COLORS = {
   hint: '#B45309',
   hintBg: '#FFFBEB',
   hintBorder: '#FDE68A',
+  leaderboard: {
+    rank1: {
+      border: '#E7CB62',
+      badgeBg: '#FFF4C9',
+      badgeText: '#A56E00',
+      rankText: '#A56E00',
+      cardBg: '#FFFDF2',
+      stripeBg: '#F9EDB5',
+      shadow: '#D4A11D',
+    },
+    rank2: {
+      border: '#CAD5E4',
+      badgeBg: '#EEF3FA',
+      badgeText: '#4C617C',
+      rankText: '#4C617C',
+      cardBg: '#F7FAFF',
+      stripeBg: '#E5EDF8',
+      shadow: '#9BB3CC',
+    },
+    rank3: {
+      border: '#E7C6AA',
+      badgeBg: '#FFF0E4',
+      badgeText: '#99540F',
+      rankText: '#99540F',
+      cardBg: '#FFF9F4',
+      stripeBg: '#FCE3D0',
+      shadow: '#D49B6C',
+    },
+    self: {
+      border: '#78C9DE',
+    },
+    premium: {
+      badgeBg: '#FFF3D6',
+      badgeBorder: '#E7CB62',
+      icon: '#B67B00',
+      rowIcon: '#C79000',
+    },
+    skeleton: {
+      border: '#E4EAF2',
+      rowBg: '#FFFFFF',
+      rank: '#DEE6F2',
+      badge: '#E1E8F4',
+      textMain: '#DEE6F2',
+      textSub: '#E6EDF8',
+      value: '#D9F2E5',
+    },
+  },
+};
+
+export const UI_TYPE_SCALE = {
+  leaderboard: {
+    title: 22,
+    subtitle: 12,
+    status: 11,
+    columnHeader: 10,
+    rowMeta: 11,
+    rowName: 13,
+    rowValue: 12,
+  },
+  marketDetails: {
+    sectionTitle: 16,
+    commentMeta: 11,
+    commentBadge: 10,
+    commentBody: 13,
+    helper: 12,
+  },
 };
 
 export const UI_SHADOWS = {

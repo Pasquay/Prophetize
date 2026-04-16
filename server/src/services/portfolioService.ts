@@ -306,8 +306,8 @@ export async function getMarketPosition(
   }
 
   const optionIds = marketOptions
-    .map((option) => Number(option.id))
-    .filter((optionId) => Number.isInteger(optionId) && optionId > 0);
+    .map((option) => String(option.id ?? '').trim())
+    .filter((optionId) => optionId.length > 0);
 
   if (optionIds.length === 0) {
     return {
@@ -320,12 +320,12 @@ export async function getMarketPosition(
 
   const optionNameById = new Map<string, string>();
   for (const option of marketOptions) {
-    const optionId = Number(option.id);
-    if (!Number.isInteger(optionId) || optionId <= 0) {
+    const optionId = String(option.id ?? '').trim();
+    if (!optionId) {
       continue;
     }
 
-    optionNameById.set(String(optionId), String(option.name ?? 'Unknown'));
+    optionNameById.set(optionId, String(option.name ?? 'Unknown'));
   }
 
   const { data: positionsData, error: positionsError } = await supabase

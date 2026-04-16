@@ -168,8 +168,8 @@ Plans:
 **Goal:** Raise audited UI quality by remediating token drift, typography inconsistency, and interaction recovery gaps on leaderboard and market detail surfaces while preserving the app's established visual language.
 **Requirements**: [UI-STD-01, UI-STD-02, UI-STD-03, UI-STD-04]
 **Depends on:** Phase 6
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
-- [ ] 07-01-PLAN.md — Tokenize leaderboard colors and normalize shared typography roles
+- [x] 07-01-PLAN.md — Tokenize leaderboard colors and normalize shared typography roles
 - [ ] 07-02-PLAN.md — Add retry recovery and truthful row affordance behavior with UX verification

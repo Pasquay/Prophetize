@@ -7,7 +7,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { categoryIconMap, OPTION_COLORS } from '@/constants/ui-mappings';
 import { ExploreTheme } from '@/constants/explore-theme';
-import { UI_COLORS, UI_SHADOWS } from '@/constants/ui-tokens';
+import { UI_COLORS } from '@/constants/ui-tokens';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -81,7 +81,7 @@ export default function PredictionCard({prediction, onPress, index = 0}:Props) {
       accessibilityRole="button"
       accessibilityHint="Opens market details"
     >
-      <View className="bg-white rounded-2xl overflow-hidden" style={UI_SHADOWS.soft}>
+      <View className="bg-white rounded-2xl overflow-hidden">
 
         {/* Image with diagonal gradient fade: top-right visible -> bottom-left hidden */}
         {prediction.image ? (

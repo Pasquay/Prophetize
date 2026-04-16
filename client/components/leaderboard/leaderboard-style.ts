@@ -1,33 +1,38 @@
+import { UI_COLORS } from '@/constants/ui-tokens';
+
 export const getTopRankStyle = (rank: number) => {
     if (rank === 1) {
+        const token = UI_COLORS.leaderboard.rank1;
         return {
-            borderColor: '#E7CB62',
-            badgeBg: '#FFF4C9',
-            badgeColor: '#A56E00',
-            rankColor: '#A56E00',
-            cardBg: '#FFFDF2',
-            stripeBg: '#F9EDB5',
-            shadowColor: '#D4A11D',
+            borderColor: token.border,
+            badgeBg: token.badgeBg,
+            badgeColor: token.badgeText,
+            rankColor: token.rankText,
+            cardBg: token.cardBg,
+            stripeBg: token.stripeBg,
+            shadowColor: token.shadow,
         };
     }
     if (rank === 2) {
+        const token = UI_COLORS.leaderboard.rank2;
         return {
-            borderColor: '#CAD5E4',
-            badgeBg: '#EEF3FA',
-            badgeColor: '#4C617C',
-            rankColor: '#4C617C',
-            cardBg: '#F7FAFF',
-            stripeBg: '#E5EDF8',
-            shadowColor: '#9BB3CC',
+            borderColor: token.border,
+            badgeBg: token.badgeBg,
+            badgeColor: token.badgeText,
+            rankColor: token.rankText,
+            cardBg: token.cardBg,
+            stripeBg: token.stripeBg,
+            shadowColor: token.shadow,
         };
     }
+    const token = UI_COLORS.leaderboard.rank3;
     return {
-        borderColor: '#E7C6AA',
-        badgeBg: '#FFF0E4',
-        badgeColor: '#99540F',
-        rankColor: '#99540F',
-        cardBg: '#FFF9F4',
-        stripeBg: '#FCE3D0',
-        shadowColor: '#D49B6C',
+        borderColor: token.border,
+        badgeBg: token.badgeBg,
+        badgeColor: token.badgeText,
+        rankColor: token.rankText,
+        cardBg: token.cardBg,
+        stripeBg: token.stripeBg,
+        shadowColor: token.shadow,
     };
 };

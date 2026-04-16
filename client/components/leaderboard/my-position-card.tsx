@@ -3,7 +3,7 @@ import { Text, View, Image } from 'react-native';
 
 import { LeaderboardEntry } from './leaderboard-row';
 import { ExploreTheme } from '@/constants/explore-theme';
-import { UI_COLORS } from '@/constants/ui-tokens';
+import { UI_COLORS, UI_SHADOWS, UI_TYPE_SCALE } from '@/constants/ui-tokens';
 
 type Props = {
     item: LeaderboardEntry;
@@ -21,13 +21,9 @@ export default function LeaderboardMyPositionCard({ item }: Props) {
         <View
             className="rounded-2xl border px-3 py-3"
             style={{
-                borderColor: '#78C9DE',
+                borderColor: UI_COLORS.leaderboard.self.border,
                 backgroundColor: UI_COLORS.surface,
-                shadowColor: '#0F172A',
-                shadowOpacity: 0.08,
-                shadowOffset: { width: 0, height: 6 },
-                shadowRadius: 10,
-                elevation: 3,
+                ...UI_SHADOWS.lift,
             }}
         >
             <View className="absolute -top-2 right-3 rounded-md px-2 py-1" style={{ backgroundColor: UI_COLORS.accent }}>
@@ -48,10 +44,10 @@ export default function LeaderboardMyPositionCard({ item }: Props) {
                 </View>
 
                 <View className="flex-1">
-                    <Text className="font-grotesk-bold text-[13px]" style={{ color: ExploreTheme.titleText }} numberOfLines={1}>
+                    <Text className="font-grotesk-bold text-[13px]" style={{ color: ExploreTheme.titleText, fontSize: UI_TYPE_SCALE.leaderboard.rowName }} numberOfLines={1}>
                         {item.username}
                     </Text>
-                    <Text className="font-jetbrain text-[11px]" style={{ color: ExploreTheme.secondaryText }}>
+                    <Text className="font-jetbrain text-[11px]" style={{ color: ExploreTheme.secondaryText, fontSize: UI_TYPE_SCALE.leaderboard.rowMeta }}>
                         {item.wins} correct calls
                     </Text>
                 </View>

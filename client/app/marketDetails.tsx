@@ -11,9 +11,10 @@ import MarketDetailSummary from "@/components/market/market-detail-summary";
 import MarketDetailTrendChart from "@/components/market/market-detail-trend-chart";
 import { ExploreTheme } from "../constants/explore-theme";
 import { useUserStore } from '@/context/useUserStore';
-import { UI_COLORS, UI_SHADOWS } from '@/constants/ui-tokens';
+import { UI_COLORS, UI_SHADOWS, UI_TYPE_SCALE } from '@/constants/ui-tokens';
 import { EmptyState } from '@/components/common/empty-state';
 import { MarketUpdatedPayload, PortfolioUpdatedPayload, subscribeRealtime } from '@/context/realtimeClient';
+import { useAuth } from '@/context/AuthContext';
 
 const CREATE_MARKET_CATEGORIES = ['SPORTS', 'CRYPTO', 'POLITICS', 'CULTURE', 'TECHNOLOGY'];
 const QUICK_SHARE_PRESETS = ['1', '5', '10'];
@@ -198,6 +199,7 @@ export default function DetailsScreen() {
   const commentSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { userData, fetchUserData, setBalanceFromSnapshot } = useUserStore();
+  const { token, isLoading: authLoading } = useAuth();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -303,6 +305,15 @@ export default function DetailsScreen() {
       return;
     }
 
+    if (authLoading) {
+      return;
+    }
+
+    if (!token) {
+      setUserPosition(null);
+      return;
+    }
+
     try {
       const { ok, data } = await api.getPortfolioPositionByMarketId(marketID);
       if (!ok) {
@@ -333,7 +344,7 @@ export default function DetailsScreen() {
       setUserPosition(null);
       return;
     }
-  }, [isCreateMode, marketID]);
+  }, [authLoading, isCreateMode, marketID, token]);
 
   const loadMarketHistory = useCallback(async () => {
     if (isCreateMode || marketID === null || Number.isNaN(marketID) || marketID <= 0) {
@@ -426,10 +437,10 @@ export default function DetailsScreen() {
   }, [isCreateMode, loadComments]);
 
   useEffect(() => {
-    if (!isCreateMode) {
+    if (!isCreateMode && !authLoading) {
       void loadUserPosition();
     }
-  }, [isCreateMode, loadUserPosition]);
+  }, [authLoading, isCreateMode, loadUserPosition]);
 
   useEffect(() => {
     if (!isCreateMode) {
@@ -1229,7 +1240,7 @@ export default function DetailsScreen() {
             ...UI_SHADOWS.soft,
           }}
         >
-          <Text className="font-grotesk-bold text-[16px] mb-2" style={{ color: ExploreTheme.titleText }}>
+          <Text className="font-grotesk-bold text-[16px] mb-2" style={{ color: ExploreTheme.titleText, fontSize: UI_TYPE_SCALE.marketDetails.sectionTitle }}>
             Recent Activity
           </Text>
           <TextInput
@@ -1293,14 +1304,14 @@ export default function DetailsScreen() {
                 opacity: commentSubmitting || !sanitizeDisplayText(commentInput) ? BUTTON_STATE_TOKENS.disabledOpacity : 1,
               }}
             >
-              <Text className="font-jetbrain text-[12px]" style={{ color: BUTTON_STATE_TOKENS.inactive.textColor }}>
-                Retry Post
+              <Text className="font-jetbrain text-[12px]" style={{ color: BUTTON_STATE_TOKENS.inactive.textColor, fontSize: UI_TYPE_SCALE.marketDetails.helper }}>
+                Retry posting comment
               </Text>
             </TouchableOpacity>
           ) : null}
 
           {commentsLoading ? (
-            <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
+              <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText, fontSize: UI_TYPE_SCALE.marketDetails.helper }}>
               Loading comments. This should only take a moment.
             </Text>
           ) : commentsError ? (
@@ -1308,7 +1319,7 @@ export default function DetailsScreen() {
               icon="error-outline"
               title="Could not load comments"
               description={`${commentsError} Please try again.`}
-              actionLabel="Retry"
+              actionLabel="Retry loading comments"
               onAction={() => {
                 void loadComments();
               }}
@@ -1333,10 +1344,10 @@ export default function DetailsScreen() {
                       </Text>
                     </View>
                     <View>
-                      <Text className="font-jetbrain text-[11px]" style={{ color: ExploreTheme.secondaryText }}>
+                      <Text className="font-jetbrain text-[11px]" style={{ color: ExploreTheme.secondaryText, fontSize: UI_TYPE_SCALE.marketDetails.commentMeta }}>
                         {sanitizeDisplayText(item.user_id) || 'Anonymous'}
                       </Text>
-                      <Text className="font-jetbrain text-[10px]" style={{ color: UI_COLORS.textMuted }}>
+                      <Text className="font-jetbrain text-[10px]" style={{ color: UI_COLORS.textMuted, fontSize: UI_TYPE_SCALE.marketDetails.commentBadge }}>
                         Market comment
                       </Text>
                     </View>
@@ -1345,12 +1356,12 @@ export default function DetailsScreen() {
                     className="rounded-full px-2 py-1"
                     style={{ backgroundColor: UI_COLORS.surface, borderWidth: 1, borderColor: UI_COLORS.borderSoft }}
                   >
-                    <Text className="font-jetbrain text-[10px]" style={{ color: UI_COLORS.textMuted }}>
+                    <Text className="font-jetbrain text-[10px]" style={{ color: UI_COLORS.textMuted, fontSize: UI_TYPE_SCALE.marketDetails.commentBadge }}>
                       {formatRelativeTime(item.created_at)}
                     </Text>
                   </View>
                 </View>
-                <Text className="font-jetbrain text-[13px]" style={{ color: ExploreTheme.titleText, lineHeight: 18 }}>
+                <Text className="font-jetbrain text-[13px]" style={{ color: ExploreTheme.titleText, fontSize: UI_TYPE_SCALE.marketDetails.commentBody, lineHeight: 18 }}>
                   {sanitizeDisplayText(item.content)}
                 </Text>
               </View>
@@ -1364,7 +1375,7 @@ export default function DetailsScreen() {
             icon="error-outline"
             title={hasInvalidMarketId ? 'Invalid market link' : 'Market unavailable'}
             description={marketError ?? 'We could not load this market right now.'}
-            actionLabel="Retry"
+            actionLabel="Retry loading market"
             onAction={() => {
               void loadMarketData();
             }}

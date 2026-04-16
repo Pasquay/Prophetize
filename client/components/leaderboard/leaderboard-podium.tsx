@@ -5,7 +5,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ExploreTheme } from '@/constants/explore-theme';
 import { LeaderboardEntry } from './leaderboard-row';
 import { getTopRankStyle } from './leaderboard-style';
-import { UI_COLORS } from '@/constants/ui-tokens';
+import { UI_COLORS, UI_TYPE_SCALE } from '@/constants/ui-tokens';
 
 type Props = {
     entries: LeaderboardEntry[];
@@ -51,7 +51,7 @@ export default function LeaderboardPodium({ entries }: Props) {
                             <View className="px-3 py-2" style={{ backgroundColor: topStyles.stripeBg }}>
                                 <View className="flex-row items-center justify-between">
                                     <View className="rounded-md px-2 py-1" style={{ backgroundColor: topStyles.cardBg }}>
-                                        <Text className="font-jetbrain-bold text-[11px]" style={{ color: topStyles.rankColor }}>
+                                        <Text className="font-jetbrain-bold text-[11px]" style={{ color: topStyles.rankColor, fontSize: UI_TYPE_SCALE.leaderboard.rowMeta }}>
                                             #{entry.rank}
                                         </Text>
                                     </View>
@@ -61,7 +61,7 @@ export default function LeaderboardPodium({ entries }: Props) {
                                             style={{ width: 11, height: 11 }}
                                             resizeMode="contain"
                                         />
-                                        <Text className="font-jetbrain-bold text-[11px]" style={{ color: valueColor }}>
+                                        <Text className="font-jetbrain-bold text-[11px]" style={{ color: valueColor, fontSize: UI_TYPE_SCALE.leaderboard.rowMeta }}>
                                             {valueLabel}
                                         </Text>
                                     </View>
@@ -70,8 +70,15 @@ export default function LeaderboardPodium({ entries }: Props) {
 
                             <View className="px-3 pb-3" style={{ paddingTop: isCenter ? 14 : 10 }}>
                             {entry.rank === 1 && (
-                                <View className="absolute right-3 top-2 rounded-full px-2 py-1" style={{ backgroundColor: '#FFF3D6', borderWidth: 1, borderColor: '#E7CB62' }}>
-                                    <MaterialIcons name="workspace-premium" size={13} color="#B67B00" />
+                                <View
+                                    className="absolute right-3 top-2 rounded-full px-2 py-1"
+                                    style={{
+                                        backgroundColor: UI_COLORS.leaderboard.premium.badgeBg,
+                                        borderWidth: 1,
+                                        borderColor: UI_COLORS.leaderboard.premium.badgeBorder,
+                                    }}
+                                >
+                                    <MaterialIcons name="workspace-premium" size={13} color={UI_COLORS.leaderboard.premium.icon} />
                                 </View>
                             )}
 
@@ -84,11 +91,11 @@ export default function LeaderboardPodium({ entries }: Props) {
                                 <Text className="mt-2 font-grotesk-bold text-[13px]" style={{ color: ExploreTheme.titleText }} numberOfLines={1}>
                                     {entry.username}
                                 </Text>
-                                <Text className="font-jetbrain text-[11px]" style={{ color: ExploreTheme.secondaryText }}>
+                                <Text className="font-jetbrain text-[11px]" style={{ color: ExploreTheme.secondaryText, fontSize: UI_TYPE_SCALE.leaderboard.rowMeta }}>
                                     {entry.wins} correct picks
                                 </Text>
 
-                                <Text className="mt-2 font-jetbrain text-[10px] uppercase tracking-[1.1px]" style={{ color: topStyles.rankColor }}>
+                                <Text className="mt-2 font-jetbrain text-[10px] uppercase tracking-[1.1px]" style={{ color: topStyles.rankColor, fontSize: UI_TYPE_SCALE.leaderboard.columnHeader }}>
                                     {getMedalLabel(entry.rank)}
                                 </Text>
                             </View>

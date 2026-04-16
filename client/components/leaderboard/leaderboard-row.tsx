@@ -1,9 +1,9 @@
 import React from 'react';
-import { Text, View, Pressable, Image } from 'react-native';
+import { Text, View, Image } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { getTopRankStyle } from './leaderboard-style';
-import { UI_COLORS } from '@/constants/ui-tokens';
+import { UI_COLORS, UI_TYPE_SCALE } from '@/constants/ui-tokens';
 
 export type LeaderboardEntry = {
     rank: number;
@@ -31,11 +31,9 @@ export default function LeaderboardRow({ item }: Props) {
 
     if (!isTopThree) {
         return (
-            <Pressable
-                onPress={() => {}}
-                hitSlop={10}
-                accessibilityLabel={`View profile: ${item.username}`}
-                accessibilityRole="button"
+            <View
+                accessible
+                accessibilityLabel={`${item.username} leaderboard row`}
                 className="rounded-2xl border px-3 py-3"
                 style={{
                     borderColor: isCurrentUser ? UI_COLORS.accentBorder : UI_COLORS.border,
@@ -75,16 +73,14 @@ export default function LeaderboardRow({ item }: Props) {
                         <Text className="font-jetbrain-bold text-[10px] text-white">YOU</Text>
                     </View>
                 ) : null}
-            </Pressable>
+            </View>
         );
     }
 
     return (
-        <Pressable
-            onPress={() => {}}
-            hitSlop={10}
-            accessibilityLabel={`View profile: ${item.username}, rank ${item.rank}`}
-            accessibilityRole="button"
+        <View
+            accessible
+            accessibilityLabel={`${item.username} rank ${item.rank} leaderboard row`}
             className="rounded-2xl border px-3 py-3"
             style={{
                 borderColor: isCurrentUser ? UI_COLORS.accentBorder : topStyles.borderColor,
@@ -98,7 +94,7 @@ export default function LeaderboardRow({ item }: Props) {
         >
             {item.rank === 1 && (
                 <View className="absolute left-2 top-2 z-10">
-                    <MaterialIcons name="workspace-premium" size={16} color="#C79000" />
+                    <MaterialIcons name="workspace-premium" size={16} color={UI_COLORS.leaderboard.premium.rowIcon} />
                 </View>
             )}
 
@@ -119,10 +115,10 @@ export default function LeaderboardRow({ item }: Props) {
                 </View>
 
                 <View className="flex-1">
-                    <Text className="font-grotesk-bold text-[12px]" style={{ color: UI_COLORS.textPrimary }} numberOfLines={1}>
+                    <Text className="font-grotesk-bold text-[12px]" style={{ color: UI_COLORS.textPrimary, fontSize: UI_TYPE_SCALE.leaderboard.rowValue }} numberOfLines={1}>
                         {item.username}
                     </Text>
-                    <Text className="font-jetbrain text-[11px]" style={{ color: UI_COLORS.textSecondary }}>
+                    <Text className="font-jetbrain text-[11px]" style={{ color: UI_COLORS.textSecondary, fontSize: UI_TYPE_SCALE.leaderboard.rowMeta }}>
                         {item.wins} wins
                     </Text>
                 </View>
@@ -138,8 +134,9 @@ export default function LeaderboardRow({ item }: Props) {
                     </Text>
                 </View>
             </View>
-            </Pressable>
-        );
+        </View>
+    );
 }
+
 
 
