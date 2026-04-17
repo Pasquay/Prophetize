@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Text, View, Alert, TextInput, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Picker } from '@react-native-picker/picker';
 import * as api from '../utils/api';
 import {Prediction} from "../.expo/types/model";
 import LoadingScreen from '@/components/common/loading-screen';
@@ -19,11 +20,7 @@ import { MarketUpdatedPayload, PortfolioUpdatedPayload, subscribeRealtime } from
 import { useAuth } from '@/context/AuthContext';
 
 const CREATE_MARKET_CATEGORIES = ['SPORTS', 'CRYPTO', 'POLITICS', 'CULTURE', 'TECHNOLOGY'];
-const CREATE_DATE_PRESETS = [
-  { label: '+1 day', days: 1 },
-  { label: '+3 days', days: 3 },
-  { label: '+7 days', days: 7 },
-];
+const CREATE_OUTCOME_COUNT_OPTIONS = [3, 4, 5, 6];
 const QUICK_SHARE_PRESETS = ['1', '5', '10'];
 const TIMEFRAME_OPTIONS: { label: string; value: api.MarketHistoryTimeframe }[] = [
   { label: '5M', value: '5m' },
@@ -173,6 +170,49 @@ const sampleTrendPointsForChart = (
   return sampled;
 };
 
+const buildDateOptions = () => {
+  const options: { label: string; value: string }[] = [];
+  const now = new Date();
+
+  for (let i = 0; i < 30; i += 1) {
+    const next = new Date(now);
+    next.setDate(now.getDate() + i);
+    const value = next.toISOString().slice(0, 10);
+    const label = next.toLocaleDateString([], {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    options.push({ label, value });
+  }
+
+  return options;
+};
+
+const buildTimeOptions = () => {
+  const options: { label: string; value: string }[] = [];
+  for (let hour = 0; hour < 24; hour += 1) {
+    for (let minute = 0; minute < 60; minute += 30) {
+      const value = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+      const labelDate = new Date(2000, 0, 1, hour, minute);
+      const label = labelDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      options.push({ label, value });
+    }
+  }
+
+  return options;
+};
+
+const composeResolutionIso = (dateValue: string, timeValue: string) => {
+  const combined = new Date(`${dateValue}T${timeValue}:00`);
+  if (Number.isNaN(combined.getTime())) {
+    return '';
+  }
+
+  return combined.toISOString();
+};
+
 
 export default function DetailsScreen() {
   const { id, mode } = useLocalSearchParams<{ id?: string; mode?: string }>();
@@ -211,8 +251,12 @@ export default function DetailsScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('SPORTS');
-  const [resolutionDate, setResolutionDate] = useState('');
-  const [selectedDatePreset, setSelectedDatePreset] = useState('');
+  const dateOptions = useMemo(() => buildDateOptions(), []);
+  const timeOptions = useMemo(() => buildTimeOptions(), []);
+  const [resolutionDateOption, setResolutionDateOption] = useState(dateOptions[0]?.value ?? '');
+  const [resolutionTimeOption, setResolutionTimeOption] = useState('12:00');
+  const [outcomeCount, setOutcomeCount] = useState(3);
+  const [outcomeValues, setOutcomeValues] = useState<string[]>(['Yes', 'No', 'Maybe']);
   const [createErrors, setCreateErrors] = useState<Partial<Record<CreateFieldKey, string>>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitCompleted, setSubmitCompleted] = useState(false);
@@ -459,6 +503,8 @@ export default function DetailsScreen() {
 
   const validateCreateForm = useCallback(() => {
     const normalizedCategory = category.trim().toUpperCase();
+    const normalizedOutcomes = outcomeValues.map((value) => sanitizeDisplayText(value)).filter(Boolean);
+    const resolutionIso = composeResolutionIso(resolutionDateOption, resolutionTimeOption);
     const nextErrors: Partial<Record<CreateFieldKey, string>> = {};
 
     if (!title.trim()) {
@@ -475,17 +521,16 @@ export default function DetailsScreen() {
       nextErrors.category = 'Choose a category chip to keep this market easy to discover.';
     }
 
-    if (!resolutionDate.trim()) {
-      nextErrors.resolutionDate = 'Set when this market should resolve (tap a preset or enter ISO date).';
+    if (!resolutionIso) {
+      nextErrors.resolutionDate = 'Select both resolution date and time from the dropdowns.';
     }
 
     if (normalizedCategory && !CREATE_MARKET_CATEGORIES.includes(normalizedCategory)) {
       nextErrors.category = `Select one of these categories: ${CREATE_MARKET_CATEGORIES.join(', ')}`;
     }
 
-    const parsedDate = new Date(resolutionDate);
-    if (resolutionDate.trim() && Number.isNaN(parsedDate.getTime())) {
-      nextErrors.resolutionDate = 'Use ISO format, for example 2026-12-31T00:00:00.000Z';
+    if (normalizedOutcomes.length < 3) {
+      nextErrors.category = 'Add at least three custom outcome labels before submitting.';
     }
 
     setCreateErrors(nextErrors);
@@ -496,10 +541,10 @@ export default function DetailsScreen() {
 
     return {
       normalizedCategory,
-      parsedDate,
-      optionValues: ['Yes', 'No'],
+      parsedDate: new Date(resolutionIso),
+      optionValues: normalizedOutcomes,
     };
-  }, [category, description, resolutionDate, title]);
+  }, [category, description, outcomeValues, resolutionDateOption, resolutionTimeOption, title]);
 
   const handleCreateMarket = useCallback(async () => {
     const validated = validateCreateForm();
@@ -532,17 +577,23 @@ export default function DetailsScreen() {
     setTitle('');
     setDescription('');
     setCategory('SPORTS');
-    setResolutionDate('');
-    setSelectedDatePreset('');
+    setResolutionDateOption(dateOptions[0]?.value ?? '');
+    setResolutionTimeOption('12:00');
+    setOutcomeCount(3);
+    setOutcomeValues(['Yes', 'No', 'Maybe']);
     setCreateErrors({});
     setSubmitError(null);
-  }, [title, description, validateCreateForm]);
+  }, [dateOptions, title, description, validateCreateForm]);
 
-  const applyDatePreset = useCallback((label: string, daysFromNow: number) => {
-    const presetDate = new Date(Date.now() + daysFromNow * 86_400_000).toISOString();
-    setResolutionDate(presetDate);
-    setSelectedDatePreset(label);
-    setCreateErrors((prev) => ({ ...prev, resolutionDate: undefined }));
+  const handleOutcomeCountChange = useCallback((nextCount: number) => {
+    setOutcomeCount(nextCount);
+    setOutcomeValues((prev) => {
+      const nextValues = [...prev];
+      while (nextValues.length < nextCount) {
+        nextValues.push(`Outcome ${nextValues.length + 1}`);
+      }
+      return nextValues.slice(0, nextCount);
+    });
   }, []);
 
   const handleBuyTrade = useCallback(async (optionIdOverride?: number) => {
@@ -859,7 +910,7 @@ export default function DetailsScreen() {
                 setTitle(value);
                 setCreateErrors((prev) => ({ ...prev, title: undefined }));
               }}
-              placeholder="Will Bitcoin close above $100k this month?"
+              placeholder="Ex: Bitcoin above $100k by month-end"
               helperText="Keep the title specific and time-bound."
               errorText={createErrors.title}
             />
@@ -917,29 +968,51 @@ export default function DetailsScreen() {
             <Text className="font-grotesk-bold text-[16px] mb-3" style={{ color: ExploreTheme.titleText }}>
               Resolution
             </Text>
-            <CreateMarketChipGroup
-              label="QUICK DATE PRESETS"
-              options={CREATE_DATE_PRESETS.map((preset) => preset.label)}
-              selected={selectedDatePreset}
-              onSelect={(value) => {
-                const selectedPreset = CREATE_DATE_PRESETS.find((preset) => preset.label === value);
-                if (selectedPreset) {
-                  applyDatePreset(selectedPreset.label, selectedPreset.days);
-                }
-              }}
-            />
-            <CreateMarketField
-              label="RESOLUTION DATE (ISO)"
-              value={resolutionDate}
-              onChangeText={(value) => {
-                setResolutionDate(value);
-                setSelectedDatePreset('');
-                setCreateErrors((prev) => ({ ...prev, resolutionDate: undefined }));
-              }}
-              placeholder="2026-12-31T00:00:00.000Z"
-              helperText="You can type an ISO date or tap a quick preset above."
-              errorText={createErrors.resolutionDate}
-            />
+            <Text className="font-jetbrain-bold text-[11px] tracking-widest mb-2" style={{ color: ExploreTheme.secondaryText }}>
+              RESOLUTION DATE
+            </Text>
+            <View
+              className="rounded-2xl mb-3"
+              style={{ backgroundColor: UI_COLORS.createMarket.fieldBg, borderWidth: 1, borderColor: UI_COLORS.createMarket.fieldBorder }}
+            >
+              <Picker
+                selectedValue={resolutionDateOption}
+                onValueChange={(value) => {
+                  setResolutionDateOption(String(value));
+                  setCreateErrors((prev) => ({ ...prev, resolutionDate: undefined }));
+                }}
+              >
+                {dateOptions.map((option) => (
+                  <Picker.Item key={option.value} label={option.label} value={option.value} />
+                ))}
+              </Picker>
+            </View>
+
+            <Text className="font-jetbrain-bold text-[11px] tracking-widest mb-2" style={{ color: ExploreTheme.secondaryText }}>
+              RESOLUTION TIME
+            </Text>
+            <View
+              className="rounded-2xl mb-3"
+              style={{ backgroundColor: UI_COLORS.createMarket.fieldBg, borderWidth: 1, borderColor: UI_COLORS.createMarket.fieldBorder }}
+            >
+              <Picker
+                selectedValue={resolutionTimeOption}
+                onValueChange={(value) => {
+                  setResolutionTimeOption(String(value));
+                  setCreateErrors((prev) => ({ ...prev, resolutionDate: undefined }));
+                }}
+              >
+                {timeOptions.map((option) => (
+                  <Picker.Item key={option.value} label={option.label} value={option.value} />
+                ))}
+              </Picker>
+            </View>
+
+            {createErrors.resolutionDate ? (
+              <Text className="font-jetbrain text-[12px] mb-3" style={{ color: UI_COLORS.danger }}>
+                {createErrors.resolutionDate}
+              </Text>
+            ) : null}
 
             <View
               className="rounded-2xl px-4 py-3"
@@ -948,9 +1021,42 @@ export default function DetailsScreen() {
               <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
                 Outcome format
               </Text>
-              <Text className="font-jetbrain-bold text-[13px] mt-1" style={{ color: ExploreTheme.titleText }}>
-                Binary market (Yes / No)
+              <Text className="font-jetbrain-bold text-[13px] mt-1 mb-2" style={{ color: ExploreTheme.titleText }}>
+                Custom outcomes (3 or more)
               </Text>
+
+              <Text className="font-jetbrain-bold text-[11px] tracking-widest mb-2" style={{ color: ExploreTheme.secondaryText }}>
+                NUMBER OF OUTCOMES
+              </Text>
+              <View
+                className="rounded-2xl mb-3"
+                style={{ backgroundColor: UI_COLORS.createMarket.fieldBg, borderWidth: 1, borderColor: UI_COLORS.createMarket.fieldBorder }}
+              >
+                <Picker
+                  selectedValue={outcomeCount}
+                  onValueChange={(value) => handleOutcomeCountChange(Number(value))}
+                >
+                  {CREATE_OUTCOME_COUNT_OPTIONS.map((countOption) => (
+                    <Picker.Item key={countOption} label={`${countOption}`} value={countOption} />
+                  ))}
+                </Picker>
+              </View>
+
+              {outcomeValues.map((outcomeValue, index) => (
+                <CreateMarketField
+                  key={`outcome-${index}`}
+                  label={`OUTCOME ${index + 1}`}
+                  value={outcomeValue}
+                  onChangeText={(value) => {
+                    setOutcomeValues((prev) => {
+                      const nextValues = [...prev];
+                      nextValues[index] = value;
+                      return nextValues;
+                    });
+                  }}
+                  placeholder={`Outcome ${index + 1}`}
+                />
+              ))}
             </View>
           </View>
 
