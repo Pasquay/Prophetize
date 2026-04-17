@@ -212,8 +212,10 @@ export default function DetailsScreen() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('SPORTS');
   const [resolutionDate, setResolutionDate] = useState('');
+  const [selectedDatePreset, setSelectedDatePreset] = useState('');
   const [createErrors, setCreateErrors] = useState<Partial<Record<CreateFieldKey, string>>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitCompleted, setSubmitCompleted] = useState(false);
 
   const tradeOptions = useMemo(() => {
     if (!prediction?.options?.length) return [];
@@ -460,28 +462,30 @@ export default function DetailsScreen() {
     const nextErrors: Partial<Record<CreateFieldKey, string>> = {};
 
     if (!title.trim()) {
-      nextErrors.title = 'Title is required.';
+      nextErrors.title = 'Add a clear market question before submitting.';
+    } else if (title.trim().length < 12) {
+      nextErrors.title = 'Make the title more specific (at least 12 characters works best).';
     }
 
     if (!description.trim()) {
-      nextErrors.description = 'Description is required.';
+      nextErrors.description = 'Add context so traders understand what decides Yes or No.';
     }
 
     if (!normalizedCategory) {
-      nextErrors.category = 'Category is required.';
+      nextErrors.category = 'Choose a category chip to keep this market easy to discover.';
     }
 
     if (!resolutionDate.trim()) {
-      nextErrors.resolutionDate = 'Resolution date is required.';
+      nextErrors.resolutionDate = 'Set when this market should resolve (tap a preset or enter ISO date).';
     }
 
     if (normalizedCategory && !CREATE_MARKET_CATEGORIES.includes(normalizedCategory)) {
-      nextErrors.category = `Use one of: ${CREATE_MARKET_CATEGORIES.join(', ')}`;
+      nextErrors.category = `Select one of these categories: ${CREATE_MARKET_CATEGORIES.join(', ')}`;
     }
 
     const parsedDate = new Date(resolutionDate);
     if (resolutionDate.trim() && Number.isNaN(parsedDate.getTime())) {
-      nextErrors.resolutionDate = 'Use ISO date format, for example 2026-12-31T00:00:00.000Z';
+      nextErrors.resolutionDate = 'Use ISO format, for example 2026-12-31T00:00:00.000Z';
     }
 
     setCreateErrors(nextErrors);
@@ -506,6 +510,7 @@ export default function DetailsScreen() {
     setSubmitLoading(true);
     setSubmitMessage(null);
     setSubmitError(null);
+    setSubmitCompleted(false);
 
     const { ok, data } = await api.createMarket({
       title: title.trim(),
@@ -518,22 +523,25 @@ export default function DetailsScreen() {
     setSubmitLoading(false);
 
     if (!ok) {
-      setSubmitError(data?.error ?? 'Unable to submit market right now.');
+      setSubmitError(toSafeMessage(data?.error, 'Unable to submit market right now.'));
       return;
     }
 
     setSubmitMessage(data?.message ?? 'Market submitted and pending admin approval.');
+    setSubmitCompleted(true);
     setTitle('');
     setDescription('');
     setCategory('SPORTS');
     setResolutionDate('');
+    setSelectedDatePreset('');
     setCreateErrors({});
     setSubmitError(null);
   }, [title, description, validateCreateForm]);
 
-  const applyDatePreset = useCallback((daysFromNow: number) => {
+  const applyDatePreset = useCallback((label: string, daysFromNow: number) => {
     const presetDate = new Date(Date.now() + daysFromNow * 86_400_000).toISOString();
     setResolutionDate(presetDate);
+    setSelectedDatePreset(label);
     setCreateErrors((prev) => ({ ...prev, resolutionDate: undefined }));
   }, []);
 
@@ -912,11 +920,11 @@ export default function DetailsScreen() {
             <CreateMarketChipGroup
               label="QUICK DATE PRESETS"
               options={CREATE_DATE_PRESETS.map((preset) => preset.label)}
-              selected={''}
+              selected={selectedDatePreset}
               onSelect={(value) => {
                 const selectedPreset = CREATE_DATE_PRESETS.find((preset) => preset.label === value);
                 if (selectedPreset) {
-                  applyDatePreset(selectedPreset.days);
+                  applyDatePreset(selectedPreset.label, selectedPreset.days);
                 }
               }}
             />
@@ -925,6 +933,7 @@ export default function DetailsScreen() {
               value={resolutionDate}
               onChangeText={(value) => {
                 setResolutionDate(value);
+                setSelectedDatePreset('');
                 setCreateErrors((prev) => ({ ...prev, resolutionDate: undefined }));
               }}
               placeholder="2026-12-31T00:00:00.000Z"
@@ -956,9 +965,27 @@ export default function DetailsScreen() {
             }}
           >
             <Text className="font-grotesk-bold text-[14px]" style={{ color: BUTTON_STATE_TOKENS.primary.textColor }}>
-              {submitLoading ? 'Submitting...' : 'Submit For Review'}
+              {submitLoading ? 'Submitting...' : submitCompleted ? 'Submitted' : 'Submit for review'}
             </Text>
           </TouchableOpacity>
+
+          {submitCompleted && submitMessage ? (
+            <View
+              className="rounded-2xl p-4 mt-3"
+              style={{
+                backgroundColor: UI_COLORS.surface,
+                borderWidth: 1,
+                borderColor: UI_COLORS.accentBorder,
+              }}
+            >
+              <Text className="font-grotesk-bold text-[14px]" style={{ color: ExploreTheme.titleText }}>
+                Market submitted
+              </Text>
+              <Text className="font-jetbrain text-[13px] mt-1" style={{ color: ExploreTheme.secondaryText }}>
+                Pending admin review. It will become visible once approved.
+              </Text>
+            </View>
+          ) : null}
 
           {submitMessage ? (
             <Text className="font-jetbrain text-[13px] mt-3" style={{ color: ExploreTheme.secondaryText }}>
