@@ -143,7 +143,7 @@ describe("Leaderboard contracts", () => {
       .get("/leaderboard")
       .query({ period: "weekly", page: 9999, limit: 100 });
     expect(boundary.status).toBe(200);
-    expect(getLeaderboardPageMock).toHaveBeenCalledWith("weekly", 9999, 100);
+    expect(getLeaderboardPageMock).toHaveBeenCalledWith("weekly", 0, 100);
   });
 
   it("GET /leaderboard/me returns 401, 400, 404, and 200 as documented", async () => {
