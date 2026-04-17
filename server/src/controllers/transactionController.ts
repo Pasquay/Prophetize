@@ -1,9 +1,11 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { supabase } from '../config/supabaseClient';
 import { AuthRequest } from '../types/authRequest';
 import { emitTradeRealtimeUpdates } from '../services/realtimeService';
 
 const ACTIVE_MARKET_STATUSES = new Set(['active', 'open']);
+const TRADE_EXECUTION_ERROR = 'Unable to execute trade right now.';
+const INTERNAL_SERVER_ERROR_MESSAGE = 'Internal server error';
 
 const parseOptionId = (value: unknown): number | null => {
     const parsed = Number(value);
@@ -150,7 +152,10 @@ export const buyShare = async(req:AuthRequest, res:Response) => {
             p_total_cost: totalCost
         });
 
-        if(rpcError) return res.status(400).json({ error: rpcError.message });
+        if(rpcError) {
+            console.error('handle_buy_shares RPC failed', rpcError);
+            return res.status(400).json({ error: TRADE_EXECUTION_ERROR });
+        }
 
         const snapshot = await getTradeSnapshot(userId, optionId);
 
@@ -175,7 +180,8 @@ export const buyShare = async(req:AuthRequest, res:Response) => {
             snapshot,
         });
     } catch(error:any){
-        return res.status(500).json({ error: error.message });
+        console.error('buyShare failed', error);
+        return res.status(500).json({ error: INTERNAL_SERVER_ERROR_MESSAGE });
     }
 };
 
@@ -208,7 +214,10 @@ export const sellShare = async(req:AuthRequest, res:Response) => {
             p_total_return: totalReturn
         });
 
-        if(rpcError) return res.status(400).json({ error: rpcError.message });
+        if(rpcError) {
+            console.error('handle_sell_shares RPC failed', rpcError);
+            return res.status(400).json({ error: TRADE_EXECUTION_ERROR });
+        }
 
         const snapshot = await getTradeSnapshot(userId, optionId);
 
@@ -233,6 +242,7 @@ export const sellShare = async(req:AuthRequest, res:Response) => {
             snapshot,
         });
     } catch(error:any){
-        return res.status(500).json({ error: error.message });
+        console.error('sellShare failed', error);
+        return res.status(500).json({ error: INTERNAL_SERVER_ERROR_MESSAGE });
     }
 };

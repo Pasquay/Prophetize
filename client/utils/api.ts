@@ -697,35 +697,45 @@ export const getNotifications = async (): Promise<{
         },
     });
 
-    const initial = await doRequest();
-    if (initial.status === 404) {
+    try {
+        const initial = await doRequest();
+        if (initial.status === 404) {
+            return {
+                ok: true,
+                data: {
+                    items: [],
+                    source: 'fallback',
+                    message: 'Notification inbox endpoint is not available yet.',
+                },
+            };
+        }
+
+        const handled = await handleResponse(initial, doRequest);
+        if (!handled.ok) {
+            return {
+                ok: false,
+                data: {
+                    error: (handled.data as Record<string, unknown>)?.error as string || 'Unable to load notifications right now.',
+                },
+            };
+        }
+
         return {
             ok: true,
             data: {
-                items: [],
-                source: 'fallback',
-                message: 'Notification inbox endpoint is not available yet.',
+                items: extractNotifications(handled.data),
+                source: 'backend',
             },
         };
-    }
-
-    const handled = await handleResponse(initial, doRequest);
-    if (!handled.ok) {
+    } catch (error) {
+        console.error('GET /notifications failed', error);
         return {
             ok: false,
             data: {
-                error: (handled.data as Record<string, unknown>)?.error as string || 'Unable to load notifications right now.',
+                error: NETWORK_ERROR_MESSAGE,
             },
         };
     }
-
-    return {
-        ok: true,
-        data: {
-            items: extractNotifications(handled.data),
-            source: 'backend',
-        },
-    };
 };
 
 export type FollowAction = 'follow' | 'unfollow';

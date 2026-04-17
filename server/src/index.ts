@@ -12,16 +12,50 @@ import notificationRoutes from "../src/routes/notificationRoutes";
 import socialRoutes from "../src/routes/socialRoutes";
 import { initializeRealtimeEmitter } from "../src/services/realtimeService";
 
+const DEFAULT_ALLOWED_ORIGINS = [
+    'http://localhost:8081',
+    'http://127.0.0.1:8081',
+    'http://localhost:19006',
+    'http://127.0.0.1:19006',
+];
+
+const allowedOrigins = (() => {
+    const configured = (process.env.CORS_ORIGINS ?? '')
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean);
+
+    if (configured.length > 0) {
+        return configured;
+    }
+
+    return DEFAULT_ALLOWED_ORIGINS;
+})();
+
+const corsOriginHandler = (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
+    // Allow non-browser and local mobile dev calls while blocking unknown web origins.
+    if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+    }
+
+    callback(new Error('CORS origin not allowed'));
+};
+
 // Server
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+    origin: corsOriginHandler,
+    credentials: true,
+}));
 const server = http.createServer(app);
 
 const io = new SocketIOServer(server, {
     cors: {
-        origin: '*',
+        origin: corsOriginHandler,
         methods: ['GET', 'POST'],
+        credentials: true,
     },
 });
 
@@ -52,7 +86,7 @@ io.on('connection', (socket) => {
 });
 
 initializeRealtimeEmitter((event, payload) => {
-    io.emit(event, payload);
+    io.to(event).emit(event, payload);
 });
 
 // Root Route

@@ -20,8 +20,14 @@ const HISTORY_BUCKET_STEPS = {
 } as const;
 
 const HISTORY_TARGET_POINTS = 5;
+const INTERNAL_SERVER_ERROR_MESSAGE = 'Internal server error';
 
 type HistoryTimeframe = keyof typeof HISTORY_BUCKET_STEPS;
+
+const sanitizeSearchTerm = (value: string) => value
+    .replace(/[%_(),]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 const clampProbabilityPercent = (value: number) => {
     if (!Number.isFinite(value)) {
@@ -138,7 +144,8 @@ export const getAllMarkets = async(req:Request, res:Response) => {
 
         return res.status(200).json( marketData );
     } catch(error:any){
-        res.status(500).json({ error: error.message });
+        console.error('getAllMarkets failed', error);
+        res.status(500).json({ error: INTERNAL_SERVER_ERROR_MESSAGE });
     }
 };
 
@@ -203,7 +210,8 @@ export const getTrendingMarkets = async(req:Request, res:Response) => {
         return res.status(200).json(marketData);
     
     } catch(error: any){
-        res.status(500).json({ error: error.message });
+        console.error('getTrendingMarkets failed', error);
+        res.status(500).json({ error: INTERNAL_SERVER_ERROR_MESSAGE });
     }
 };
 
@@ -269,7 +277,8 @@ export const getMarketByCategory = async(req:Request, res:Response) => {
 
         return res.status(200).json(marketData);
     } catch(error:any){
-        return res.status(500).json({ error: error.message });
+        console.error('getMarketByCategory failed', error);
+        return res.status(500).json({ error: INTERNAL_SERVER_ERROR_MESSAGE });
     }
 };
 
@@ -300,7 +309,8 @@ export const getMarketById = async(req:Request, res:Response) => {
 
         return res.status(200).json({ data });
     } catch(error:any){
-        return res.status(500).json({ error: error.message });
+        console.error('getMarketById failed', error);
+        return res.status(500).json({ error: INTERNAL_SERVER_ERROR_MESSAGE });
     }
 };
 
@@ -328,7 +338,10 @@ export const searchMarket = async(req:Request, res:Response) => {
                 )
             `, { count: "exact" });
 
-        if(search) query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+        const sanitizedSearch = typeof search === 'string' ? sanitizeSearchTerm(search) : '';
+        if(sanitizedSearch) {
+            query = query.or(`title.ilike.%${sanitizedSearch}%,description.ilike.%${sanitizedSearch}%`);
+        }
         if(category) query = query.eq('category', category.toUpperCase());
         if(status) query = query.eq('status', status.toLowerCase());
         else query = query.eq('status', 'active');
@@ -380,7 +393,8 @@ export const searchMarket = async(req:Request, res:Response) => {
             }
         });
     } catch(error:any){
-        return res.status(500).json({ error: error.message });
+        console.error('searchMarket failed', error);
+        return res.status(500).json({ error: INTERNAL_SERVER_ERROR_MESSAGE });
     }
 };
 
@@ -454,7 +468,8 @@ export const createMarket = async(req:AuthRequest, res:Response) => {
             marketId: market.id
         }); 
     } catch(error:any){
-        return res.status(500).json({ error: error.message });
+        console.error('createMarket failed', error);
+        return res.status(500).json({ error: INTERNAL_SERVER_ERROR_MESSAGE });
     }
 };
 
@@ -486,7 +501,8 @@ export const reviewMarket = async(req:AuthRequest, res:Response) => {
             market: data
         });
     } catch(error:any){
-        return res.status(500).json({ error: error.message });
+        console.error('reviewMarket failed', error);
+        return res.status(500).json({ error: INTERNAL_SERVER_ERROR_MESSAGE });
     }
 };
 
@@ -639,6 +655,7 @@ export const getMarketHistory = async(req: Request, res: Response) => {
             },
         });
     } catch (error: any) {
-        return res.status(500).json({ error: error.message });
+        console.error('getMarketHistory failed', error);
+        return res.status(500).json({ error: INTERNAL_SERVER_ERROR_MESSAGE });
     }
 };
