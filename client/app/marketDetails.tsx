@@ -9,6 +9,8 @@ import MarketDetailsHeader from "@/components/market/market-detail-header";
 import MarketDetailBalance from "@/components/market/market-detail-balance";
 import MarketDetailSummary from "@/components/market/market-detail-summary";
 import MarketDetailTrendChart from "@/components/market/market-detail-trend-chart";
+import { CreateMarketField } from '@/components/market/create-market-field';
+import { CreateMarketChipGroup } from '@/components/market/create-market-chip-group';
 import { ExploreTheme } from "../constants/explore-theme";
 import { useUserStore } from '@/context/useUserStore';
 import { UI_COLORS, UI_SHADOWS, UI_TYPE_SCALE } from '@/constants/ui-tokens';
@@ -17,6 +19,11 @@ import { MarketUpdatedPayload, PortfolioUpdatedPayload, subscribeRealtime } from
 import { useAuth } from '@/context/AuthContext';
 
 const CREATE_MARKET_CATEGORIES = ['SPORTS', 'CRYPTO', 'POLITICS', 'CULTURE', 'TECHNOLOGY'];
+const CREATE_DATE_PRESETS = [
+  { label: '+1 day', days: 1 },
+  { label: '+3 days', days: 3 },
+  { label: '+7 days', days: 7 },
+];
 const QUICK_SHARE_PRESETS = ['1', '5', '10'];
 const TIMEFRAME_OPTIONS: { label: string; value: api.MarketHistoryTimeframe }[] = [
   { label: '5M', value: '5m' },
@@ -524,6 +531,12 @@ export default function DetailsScreen() {
     setSubmitError(null);
   }, [title, description, validateCreateForm]);
 
+  const applyDatePreset = useCallback((daysFromNow: number) => {
+    const presetDate = new Date(Date.now() + daysFromNow * 86_400_000).toISOString();
+    setResolutionDate(presetDate);
+    setCreateErrors((prev) => ({ ...prev, resolutionDate: undefined }));
+  }, []);
+
   const handleBuyTrade = useCallback(async (optionIdOverride?: number) => {
     if (!prediction) {
       return;
@@ -811,92 +824,131 @@ export default function DetailsScreen() {
           </View>
         </SafeAreaView>
 
-        <ScrollView className="px-5 py-4">
-          <Text className="font-grotesk-bold text-[22px] mb-2" style={{ color: ExploreTheme.titleText }}>
+        <ScrollView className="px-5 py-4" contentContainerStyle={{ paddingBottom: 28 }}>
+          <Text className="font-grotesk-bold text-[24px] mb-2" style={{ color: ExploreTheme.titleText }}>
             Submit New Market
           </Text>
           <Text className="font-jetbrain text-[13px] mb-4" style={{ color: ExploreTheme.secondaryText }}>
             New markets are pending until admin approval and will not appear publicly until approved.
           </Text>
 
-          <TextInput
-            value={title}
-            onChangeText={(value) => {
-              setTitle(value);
-              setCreateErrors((prev) => ({ ...prev, title: undefined }));
-            }}
-            placeholder="Title"
-            className="bg-white rounded-xl px-4 py-3 mb-3 font-jetbrain"
-            style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, color: ExploreTheme.titleText }}
-          />
-          {createErrors.title ? (
-            <Text className="font-jetbrain text-[12px] mt-[-8px] mb-3" style={{ color: ExploreTheme.searchHint }}>
-              {createErrors.title}
-            </Text>
-          ) : null}
-          <TextInput
-            value={description}
-            onChangeText={(value) => {
-              setDescription(value);
-              setCreateErrors((prev) => ({ ...prev, description: undefined }));
-            }}
-            placeholder="Description"
-            multiline
-            className="bg-white rounded-xl px-4 py-3 mb-3 font-jetbrain"
-            style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, color: ExploreTheme.titleText, minHeight: 92 }}
-          />
-          {createErrors.description ? (
-            <Text className="font-jetbrain text-[12px] mt-[-8px] mb-3" style={{ color: ExploreTheme.searchHint }}>
-              {createErrors.description}
-            </Text>
-          ) : null}
-          <TextInput
-            value={category}
-            onChangeText={(value) => {
-              setCategory(value);
-              setCreateErrors((prev) => ({ ...prev, category: undefined }));
-            }}
-            placeholder={`Category (${CREATE_MARKET_CATEGORIES.join(', ')})`}
-            autoCapitalize="characters"
-            className="bg-white rounded-xl px-4 py-3 mb-3 font-jetbrain"
-            style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, color: ExploreTheme.titleText }}
-          />
-          {createErrors.category ? (
-            <Text className="font-jetbrain text-[12px] mt-[-8px] mb-3" style={{ color: ExploreTheme.searchHint }}>
-              {createErrors.category}
-            </Text>
-          ) : null}
-          <TextInput
-            value={resolutionDate}
-            onChangeText={(value) => {
-              setResolutionDate(value);
-              setCreateErrors((prev) => ({ ...prev, resolutionDate: undefined }));
-            }}
-            placeholder="Resolution date (ISO)"
-            className="bg-white rounded-xl px-4 py-3 mb-3 font-jetbrain"
-            style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, color: ExploreTheme.titleText }}
-          />
-          {createErrors.resolutionDate ? (
-            <Text className="font-jetbrain text-[12px] mt-[-8px] mb-3" style={{ color: ExploreTheme.searchHint }}>
-              {createErrors.resolutionDate}
-            </Text>
-          ) : null}
           <View
-            className="rounded-xl px-4 py-3 mb-4"
-            style={{ borderWidth: 1, borderColor: ExploreTheme.headerBorder, backgroundColor: UI_COLORS.surfaceSoft }}
+            className="rounded-3xl p-4 mb-4"
+            style={{
+              backgroundColor: UI_COLORS.createMarket.cardBg,
+              borderWidth: 1,
+              borderColor: UI_COLORS.createMarket.cardBorder,
+              ...UI_SHADOWS.soft,
+            }}
           >
-            <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
-              Outcome format
+            <Text className="font-grotesk-bold text-[16px] mb-3" style={{ color: ExploreTheme.titleText }}>
+              Market Basics
             </Text>
-            <Text className="font-jetbrain-bold text-[13px] mt-1" style={{ color: ExploreTheme.titleText }}>
-              Binary market (Yes / No)
+            <CreateMarketField
+              label="TITLE"
+              value={title}
+              onChangeText={(value) => {
+                setTitle(value);
+                setCreateErrors((prev) => ({ ...prev, title: undefined }));
+              }}
+              placeholder="Will Bitcoin close above $100k this month?"
+              helperText="Keep the title specific and time-bound."
+              errorText={createErrors.title}
+            />
+            <CreateMarketField
+              label="DESCRIPTION"
+              value={description}
+              onChangeText={(value) => {
+                setDescription(value);
+                setCreateErrors((prev) => ({ ...prev, description: undefined }));
+              }}
+              placeholder="Add context users need before they trade this market."
+              multiline
+              helperText="A clear description leads to cleaner trading decisions."
+              errorText={createErrors.description}
+            />
+          </View>
+
+          <View
+            className="rounded-3xl p-4 mb-4"
+            style={{
+              backgroundColor: UI_COLORS.createMarket.cardBg,
+              borderWidth: 1,
+              borderColor: UI_COLORS.createMarket.cardBorder,
+              ...UI_SHADOWS.soft,
+            }}
+          >
+            <Text className="font-grotesk-bold text-[16px] mb-3" style={{ color: ExploreTheme.titleText }}>
+              Category
             </Text>
+            <CreateMarketChipGroup
+              label="PICK A CATEGORY"
+              options={CREATE_MARKET_CATEGORIES}
+              selected={category}
+              onSelect={(value) => {
+                setCategory(value);
+                setCreateErrors((prev) => ({ ...prev, category: undefined }));
+              }}
+            />
+            {createErrors.category ? (
+              <Text className="font-jetbrain text-[12px]" style={{ color: UI_COLORS.danger }}>
+                {createErrors.category}
+              </Text>
+            ) : null}
+          </View>
+
+          <View
+            className="rounded-3xl p-4 mb-4"
+            style={{
+              backgroundColor: UI_COLORS.createMarket.cardBg,
+              borderWidth: 1,
+              borderColor: UI_COLORS.createMarket.cardBorder,
+              ...UI_SHADOWS.soft,
+            }}
+          >
+            <Text className="font-grotesk-bold text-[16px] mb-3" style={{ color: ExploreTheme.titleText }}>
+              Resolution
+            </Text>
+            <CreateMarketChipGroup
+              label="QUICK DATE PRESETS"
+              options={CREATE_DATE_PRESETS.map((preset) => preset.label)}
+              selected={''}
+              onSelect={(value) => {
+                const selectedPreset = CREATE_DATE_PRESETS.find((preset) => preset.label === value);
+                if (selectedPreset) {
+                  applyDatePreset(selectedPreset.days);
+                }
+              }}
+            />
+            <CreateMarketField
+              label="RESOLUTION DATE (ISO)"
+              value={resolutionDate}
+              onChangeText={(value) => {
+                setResolutionDate(value);
+                setCreateErrors((prev) => ({ ...prev, resolutionDate: undefined }));
+              }}
+              placeholder="2026-12-31T00:00:00.000Z"
+              helperText="You can type an ISO date or tap a quick preset above."
+              errorText={createErrors.resolutionDate}
+            />
+
+            <View
+              className="rounded-2xl px-4 py-3"
+              style={{ borderWidth: 1, borderColor: UI_COLORS.createMarket.fieldBorder, backgroundColor: UI_COLORS.surfaceSoft }}
+            >
+              <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
+                Outcome format
+              </Text>
+              <Text className="font-jetbrain-bold text-[13px] mt-1" style={{ color: ExploreTheme.titleText }}>
+                Binary market (Yes / No)
+              </Text>
+            </View>
           </View>
 
           <TouchableOpacity
             disabled={submitLoading}
             onPress={handleCreateMarket}
-            className="rounded-xl py-3 items-center"
+            className="rounded-2xl py-3 items-center"
             style={{
               backgroundColor: submitLoading
                 ? BUTTON_STATE_TOKENS.primary.disabledBackgroundColor
