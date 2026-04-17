@@ -22,6 +22,18 @@ export const UI_COLORS = {
   hint: '#B45309',
   hintBg: '#FFFBEB',
   hintBorder: '#FDE68A',
+  createMarket: {
+    cardBg: '#FFFFFF',
+    cardBorder: '#DDEDF4',
+    fieldBg: '#F3FAFD',
+    fieldBorder: '#D5EAF1',
+    fieldBorderError: '#EF4444',
+    chipBg: '#FFFFFF',
+    chipBorder: '#D5EAF1',
+    chipBgActive: 'rgba(43, 181, 214, 0.12)',
+    chipBorderActive: '#9CDDEA',
+    chipTextMuted: '#64748B',
+  },
   leaderboard: {
     rank1: {
       border: '#E7CB62',
