@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 04-03-PLAN.md
-last_updated: "2026-04-15T01:57:17.861Z"
-last_activity: 2026-04-15 -- Phase 7 execution started
+last_updated: "2026-04-17T18:56:12.358Z"
+last_activity: 2026-04-17
 progress:
-  total_phases: 7
+  total_phases: 8
   completed_phases: 2
-  total_plans: 9
-  completed_plans: 4
-  percent: 44
+  total_plans: 11
+  completed_plans: 6
+  percent: 55
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-13)
 
 **Core value:** Ship reliable prediction-market features with contract-first backend/frontend alignment.
-**Current focus:** Phase 7 — using the ui audit, fix the following UI to make it according to standards, do not forget to use the given UI already in the app
+**Current focus:** Phase 8 — Revamp the Create market to be more user friendly and look better to the eye keepin the same theme through out the entrie app
 
 ## Current Position
 
-Phase: 7 (using the ui audit, fix the following UI to make it according to standards, do not forget to use the given UI already in the app) — EXECUTING
-Plan: 1 of 2
-Status: Executing Phase 7
-Last activity: 2026-04-15 -- Phase 7 execution started
+Phase: 8 (Revamp the Create market to be more user friendly and look better to the eye keepin the same theme through out the entrie app) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-04-17
 
 Progress: [██░░░░░░░░] 25%
 
@@ -58,6 +58,7 @@ Progress: [██░░░░░░░░] 25%
 | Phase 04 P02 | 24m | 2 tasks | 3 files |
 | Phase 04 P03 | 10m | 2 tasks | 5 files |
 | Phase 04 P03 | 10m | 2 tasks | 5 files |
+| Phase 08 P01 | 24 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,7 @@ Progress: [██░░░░░░░░] 25%
 
 - Phase 6 added: 6
 - Phase 7 added: using the ui audit, fix the following UI to make it according to standards, do not forget to use the given UI already in the app
+- Phase 8 added: Revamp the Create market to be more user friendly and look better to the eye keepin the same theme through out the entrie app
 
 ### Pending Todos
 

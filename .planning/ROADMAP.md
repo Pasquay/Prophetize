@@ -173,3 +173,14 @@ Plans:
 Plans:
 - [x] 07-01-PLAN.md — Tokenize leaderboard colors and normalize shared typography roles
 - [ ] 07-02-PLAN.md — Add retry recovery and truthful row affordance behavior with UX verification
+
+### Phase 8: Revamp the Create market to be more user friendly and look better to the eye keepin the same theme through out the entrie app
+
+**Goal:** Redesign the create-market experience into a guided, mobile-friendly flow with stronger visual hierarchy, clearer validation guidance, and polished submit feedback while preserving the app's established tokenized theme.
+**Requirements**: [CM-UX-01, CM-UX-02, CM-UX-03, CM-UX-04]
+**Depends on:** Phase 7
+**Plans:** 1/2 plans executed
+
+Plans:
+- [x] 08-01-PLAN.md — Build create-market UI foundation with tokenized cards, reusable form fields, and guided category/date controls
+- [ ] 08-02-PLAN.md — Polish validation, submit lifecycle feedback, and mobile usability with human UX verification checkpoint

@@ -515,6 +515,72 @@ export const getPortfolioPositionByMarketId = async (marketId: number) => {
     };
 };
 
+export type PortfolioSummary = {
+    username: string;
+    avatar_url: string | null;
+    joined: string;
+    balance: number;
+    positions_value: number;
+    net_worth: number;
+    biggest_win: number;
+    predictions_count: number;
+};
+
+export type PortfolioActivityTransaction = {
+    id: string;
+    market_option_id: string;
+    type: string;
+    shares: number;
+    price_at_time: number;
+    amount: number;
+    created_at: string;
+    option_name: string;
+    market_id: string;
+    market_title: string;
+};
+
+export type CreatedMarketItem = {
+    id: number;
+    title: string;
+    category: string;
+    status: string;
+    endDate: string;
+    createdAt: string;
+    totalVolume: number;
+};
+
+export const getPortfolioSummary = async () => {
+    return get('/portfolio/summary');
+};
+
+export const getPortfolioActivity = async () => {
+    return get('/portfolio/activity');
+};
+
+export const getCreatedMarkets = async (params?: {
+    userId?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+}) => {
+    const searchParams = new URLSearchParams();
+    if (params?.userId) {
+        searchParams.set('userId', params.userId);
+    }
+    if (params?.status) {
+        searchParams.set('status', params.status);
+    }
+    if (typeof params?.page === 'number') {
+        searchParams.set('page', String(params.page));
+    }
+    if (typeof params?.limit === 'number') {
+        searchParams.set('limit', String(params.limit));
+    }
+
+    const query = searchParams.toString();
+    return get(`/markets/created${query ? `?${query}` : ''}`);
+};
+
 export type MarketHistoryTimeframe = '5m' | '1h' | '1d' | '1w';
 
 export type MarketHistoryPoint = {

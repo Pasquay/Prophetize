@@ -1,10 +1,11 @@
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { Text, View, Alert, TextInput, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { Text, View, Alert, TextInput, ScrollView, TouchableOpacity, Image, Pressable, NativeModules, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Picker } from '@react-native-picker/picker';
+import type { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as api from '../utils/api';
-import {Prediction} from "../.expo/types/model";
+import type { Prediction } from '@/types/prediction';
 import LoadingScreen from '@/components/common/loading-screen';
 import MarketDetailsHeader from "@/components/market/market-detail-header";
 import MarketDetailBalance from "@/components/market/market-detail-balance";
@@ -20,7 +21,6 @@ import { MarketUpdatedPayload, PortfolioUpdatedPayload, subscribeRealtime } from
 import { useAuth } from '@/context/AuthContext';
 
 const CREATE_MARKET_CATEGORIES = ['SPORTS', 'CRYPTO', 'POLITICS', 'CULTURE', 'TECHNOLOGY'];
-const CREATE_OUTCOME_COUNT_OPTIONS = [3, 4, 5, 6];
 const QUICK_SHARE_PRESETS = ['1', '5', '10'];
 const TIMEFRAME_OPTIONS: { label: string; value: api.MarketHistoryTimeframe }[] = [
   { label: '5M', value: '5m' },
@@ -52,7 +52,7 @@ const BUTTON_STATE_TOKENS = {
     disabledBackgroundColor: UI_COLORS.borderMuted,
   },
 };
-type CreateFieldKey = 'title' | 'description' | 'category' | 'resolutionDate';
+type CreateFieldKey = 'title' | 'description' | 'category' | 'resolutionDate' | 'outcomes';
 
 type CommentSubmissionState =
   | { type: 'success'; message: string }
@@ -170,47 +170,34 @@ const sampleTrendPointsForChart = (
   return sampled;
 };
 
-const buildDateOptions = () => {
-  const options: { label: string; value: string }[] = [];
-  const now = new Date();
+const formatResolutionDateLabel = (value: Date) =>
+  value.toLocaleDateString([], {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 
-  for (let i = 0; i < 30; i += 1) {
-    const next = new Date(now);
-    next.setDate(now.getDate() + i);
-    const value = next.toISOString().slice(0, 10);
-    const label = next.toLocaleDateString([], {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    options.push({ label, value });
-  }
+const formatResolutionTimeLabel = (value: Date) =>
+  value.toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 
-  return options;
+const toLocalDateKey = (value: Date) => {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
-const buildTimeOptions = () => {
-  const options: { label: string; value: string }[] = [];
-  for (let hour = 0; hour < 24; hour += 1) {
-    for (let minute = 0; minute < 60; minute += 30) {
-      const value = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-      const labelDate = new Date(2000, 0, 1, hour, minute);
-      const label = labelDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-      options.push({ label, value });
-    }
+const parseLocalDateKey = (value: string) => {
+  const [year, month, day] = value.split('-').map((part) => Number(part));
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+    return null;
   }
 
-  return options;
-};
-
-const composeResolutionIso = (dateValue: string, timeValue: string) => {
-  const combined = new Date(`${dateValue}T${timeValue}:00`);
-  if (Number.isNaN(combined.getTime())) {
-    return '';
-  }
-
-  return combined.toISOString();
+  return new Date(year, month - 1, day);
 };
 
 
@@ -251,15 +238,83 @@ export default function DetailsScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('SPORTS');
-  const dateOptions = useMemo(() => buildDateOptions(), []);
-  const timeOptions = useMemo(() => buildTimeOptions(), []);
-  const [resolutionDateOption, setResolutionDateOption] = useState(dateOptions[0]?.value ?? '');
-  const [resolutionTimeOption, setResolutionTimeOption] = useState('12:00');
-  const [outcomeCount, setOutcomeCount] = useState(3);
-  const [outcomeValues, setOutcomeValues] = useState<string[]>(['Yes', 'No', 'Maybe']);
+  const [resolutionDateTime, setResolutionDateTime] = useState(() => {
+    const next = new Date();
+    next.setDate(next.getDate() + 1);
+    next.setSeconds(0, 0);
+    return next;
+  });
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [fallbackPickerMode, setFallbackPickerMode] = useState<'date' | 'time' | null>(null);
+  const [outcomeValues, setOutcomeValues] = useState<string[]>(['Yes', 'No']);
   const [createErrors, setCreateErrors] = useState<Partial<Record<CreateFieldKey, string>>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitCompleted, setSubmitCompleted] = useState(false);
+  const [showSubmitSuccessModal, setShowSubmitSuccessModal] = useState(false);
+
+  const fallbackDateOptions = useMemo(() => {
+    const options: { label: string; value: string }[] = [];
+    const now = new Date();
+
+    for (let i = 0; i < 45; i += 1) {
+      const next = new Date(now);
+      next.setDate(now.getDate() + i);
+      options.push({
+        label: formatResolutionDateLabel(next),
+        value: toLocalDateKey(next),
+      });
+    }
+
+    return options;
+  }, []);
+
+  const fallbackTimeOptions = useMemo(() => {
+    const options: { label: string; value: string }[] = [];
+
+    for (let hour = 0; hour < 24; hour += 1) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const value = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        const labelDate = new Date(2000, 0, 1, hour, minute);
+        options.push({
+          label: labelDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+          value,
+        });
+      }
+    }
+
+    return options;
+  }, []);
+
+  const hasNativeDateTimePicker = useMemo(() => {
+    const modules = NativeModules as Record<string, unknown>;
+    return Boolean(modules.RNDateTimePicker || modules.RNCDatePicker || modules.RNCDateTimePicker);
+  }, []);
+
+  const NativeDateTimePicker = useMemo<React.ComponentType<{
+    value: Date;
+    mode: 'date' | 'time';
+    onChange: (event: DateTimePickerEvent, date?: Date) => void;
+    minimumDate?: Date;
+  }> | null>(() => {
+    if (!hasNativeDateTimePicker) {
+      return null;
+    }
+
+    try {
+      const mod = require('@react-native-community/datetimepicker') as {
+        default?: React.ComponentType<{
+          value: Date;
+          mode: 'date' | 'time';
+          onChange: (event: DateTimePickerEvent, date?: Date) => void;
+          minimumDate?: Date;
+        }>;
+      };
+      return mod.default ?? null;
+    } catch {
+      return null;
+    }
+  }, [hasNativeDateTimePicker]);
 
   const tradeOptions = useMemo(() => {
     if (!prediction?.options?.length) return [];
@@ -504,7 +559,6 @@ export default function DetailsScreen() {
   const validateCreateForm = useCallback(() => {
     const normalizedCategory = category.trim().toUpperCase();
     const normalizedOutcomes = outcomeValues.map((value) => sanitizeDisplayText(value)).filter(Boolean);
-    const resolutionIso = composeResolutionIso(resolutionDateOption, resolutionTimeOption);
     const nextErrors: Partial<Record<CreateFieldKey, string>> = {};
 
     if (!title.trim()) {
@@ -521,16 +575,16 @@ export default function DetailsScreen() {
       nextErrors.category = 'Choose a category chip to keep this market easy to discover.';
     }
 
-    if (!resolutionIso) {
-      nextErrors.resolutionDate = 'Select both resolution date and time from the dropdowns.';
+    if (Number.isNaN(resolutionDateTime.getTime())) {
+      nextErrors.resolutionDate = 'Pick a valid resolution date and time.';
     }
 
     if (normalizedCategory && !CREATE_MARKET_CATEGORIES.includes(normalizedCategory)) {
       nextErrors.category = `Select one of these categories: ${CREATE_MARKET_CATEGORIES.join(', ')}`;
     }
 
-    if (normalizedOutcomes.length < 3) {
-      nextErrors.category = 'Add at least three custom outcome labels before submitting.';
+    if (normalizedOutcomes.length < 2) {
+      nextErrors.outcomes = 'Add at least two outcome choices before submitting.';
     }
 
     setCreateErrors(nextErrors);
@@ -541,10 +595,10 @@ export default function DetailsScreen() {
 
     return {
       normalizedCategory,
-      parsedDate: new Date(resolutionIso),
+      parsedDate: resolutionDateTime,
       optionValues: normalizedOutcomes,
     };
-  }, [category, description, outcomeValues, resolutionDateOption, resolutionTimeOption, title]);
+  }, [category, description, outcomeValues, resolutionDateTime, title]);
 
   const handleCreateMarket = useCallback(async () => {
     const validated = validateCreateForm();
@@ -574,27 +628,126 @@ export default function DetailsScreen() {
 
     setSubmitMessage(data?.message ?? 'Market submitted and pending admin approval.');
     setSubmitCompleted(true);
+    setShowSubmitSuccessModal(true);
     setTitle('');
     setDescription('');
     setCategory('SPORTS');
-    setResolutionDateOption(dateOptions[0]?.value ?? '');
-    setResolutionTimeOption('12:00');
-    setOutcomeCount(3);
-    setOutcomeValues(['Yes', 'No', 'Maybe']);
+    const nextDefault = new Date();
+    nextDefault.setDate(nextDefault.getDate() + 1);
+    nextDefault.setSeconds(0, 0);
+    setResolutionDateTime(nextDefault);
+    setOutcomeValues(['Yes', 'No']);
     setCreateErrors({});
     setSubmitError(null);
-  }, [dateOptions, title, description, validateCreateForm]);
+  }, [title, description, validateCreateForm]);
 
-  const handleOutcomeCountChange = useCallback((nextCount: number) => {
-    setOutcomeCount(nextCount);
+  const handleAddOutcome = useCallback(() => {
     setOutcomeValues((prev) => {
       const nextValues = [...prev];
-      while (nextValues.length < nextCount) {
-        nextValues.push(`Outcome ${nextValues.length + 1}`);
-      }
-      return nextValues.slice(0, nextCount);
+      nextValues.push(`Outcome ${nextValues.length + 1}`);
+      return nextValues;
     });
   }, []);
+
+  const handleRemoveOutcome = useCallback((index: number) => {
+    setOutcomeValues((prev) => {
+      if (prev.length <= 2) {
+        return prev;
+      }
+
+      return prev.filter((_, currentIndex) => currentIndex !== index);
+    });
+  }, []);
+
+  const onNativeDateChange = useCallback((event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (event.type === 'dismissed' || !selectedDate) {
+      return;
+    }
+
+    setResolutionDateTime((prev) => {
+      const next = new Date(prev);
+      next.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+      return next;
+    });
+    setCreateErrors((prev) => ({ ...prev, resolutionDate: undefined }));
+  }, []);
+
+  const onNativeTimeChange = useCallback((event: DateTimePickerEvent, selectedTime?: Date) => {
+    setShowTimePicker(false);
+    if (event.type === 'dismissed' || !selectedTime) {
+      return;
+    }
+
+    setResolutionDateTime((prev) => {
+      const next = new Date(prev);
+      next.setHours(selectedTime.getHours(), selectedTime.getMinutes(), 0, 0);
+      return next;
+    });
+    setCreateErrors((prev) => ({ ...prev, resolutionDate: undefined }));
+  }, []);
+
+  const handleOpenDatePicker = useCallback(() => {
+    if (!NativeDateTimePicker) {
+      setFallbackPickerMode('date');
+      return;
+    }
+
+    setShowDatePicker(true);
+  }, [NativeDateTimePicker]);
+
+  const handleOpenTimePicker = useCallback(() => {
+    if (!NativeDateTimePicker) {
+      setFallbackPickerMode('time');
+      return;
+    }
+
+    setShowTimePicker(true);
+  }, [NativeDateTimePicker]);
+
+  const dismissSubmitSuccessModal = useCallback(() => {
+    setShowSubmitSuccessModal(false);
+    setSubmitCompleted(false);
+    setSubmitMessage(null);
+  }, []);
+
+  const handleFallbackPickerSelect = useCallback((value: string) => {
+    if (fallbackPickerMode === 'date') {
+      const nextDate = parseLocalDateKey(value);
+      if (!nextDate) {
+        return;
+      }
+
+      setResolutionDateTime((prev) => {
+        const next = new Date(prev);
+        next.setFullYear(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate());
+        return next;
+      });
+    }
+
+    if (fallbackPickerMode === 'time') {
+      const [hours, minutes] = value.split(':').map((part) => Number(part));
+      if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+        return;
+      }
+
+      setResolutionDateTime((prev) => {
+        const next = new Date(prev);
+        next.setHours(hours, minutes, 0, 0);
+        return next;
+      });
+    }
+
+    setCreateErrors((prev) => ({ ...prev, resolutionDate: undefined }));
+    setFallbackPickerMode(null);
+  }, [fallbackPickerMode]);
+
+  const fallbackPickerTitle = fallbackPickerMode === 'date' ? 'Pick resolution date' : 'Pick resolution time';
+  const fallbackPickerOptions = fallbackPickerMode === 'date' ? fallbackDateOptions : fallbackTimeOptions;
+  const fallbackSelectedValue =
+    fallbackPickerMode === 'date'
+      ? toLocalDateKey(resolutionDateTime)
+      : `${String(resolutionDateTime.getHours()).padStart(2, '0')}:${String(resolutionDateTime.getMinutes()).padStart(2, '0')}`;
 
   const handleBuyTrade = useCallback(async (optionIdOverride?: number) => {
     if (!prediction) {
@@ -884,12 +1037,30 @@ export default function DetailsScreen() {
         </SafeAreaView>
 
         <ScrollView className="px-5 py-4" contentContainerStyle={{ paddingBottom: 28 }}>
-          <Text className="font-grotesk-bold text-[24px] mb-2" style={{ color: ExploreTheme.titleText }}>
-            Submit New Market
-          </Text>
-          <Text className="font-jetbrain text-[13px] mb-4" style={{ color: ExploreTheme.secondaryText }}>
-            New markets are pending until admin approval and will not appear publicly until approved.
-          </Text>
+          <View
+            className="rounded-3xl px-4 py-4 mb-4"
+            style={{
+              backgroundColor: UI_COLORS.surface,
+              borderWidth: 1,
+              borderColor: UI_COLORS.accentBorder,
+              ...UI_SHADOWS.soft,
+            }}
+          >
+            <View
+              className="self-start rounded-full px-3 py-1 mb-3"
+              style={{ backgroundColor: UI_COLORS.accentSoft, borderWidth: 1, borderColor: UI_COLORS.accentBorder }}
+            >
+              <Text className="font-jetbrain text-[11px]" style={{ color: UI_COLORS.linkPressed }}>
+                Creator Queue
+              </Text>
+            </View>
+            <Text className="font-grotesk-bold text-[24px] mb-1" style={{ color: ExploreTheme.titleText }}>
+              Create Market
+            </Text>
+            <Text className="font-jetbrain text-[13px]" style={{ color: ExploreTheme.secondaryText }}>
+              Ask one clear question. Set deadline. Add outcomes.
+            </Text>
+          </View>
 
           <View
             className="rounded-3xl p-4 mb-4"
@@ -900,8 +1071,8 @@ export default function DetailsScreen() {
               ...UI_SHADOWS.soft,
             }}
           >
-            <Text className="font-grotesk-bold text-[16px] mb-3" style={{ color: ExploreTheme.titleText }}>
-              Market Basics
+            <Text className="font-grotesk-bold text-[16px]" style={{ color: ExploreTheme.titleText }}>
+              Question
             </Text>
             <CreateMarketField
               label="TITLE"
@@ -911,7 +1082,6 @@ export default function DetailsScreen() {
                 setCreateErrors((prev) => ({ ...prev, title: undefined }));
               }}
               placeholder="Ex: Bitcoin above $100k by month-end"
-              helperText="Keep the title specific and time-bound."
               errorText={createErrors.title}
             />
             <CreateMarketField
@@ -923,7 +1093,6 @@ export default function DetailsScreen() {
               }}
               placeholder="Add context users need before they trade this market."
               multiline
-              helperText="A clear description leads to cleaner trading decisions."
               errorText={createErrors.description}
             />
           </View>
@@ -937,8 +1106,8 @@ export default function DetailsScreen() {
               ...UI_SHADOWS.soft,
             }}
           >
-            <Text className="font-grotesk-bold text-[16px] mb-3" style={{ color: ExploreTheme.titleText }}>
-              Category
+            <Text className="font-grotesk-bold text-[16px]" style={{ color: ExploreTheme.titleText }}>
+              Market Setup
             </Text>
             <CreateMarketChipGroup
               label="PICK A CATEGORY"
@@ -966,47 +1135,75 @@ export default function DetailsScreen() {
             }}
           >
             <Text className="font-grotesk-bold text-[16px] mb-3" style={{ color: ExploreTheme.titleText }}>
-              Resolution
+              Outcomes
             </Text>
-            <Text className="font-jetbrain-bold text-[11px] tracking-widest mb-2" style={{ color: ExploreTheme.secondaryText }}>
-              RESOLUTION DATE
-            </Text>
-            <View
-              className="rounded-2xl mb-3"
-              style={{ backgroundColor: UI_COLORS.createMarket.fieldBg, borderWidth: 1, borderColor: UI_COLORS.createMarket.fieldBorder }}
-            >
-              <Picker
-                selectedValue={resolutionDateOption}
-                onValueChange={(value) => {
-                  setResolutionDateOption(String(value));
-                  setCreateErrors((prev) => ({ ...prev, resolutionDate: undefined }));
-                }}
-              >
-                {dateOptions.map((option) => (
-                  <Picker.Item key={option.value} label={option.label} value={option.value} />
-                ))}
-              </Picker>
-            </View>
 
-            <Text className="font-jetbrain-bold text-[11px] tracking-widest mb-2" style={{ color: ExploreTheme.secondaryText }}>
-              RESOLUTION TIME
-            </Text>
-            <View
-              className="rounded-2xl mb-3"
-              style={{ backgroundColor: UI_COLORS.createMarket.fieldBg, borderWidth: 1, borderColor: UI_COLORS.createMarket.fieldBorder }}
+            <Pressable
+              onPress={handleOpenDatePicker}
+              className="rounded-2xl px-4 py-3 mb-3 flex-row items-center"
+              style={{
+                backgroundColor: UI_COLORS.createMarket.fieldBg,
+                borderWidth: 1,
+                borderColor: UI_COLORS.createMarket.fieldBorder,
+                minHeight: 48,
+              }}
             >
-              <Picker
-                selectedValue={resolutionTimeOption}
-                onValueChange={(value) => {
-                  setResolutionTimeOption(String(value));
-                  setCreateErrors((prev) => ({ ...prev, resolutionDate: undefined }));
-                }}
-              >
-                {timeOptions.map((option) => (
-                  <Picker.Item key={option.value} label={option.label} value={option.value} />
-                ))}
-              </Picker>
-            </View>
+              <MaterialIcons name="calendar-month" size={20} color={ExploreTheme.secondaryText} />
+              <View className="flex-1 ml-3">
+                <Text className="font-jetbrain text-[11px] tracking-widest" style={{ color: ExploreTheme.secondaryText }}>
+                  RESOLUTION DATE
+                </Text>
+                <Text className="font-jetbrain text-[13px] mt-1" style={{ color: ExploreTheme.titleText }}>
+                  {formatResolutionDateLabel(resolutionDateTime)}
+                </Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={20} color={ExploreTheme.secondaryText} />
+            </Pressable>
+
+            {!NativeDateTimePicker ? (
+              <Text className="font-jetbrain text-[11px] mb-3" style={{ color: ExploreTheme.secondaryText }}>
+                Using quick picker in this environment.
+              </Text>
+            ) : null}
+
+            <Pressable
+              onPress={handleOpenTimePicker}
+              className="rounded-2xl px-4 py-3 mb-3 flex-row items-center"
+              style={{
+                backgroundColor: UI_COLORS.createMarket.fieldBg,
+                borderWidth: 1,
+                borderColor: UI_COLORS.createMarket.fieldBorder,
+                minHeight: 48,
+              }}
+            >
+              <MaterialIcons name="schedule" size={20} color={ExploreTheme.secondaryText} />
+              <View className="flex-1 ml-3">
+                <Text className="font-jetbrain text-[11px] tracking-widest" style={{ color: ExploreTheme.secondaryText }}>
+                  RESOLUTION TIME
+                </Text>
+                <Text className="font-jetbrain text-[13px] mt-1" style={{ color: ExploreTheme.titleText }}>
+                  {formatResolutionTimeLabel(resolutionDateTime)}
+                </Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={20} color={ExploreTheme.secondaryText} />
+            </Pressable>
+
+            {NativeDateTimePicker && showDatePicker ? (
+              <NativeDateTimePicker
+                value={resolutionDateTime}
+                mode="date"
+                onChange={onNativeDateChange}
+                minimumDate={new Date()}
+              />
+            ) : null}
+
+            {NativeDateTimePicker && showTimePicker ? (
+              <NativeDateTimePicker
+                value={resolutionDateTime}
+                mode="time"
+                onChange={onNativeTimeChange}
+              />
+            ) : null}
 
             {createErrors.resolutionDate ? (
               <Text className="font-jetbrain text-[12px] mb-3" style={{ color: UI_COLORS.danger }}>
@@ -1014,37 +1211,9 @@ export default function DetailsScreen() {
               </Text>
             ) : null}
 
-            <View
-              className="rounded-2xl px-4 py-3"
-              style={{ borderWidth: 1, borderColor: UI_COLORS.createMarket.fieldBorder, backgroundColor: UI_COLORS.surfaceSoft }}
-            >
-              <Text className="font-jetbrain text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
-                Outcome format
-              </Text>
-              <Text className="font-jetbrain-bold text-[13px] mt-1 mb-2" style={{ color: ExploreTheme.titleText }}>
-                Custom outcomes (3 or more)
-              </Text>
-
-              <Text className="font-jetbrain-bold text-[11px] tracking-widest mb-2" style={{ color: ExploreTheme.secondaryText }}>
-                NUMBER OF OUTCOMES
-              </Text>
-              <View
-                className="rounded-2xl mb-3"
-                style={{ backgroundColor: UI_COLORS.createMarket.fieldBg, borderWidth: 1, borderColor: UI_COLORS.createMarket.fieldBorder }}
-              >
-                <Picker
-                  selectedValue={outcomeCount}
-                  onValueChange={(value) => handleOutcomeCountChange(Number(value))}
-                >
-                  {CREATE_OUTCOME_COUNT_OPTIONS.map((countOption) => (
-                    <Picker.Item key={countOption} label={`${countOption}`} value={countOption} />
-                  ))}
-                </Picker>
-              </View>
-
-              {outcomeValues.map((outcomeValue, index) => (
+            {outcomeValues.map((outcomeValue, index) => (
+              <View key={`outcome-${index}`} className="mb-2">
                 <CreateMarketField
-                  key={`outcome-${index}`}
                   label={`OUTCOME ${index + 1}`}
                   value={outcomeValue}
                   onChangeText={(value) => {
@@ -1053,13 +1222,55 @@ export default function DetailsScreen() {
                       nextValues[index] = value;
                       return nextValues;
                     });
+                    setCreateErrors((prev) => ({ ...prev, outcomes: undefined }));
                   }}
                   placeholder={`Outcome ${index + 1}`}
                 />
-              ))}
-            </View>
-          </View>
+                {outcomeValues.length > 2 ? (
+                  <Pressable
+                    onPress={() => handleRemoveOutcome(index)}
+                    className="rounded-xl py-2 items-center mb-2"
+                    style={{ borderWidth: 1, borderColor: UI_COLORS.createMarket.fieldBorder }}
+                  >
+                    <Text className="font-jetbrain text-[12px]" style={{ color: UI_COLORS.textMuted }}>
+                      Remove outcome
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ))}
 
+            <Pressable
+              onPress={handleAddOutcome}
+              className="rounded-2xl px-4 py-3 items-center justify-center"
+              style={{
+                backgroundColor: UI_COLORS.createMarket.fieldBg,
+                borderWidth: 1,
+                borderColor: UI_COLORS.createMarket.fieldBorder,
+                minHeight: 48,
+              }}
+            >
+              <Text className="font-grotesk-bold text-[13px]" style={{ color: ExploreTheme.linkText }}>
+                + Add outcome
+              </Text>
+            </Pressable>
+
+            {createErrors.outcomes ? (
+              <Text className="font-jetbrain text-[12px] mt-2" style={{ color: UI_COLORS.danger }}>
+                {createErrors.outcomes}
+              </Text>
+            ) : null}
+          </View>
+        </ScrollView>
+
+        <View
+          className="px-5 pt-3 pb-4"
+          style={{
+            backgroundColor: UI_COLORS.surface,
+            borderTopWidth: 1,
+            borderTopColor: UI_COLORS.borderSoft,
+          }}
+        >
           <TouchableOpacity
             disabled={submitLoading}
             onPress={handleCreateMarket}
@@ -1071,39 +1282,117 @@ export default function DetailsScreen() {
             }}
           >
             <Text className="font-grotesk-bold text-[14px]" style={{ color: BUTTON_STATE_TOKENS.primary.textColor }}>
-              {submitLoading ? 'Submitting...' : submitCompleted ? 'Submitted' : 'Submit for review'}
+              {submitLoading ? 'Submitting...' : submitCompleted ? 'Submitted' : 'Submit'}
             </Text>
           </TouchableOpacity>
+          {submitError ? (
+            <Text className="font-jetbrain text-[13px] mt-2" style={{ color: ExploreTheme.searchHint }}>
+              {submitError}
+            </Text>
+          ) : null}
+        </View>
 
-          {submitCompleted && submitMessage ? (
+        <Modal
+          visible={fallbackPickerMode !== null}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setFallbackPickerMode(null)}
+        >
+          <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(4, 10, 24, 0.35)' }}>
             <View
-              className="rounded-2xl p-4 mt-3"
+              className="w-full rounded-3xl p-4"
+              style={{
+                backgroundColor: UI_COLORS.surface,
+                borderWidth: 1,
+                borderColor: UI_COLORS.borderSoft,
+                ...UI_SHADOWS.soft,
+              }}
+            >
+              <Text className="font-grotesk-bold text-[18px] mb-1" style={{ color: ExploreTheme.titleText }}>
+                {fallbackPickerTitle}
+              </Text>
+              <Text className="font-jetbrain text-[12px] mb-3" style={{ color: ExploreTheme.secondaryText }}>
+                Choose from the quick list.
+              </Text>
+
+              <ScrollView style={{ maxHeight: 280 }}>
+                {fallbackPickerOptions.map((option) => {
+                  const isSelected = option.value === fallbackSelectedValue;
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => handleFallbackPickerSelect(option.value)}
+                      className="rounded-xl px-3 py-3 mb-2"
+                      style={{
+                        backgroundColor: isSelected ? UI_COLORS.accentSoft : UI_COLORS.surface,
+                        borderWidth: 1,
+                        borderColor: isSelected ? UI_COLORS.accentBorder : UI_COLORS.borderSoft,
+                      }}
+                    >
+                      <Text className="font-jetbrain text-[13px]" style={{ color: ExploreTheme.titleText }}>
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+
+              <TouchableOpacity
+                onPress={() => setFallbackPickerMode(null)}
+                className="rounded-2xl py-3 items-center mt-2"
+                style={{ backgroundColor: UI_COLORS.surfaceSoft, borderWidth: 1, borderColor: UI_COLORS.borderSoft }}
+              >
+                <Text className="font-grotesk-bold text-[14px]" style={{ color: ExploreTheme.titleText }}>
+                  Close
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal
+          visible={showSubmitSuccessModal}
+          transparent
+          animationType="fade"
+          onRequestClose={dismissSubmitSuccessModal}
+        >
+          <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: 'rgba(4, 10, 24, 0.45)' }}>
+            <View
+              className="w-full rounded-3xl p-5"
               style={{
                 backgroundColor: UI_COLORS.surface,
                 borderWidth: 1,
                 borderColor: UI_COLORS.accentBorder,
+                ...UI_SHADOWS.soft,
               }}
             >
-              <Text className="font-grotesk-bold text-[14px]" style={{ color: ExploreTheme.titleText }}>
-                Market submitted
-              </Text>
-              <Text className="font-jetbrain text-[13px] mt-1" style={{ color: ExploreTheme.secondaryText }}>
-                Pending admin review. It will become visible once approved.
-              </Text>
-            </View>
-          ) : null}
+              <View className="items-center">
+                <View
+                  className="rounded-full p-2 mb-3"
+                  style={{ backgroundColor: 'rgba(16, 185, 129, 0.12)', borderWidth: 1, borderColor: UI_COLORS.success }}
+                >
+                  <MaterialIcons name="check-circle" size={24} color={UI_COLORS.success} />
+                </View>
+                <Text className="font-grotesk-bold text-[20px]" style={{ color: ExploreTheme.titleText }}>
+                  Market submitted
+                </Text>
+                <Text className="font-jetbrain text-[13px] mt-2 text-center" style={{ color: ExploreTheme.secondaryText }}>
+                  {submitMessage ?? 'Pending admin review. It will become visible once approved.'}
+                </Text>
+              </View>
 
-          {submitMessage ? (
-            <Text className="font-jetbrain text-[13px] mt-3" style={{ color: ExploreTheme.secondaryText }}>
-              {submitMessage}
-            </Text>
-          ) : null}
-          {submitError ? (
-            <Text className="font-jetbrain text-[13px] mt-3" style={{ color: ExploreTheme.searchHint }}>
-              {submitError}
-            </Text>
-          ) : null}
-        </ScrollView>
+              <TouchableOpacity
+                onPress={dismissSubmitSuccessModal}
+                className="rounded-2xl py-3 items-center mt-5"
+                style={{ backgroundColor: BUTTON_STATE_TOKENS.primary.backgroundColor }}
+              >
+                <Text className="font-grotesk-bold text-[14px]" style={{ color: BUTTON_STATE_TOKENS.primary.textColor }}>
+                  Continue
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   }

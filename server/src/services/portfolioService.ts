@@ -2,7 +2,7 @@
 // portfolioService.ts — All DB logic for portfolio features
 // ============================================================
 
-import { supabase } from '../config/supabaseClient';
+import { supabase, supabaseAdmin } from '../config/supabaseClient';
 import {
   ActivityTransaction,
   EnrichedPosition,
@@ -288,7 +288,7 @@ export async function getMarketPosition(
     };
   }
 
-  const { data: optionsData, error: optionsError } = await supabase
+  const { data: optionsData, error: optionsError } = await supabaseAdmin
     .from('market_options')
     .select('id, name')
     .eq('market_id', parsedMarketId);
@@ -306,8 +306,8 @@ export async function getMarketPosition(
   }
 
   const optionIds = marketOptions
-    .map((option) => String(option.id ?? '').trim())
-    .filter((optionId) => optionId.length > 0);
+    .map((option) => Number(option.id))
+    .filter((optionId) => Number.isInteger(optionId) && optionId > 0);
 
   if (optionIds.length === 0) {
     return {
@@ -328,7 +328,7 @@ export async function getMarketPosition(
     optionNameById.set(optionId, String(option.name ?? 'Unknown'));
   }
 
-  const { data: positionsData, error: positionsError } = await supabase
+  const { data: positionsData, error: positionsError } = await supabaseAdmin
     .from('user_positions')
     .select('market_option_id, shares_owned, updated_at')
     .eq('user_id', userId)

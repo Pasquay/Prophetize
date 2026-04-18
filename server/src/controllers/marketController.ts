@@ -24,6 +24,16 @@ const INTERNAL_SERVER_ERROR_MESSAGE = 'Internal server error';
 
 type HistoryTimeframe = keyof typeof HISTORY_BUCKET_STEPS;
 
+const CREATED_MARKET_STATUSES = [
+    'pending',
+    'active',
+    'closed',
+    'resolving',
+    'disputed',
+    'finalized',
+    'rejected'
+] as const;
+
 const sanitizeSearchTerm = (value: string) => value
     .replace(/[%_(),]/g, ' ')
     .replace(/\s+/g, ' ')
@@ -137,7 +147,8 @@ export const getAllMarkets = async(req:Request, res:Response) => {
                 category: item.category,
                 endDate: item.end_date,
                 status: item.status,
-                volume: item.volume || 0, 
+                total_volume: Number(item.total_volume) || 0,
+                volume: Number(item.total_volume) || 0,
                 options: finalOptions
             }
         });
@@ -394,6 +405,72 @@ export const searchMarket = async(req:Request, res:Response) => {
         });
     } catch(error:any){
         console.error('searchMarket failed', error);
+        return res.status(500).json({ error: INTERNAL_SERVER_ERROR_MESSAGE });
+    }
+};
+
+// GET /markets/created?userId=&status=&page=&limit= - Markets created by a user
+export const getCreatedMarkets = async(req: AuthRequest, res: Response) => {
+    try {
+        const fallbackUserId = req.user?.id;
+        const queryUserId = typeof req.query.userId === 'string' ? req.query.userId.trim() : '';
+        const userId = queryUserId || fallbackUserId;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const page = parseInt(req.query.page as string, 10) || 0;
+        const limit = parseInt(req.query.limit as string, 10) || 10;
+        const { from, to } = getPaginationRange(page, limit);
+
+        const statusRaw = typeof req.query.status === 'string' ? req.query.status.trim().toLowerCase() : '';
+        const requestedStatuses = statusRaw
+            ? statusRaw.split(',').map((value) => value.trim()).filter(Boolean)
+            : [];
+
+        if (requestedStatuses.some((value) => !CREATED_MARKET_STATUSES.includes(value as typeof CREATED_MARKET_STATUSES[number]))) {
+            return res.status(400).json({
+                error: `Invalid status filter. Allowed: ${CREATED_MARKET_STATUSES.join(', ')}`,
+            });
+        }
+
+        let query = supabase
+            .from('markets')
+            .select('id, title, category, status, end_date, created_at, total_volume', { count: 'exact' })
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+
+        if (requestedStatuses.length > 0) {
+            query = query.in('status', requestedStatuses);
+        }
+
+        const { data, count, error } = await query.range(from, to);
+        if (error) {
+            throw error;
+        }
+
+        const normalized = (data || []).map((market: any) => ({
+            id: Number(market.id),
+            title: typeof market.title === 'string' ? market.title : '',
+            category: typeof market.category === 'string' ? market.category : '',
+            status: typeof market.status === 'string' ? market.status : 'pending',
+            endDate: market.end_date,
+            createdAt: market.created_at,
+            totalVolume: Number(market.total_volume) || 0,
+        }));
+
+        return res.status(200).json({
+            data: normalized,
+            meta: {
+                total_records: count || 0,
+                current_page: page,
+                total_pages: count ? Math.ceil(count / limit) : 0,
+                has_next_page: count ? ((page + 1) * limit) < count : false,
+            },
+        });
+    } catch (error: any) {
+        console.error('getCreatedMarkets failed', error);
         return res.status(500).json({ error: INTERNAL_SERVER_ERROR_MESSAGE });
     }
 };

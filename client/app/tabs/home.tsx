@@ -17,6 +17,7 @@ import { PortfolioUpdatedPayload, subscribeRealtime } from '../../context/realti
 import categories from "../../constants/categories";
 import { ExploreTheme } from "../../constants/explore-theme";
 import { UI_COLORS } from '@/constants/ui-tokens';
+import { normalizePrediction } from '../../utils/prediction-helpers';
 
 export default function HomeScreen() {
 
@@ -60,8 +61,10 @@ export default function HomeScreen() {
         const {ok, data} = await api.get("/markets/"+endpoint);
         if(ok){
             const normalizedPredictions = Array.isArray(data)
-                ? data.filter(i => i && i.id)
-                : (Array.isArray(data.data) ? data.data.filter((i: any) => i && i.id) : []);
+                ? data.filter(i => i && i.id).map((item: Prediction) => normalizePrediction(item))
+                : (Array.isArray(data.data)
+                    ? data.data.filter((i: any) => i && i.id).map((item: Prediction) => normalizePrediction(item))
+                    : []);
 
             setPrediction(normalizedPredictions);
             setNoMarket(normalizedPredictions.length === 0);

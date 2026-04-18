@@ -32,9 +32,38 @@ const allowedOrigins = (() => {
     return DEFAULT_ALLOWED_ORIGINS;
 })();
 
+const isPrivateLanHost = (host: string) => {
+    return /^10\./.test(host)
+        || /^192\.168\./.test(host)
+        || /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
+};
+
+const isAllowedOrigin = (origin: string) => {
+    if (allowedOrigins.includes(origin)) {
+        return true;
+    }
+
+    try {
+        const parsed = new URL(origin);
+        const host = parsed.hostname;
+
+        if (host === 'localhost' || host === '127.0.0.1') {
+            return true;
+        }
+
+        if (process.env.NODE_ENV !== 'production' && isPrivateLanHost(host)) {
+            return true;
+        }
+    } catch {
+        return false;
+    }
+
+    return false;
+};
+
 const corsOriginHandler = (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
     // Allow non-browser and local mobile dev calls while blocking unknown web origins.
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || isAllowedOrigin(origin)) {
         callback(null, true);
         return;
     }
