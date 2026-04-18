@@ -5,6 +5,9 @@ import leaderboardRoutes from "../src/routes/leaderboardRoutes";
 import transactionRoutes from "../src/routes/transactionRoutes";
 import notificationRoutes from "../src/routes/notificationRoutes";
 import socialRoutes from "../src/routes/socialRoutes";
+import adminRoutes from "../src/routes/adminRoutes";
+import adminConflictRoutes from "../src/routes/adminConflictRoutes";
+import adminAnalyticsRoutes from "../src/routes/adminAnalyticsRoutes";
 
 export const createTestApp = () => {
   const app = express();
@@ -20,6 +23,9 @@ export const createTestApp = () => {
   app.use("/transaction", transactionRoutes);
   app.use("/notifications", notificationRoutes);
   app.use("/social", socialRoutes);
+  app.use('/admin', adminRoutes);
+  app.use('/admin', adminConflictRoutes);
+  app.use('/admin', adminAnalyticsRoutes);
 
   return app;
 };

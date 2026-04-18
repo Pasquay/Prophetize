@@ -14,6 +14,7 @@ router.get("/categories", marketController.getCategories);
 router.get("/category/:category", marketController.getMarketByCategory);
 router.get("/search", marketController.searchMarket);
 router.get('/created', requireAuth, marketController.getCreatedMarkets);
+router.get('/created/user/:userId', requireAuth, marketController.getCreatedMarkets);
 router.get("/:id/history", marketController.getMarketHistory);
 router.post("/create", requireAuth, marketController.createMarket);
 router.post("/review/:id", requireAuth, requireAdmin, marketController.reviewMarket);

@@ -1,0 +1,69 @@
+:root {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #111827;
+  background: #f7fafc;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 250px 1fr;
+}
+
+.sidebar {
+  border-right: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding: 20px;
+}
+
+.main {
+  padding: 20px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.grid {
+  display: grid;
+  gap: 16px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.btn {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  padding: 6px 12px;
+}
+
+.badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 12px;
+  border: 1px solid #d1d5db;
+}

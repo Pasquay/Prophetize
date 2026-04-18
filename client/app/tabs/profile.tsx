@@ -165,17 +165,7 @@ export default function ProfileScreen() {
     }
 
     if (createdResult.ok) {
-      const normalized = getPayloadArray(createdResult.data)
-        .map((item) => ({
-          id: Number(item.id ?? 0),
-          title: String(item.title ?? ''),
-          category: String(item.category ?? ''),
-          status: String(item.status ?? 'pending'),
-          endDate: String(item.endDate ?? ''),
-          createdAt: String(item.createdAt ?? ''),
-          totalVolume: Number(item.totalVolume ?? 0),
-        }))
-        .filter((item) => Number.isInteger(item.id) && item.id > 0 && item.title);
+      const normalized = api.normalizeCreatedMarketsPayload(createdResult.data);
 
       setCreatedMarkets(normalized);
     } else {
@@ -261,11 +251,6 @@ export default function ProfileScreen() {
     );
   };
 
-  const handleEditProfile = async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert('Edit Profile', 'Coming soon!');
-  };
-
   const displayName = isOwnProfile
     ? (summary?.username || user?.username || 'You')
     : `Trader ${viewedUserId.slice(0, 6)}`;
@@ -319,8 +304,7 @@ export default function ProfileScreen() {
                   imageUrl={summary?.avatar_url || user?.avatar_url}
                   username={displayName}
                   size="md"
-                  editable={isOwnProfile}
-                  onEditPress={handleEditProfile}
+                  editable={false}
                 />
                 <View className="ml-3 flex-1">
                   <Text className="font-grotesk-bold text-[24px]" style={{ color: UI_COLORS.textPrimary }}>
@@ -420,6 +404,7 @@ export default function ProfileScreen() {
                 icon="storefront"
                 title="No created markets yet"
                 description={isOwnProfile ? 'Create your first market to see it here.' : 'No public market creations to show.'}
+                compact
               />
             ) : (
               createdMarkets.map((market, index) => {
@@ -488,6 +473,7 @@ export default function ProfileScreen() {
                   icon="history"
                   title="No activity yet"
                   description="Your trades and resolutions will appear here."
+                  compact
                 />
               ) : (
                 activities.map((activity, index) => {

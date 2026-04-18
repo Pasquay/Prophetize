@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 04-03-PLAN.md
-last_updated: "2026-04-17T18:56:12.358Z"
-last_activity: 2026-04-17
+last_updated: "2026-04-18T11:03:07.279Z"
+last_activity: 2026-04-18
 progress:
-  total_phases: 8
-  completed_phases: 2
-  total_plans: 11
-  completed_plans: 6
-  percent: 55
+  total_phases: 9
+  completed_phases: 3
+  total_plans: 14
+  completed_plans: 9
+  percent: 64
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-13)
 
 **Core value:** Ship reliable prediction-market features with contract-first backend/frontend alignment.
-**Current focus:** Phase 8 — Revamp the Create market to be more user friendly and look better to the eye keepin the same theme through out the entrie app
+**Current focus:** Phase 09 — create-an-admin-dahsbaord-for-the-admins-to-manage-users-loo
 
 ## Current Position
 
-Phase: 8 (Revamp the Create market to be more user friendly and look better to the eye keepin the same theme through out the entrie app) — EXECUTING
-Plan: 2 of 2
+Phase: 9
+Plan: Not started
 Status: Ready to execute
-Last activity: 2026-04-17
+Last activity: 2026-04-18
 
 Progress: [██░░░░░░░░] 25%
 
@@ -36,7 +36,7 @@ Progress: [██░░░░░░░░] 25%
 
 **Velocity:**
 
-- Total plans completed: 1
+- Total plans completed: 4
 - Average duration: 20 min
 - Total execution time: 0.3 hours
 
@@ -45,6 +45,7 @@ Progress: [██░░░░░░░░] 25%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 03 | 1 | 20m | 20m |
+| 9 | 3 | - | - |
 
 **Recent Trend:**
 
@@ -90,6 +91,7 @@ Progress: [██░░░░░░░░] 25%
 - Phase 6 added: 6
 - Phase 7 added: using the ui audit, fix the following UI to make it according to standards, do not forget to use the given UI already in the app
 - Phase 8 added: Revamp the Create market to be more user friendly and look better to the eye keepin the same theme through out the entrie app
+- Phase 9 added: Create an admin dahsbaord for the admins to manage users, look at data, resolve user conflicts, and most importantly, manage the user created markets. Use react-bits and shadcn ui to make it simple and effective enough
 
 ### Pending Todos
 

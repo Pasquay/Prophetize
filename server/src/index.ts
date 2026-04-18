@@ -10,6 +10,9 @@ import portfolioRoutes from '../src/routes/portfolioRoutes';
 import leaderboardRoutes from '../src/routes/leaderboardRoutes';
 import notificationRoutes from "../src/routes/notificationRoutes";
 import socialRoutes from "../src/routes/socialRoutes";
+import adminRoutes from "../src/routes/adminRoutes";
+import adminConflictRoutes from "../src/routes/adminConflictRoutes";
+import adminAnalyticsRoutes from "../src/routes/adminAnalyticsRoutes";
 import { initializeRealtimeEmitter } from "../src/services/realtimeService";
 
 const DEFAULT_ALLOWED_ORIGINS = [
@@ -131,6 +134,9 @@ app.use('/portfolio', portfolioRoutes);
 app.use('/leaderboard', leaderboardRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/social", socialRoutes);
+app.use('/admin', adminRoutes);
+app.use('/admin', adminConflictRoutes);
+app.use('/admin', adminAnalyticsRoutes);
 
 // Starting server
 const PORT = process.env.PORT || 3000;

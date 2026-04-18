@@ -26,10 +26,13 @@ type HistoryTimeframe = keyof typeof HISTORY_BUCKET_STEPS;
 
 const CREATED_MARKET_STATUSES = [
     'pending',
+    'pending_approval',
     'active',
     'closed',
     'resolving',
+    'challenged',
     'disputed',
+    'resolved',
     'finalized',
     'rejected'
 ] as const;
@@ -413,8 +416,9 @@ export const searchMarket = async(req:Request, res:Response) => {
 export const getCreatedMarkets = async(req: AuthRequest, res: Response) => {
     try {
         const fallbackUserId = req.user?.id;
+        const routeUserId = typeof req.params.userId === 'string' ? req.params.userId.trim() : '';
         const queryUserId = typeof req.query.userId === 'string' ? req.query.userId.trim() : '';
-        const userId = queryUserId || fallbackUserId;
+        const userId = routeUserId || queryUserId || fallbackUserId;
 
         if (!userId) {
             return res.status(401).json({ error: 'Unauthorized' });

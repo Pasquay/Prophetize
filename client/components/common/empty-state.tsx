@@ -9,6 +9,7 @@ type EmptyStateProps = {
   description?: string;
   actionLabel?: string;
   onAction?: () => void;
+  compact?: boolean;
 };
 
 /**
@@ -27,20 +28,25 @@ export function EmptyState({
   description,
   actionLabel,
   onAction,
+  compact = false,
 }: EmptyStateProps) {
+  const iconSize = compact ? 26 : 32;
+  const iconContainerClass = compact ? 'w-12 h-12' : 'w-16 h-16';
+  const copySize = compact ? 'text-[13px]' : 'text-[14px]';
+
   return (
-    <View className="items-center justify-center py-8 gap-3">
+    <View className={`items-center justify-center gap-3 ${compact ? 'py-6' : 'py-8'}`}>
       {/* Icon - smaller, more subtle */}
       <View
-        className="w-16 h-16 rounded-full items-center justify-center"
+        className={`${iconContainerClass} rounded-full items-center justify-center`}
         style={{ backgroundColor: UI_COLORS.surfaceMuted }}
       >
-        <MaterialIcons name={icon} size={32} color={UI_COLORS.textMuted} />
+        <MaterialIcons name={icon} size={iconSize} color={UI_COLORS.textMuted} />
       </View>
 
       {/* Title - use same style as end indicator */}
       <Text
-        className="font-jetbrain text-[14px] text-center"
+        className={`font-jetbrain ${copySize} text-center`}
         style={{ color: UI_COLORS.textSecondary }}
       >
         {title}
@@ -49,7 +55,7 @@ export function EmptyState({
       {/* Description - same style as title for consistency */}
       {description && (
         <Text
-          className="font-jetbrain text-[14px] text-center px-8"
+          className={`font-jetbrain ${copySize} text-center px-8`}
           style={{ color: UI_COLORS.textSecondary }}
         >
           {description}

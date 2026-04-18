@@ -184,3 +184,16 @@ Plans:
 Plans:
 - [x] 08-01-PLAN.md — Build create-market UI foundation with tokenized cards, reusable form fields, and guided category/date controls
 - [ ] 08-02-PLAN.md — Polish validation, submit lifecycle feedback, and mobile usability with human UX verification checkpoint
+
+### Phase 9: Create an admin dahsbaord for the admins to manage users, look at data, resolve user conflicts, and most importantly, manage the user created markets. Use react-bits and shadcn ui to make it simple and effective enough
+
+**Goal:** Ship an operationally useful separate web admin dashboard with single-admin-role access control, auditable market moderation and conflict outcome tracking, then layer analytics views after operations queues are stable; also clean up mobile profile to real-data sections and wire User Created Markets behavior.
+**Requirements**: [ADM-OPS-01, ADM-OPS-02, ADM-OPS-03, ADM-OPS-04, ADM-OPS-05, ADM-ANL-01, ADM-MOB-01, ADM-MOB-02]
+**Depends on:** Phase 8
+**Plans:** 3/3 plans complete
+
+Plans:
+- [x] 09-01-PLAN.md — Build separate admin web app foundation, baseline admin ACL, and operations queues for approvals and due-resolution work
+- [x] 09-02-PLAN.md — Add conflict visibility/outcome recording workflow and complete mobile profile cleanup with User Created Markets wiring
+- [x] 09-03-PLAN.md — Deliver phase wave-2 analytics views for moderation throughput, queue health, and conflict outcomes
+

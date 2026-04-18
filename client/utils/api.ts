@@ -549,6 +549,45 @@ export type CreatedMarketItem = {
     totalVolume: number;
 };
 
+export const normalizeCreatedMarketsPayload = (payload: unknown): CreatedMarketItem[] => {
+    const source = payload && typeof payload === 'object'
+        ? (payload as Record<string, unknown>).data
+        : payload;
+
+    if (!Array.isArray(source)) {
+        return [];
+    }
+
+    return source
+        .map((item) => {
+            if (!item || typeof item !== 'object') {
+                return null;
+            }
+
+            const row = item as Record<string, unknown>;
+            const id = Number(row.id);
+            if (!Number.isInteger(id) || id <= 0) {
+                return null;
+            }
+
+            const title = typeof row.title === 'string' ? row.title : '';
+            if (!title) {
+                return null;
+            }
+
+            return {
+                id,
+                title,
+                category: typeof row.category === 'string' ? row.category : '',
+                status: typeof row.status === 'string' ? row.status : 'pending',
+                endDate: typeof row.endDate === 'string' ? row.endDate : '',
+                createdAt: typeof row.createdAt === 'string' ? row.createdAt : '',
+                totalVolume: Number(row.totalVolume) || 0,
+            } satisfies CreatedMarketItem;
+        })
+        .filter((item): item is CreatedMarketItem => Boolean(item));
+};
+
 export const getPortfolioSummary = async () => {
     return get('/portfolio/summary');
 };
@@ -578,7 +617,10 @@ export const getCreatedMarkets = async (params?: {
     }
 
     const query = searchParams.toString();
-    return get(`/markets/created${query ? `?${query}` : ''}`);
+    const endpoint = params?.userId
+        ? `/markets/created/user/${params.userId}${query ? `?${query}` : ''}`
+        : `/markets/created${query ? `?${query}` : ''}`;
+    return get(endpoint);
 };
 
 export type MarketHistoryTimeframe = '5m' | '1h' | '1d' | '1w';
