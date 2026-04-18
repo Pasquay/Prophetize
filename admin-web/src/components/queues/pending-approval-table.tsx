@@ -1,4 +1,6 @@
 import React from 'react';
+import { Button } from '../ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
 type PendingMarket = {
   id: number;
@@ -15,8 +17,11 @@ type Props = {
 
 export const PendingApprovalTable = ({ rows, onApprove, onReject }: Props) => {
   return (
-    <div className="card">
-      <h3>Pending Approvals</h3>
+    <Card>
+      <CardHeader>
+        <CardTitle>Pending Approvals</CardTitle>
+      </CardHeader>
+      <CardContent>
       <table className="table">
         <thead>
           <tr>
@@ -38,18 +43,19 @@ export const PendingApprovalTable = ({ rows, onApprove, onReject }: Props) => {
                 <td>{row.category}</td>
                 <td>{row.created_at ? new Date(row.created_at).toLocaleString() : '--'}</td>
                 <td>
-                  <button className="btn" onClick={() => onApprove(row.id)}>
+                  <Button size="sm" onClick={() => onApprove(row.id)}>
                     Approve
-                  </button>{' '}
-                  <button className="btn" onClick={() => onReject(row.id)}>
+                  </Button>{' '}
+                  <Button size="sm" variant="destructive" onClick={() => onReject(row.id)}>
                     Reject
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))
           )}
         </tbody>
       </table>
-    </div>
+      </CardContent>
+    </Card>
   );
 };

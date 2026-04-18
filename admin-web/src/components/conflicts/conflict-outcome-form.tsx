@@ -1,4 +1,9 @@
 import React, { useState } from 'react';
+import { Button } from '../ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Input } from '../ui/input';
+import { Select } from '../ui/select';
+import { Textarea } from '../ui/textarea';
 
 type Props = {
   conflictId: number | null;
@@ -11,29 +16,31 @@ export const ConflictOutcomeForm = ({ conflictId, onSubmit }: Props) => {
   const [evidenceUrl, setEvidenceUrl] = useState('');
 
   return (
-    <div className="card">
-      <h3>Record Conflict Outcome</h3>
+    <Card>
+      <CardHeader>
+        <CardTitle>Record Conflict Outcome</CardTitle>
+      </CardHeader>
+      <CardContent className="grid">
       <div className="grid">
         <label>
           Outcome
-          <select value={outcome} onChange={(event) => setOutcome(event.target.value as 'uphold' | 'dismiss')}>
+          <Select value={outcome} onChange={(event) => setOutcome(event.target.value as 'uphold' | 'dismiss')}>
             <option value="uphold">Uphold conflict</option>
             <option value="dismiss">Dismiss conflict</option>
-          </select>
+          </Select>
         </label>
 
         <label>
           Outcome note
-          <textarea value={outcomeNote} onChange={(event) => setOutcomeNote(event.target.value)} />
+          <Textarea value={outcomeNote} onChange={(event) => setOutcomeNote(event.target.value)} />
         </label>
 
         <label>
           Evidence URL (optional)
-          <input value={evidenceUrl} onChange={(event) => setEvidenceUrl(event.target.value)} />
+          <Input value={evidenceUrl} onChange={(event) => setEvidenceUrl(event.target.value)} />
         </label>
 
-        <button
-          className="btn"
+        <Button
           disabled={!conflictId || !outcomeNote.trim()}
           onClick={() => {
             if (!conflictId) {
@@ -48,8 +55,9 @@ export const ConflictOutcomeForm = ({ conflictId, onSubmit }: Props) => {
           }}
         >
           Save outcome
-        </button>
+        </Button>
       </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };

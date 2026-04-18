@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { Button } from '../ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Input } from '../ui/input';
 
 type DueMarket = {
   id: number;
@@ -33,8 +36,11 @@ export const DueResolutionTable = ({ rows, onResolve }: Props) => {
   };
 
   return (
-    <div className="card">
-      <h3>Due For Resolution</h3>
+    <Card>
+      <CardHeader>
+        <CardTitle>Due For Resolution</CardTitle>
+      </CardHeader>
+      <CardContent>
       <table className="table">
         <thead>
           <tr>
@@ -61,24 +67,27 @@ export const DueResolutionTable = ({ rows, onResolve }: Props) => {
                   <td>{row.title}</td>
                   <td>{row.end_date ? new Date(row.end_date).toLocaleString() : '--'}</td>
                   <td>
-                    <input
+                    <Input
                       value={String(draft.resolved_option_id)}
                       onChange={(event) => updateDraft(row.id, 'resolved_option_id', event.target.value)}
                       placeholder="Option ID"
-                    />{' '}
-                    <input
+                    />
+                    {' '}
+                    <Input
                       value={draft.resolution_evidence_url}
                       onChange={(event) => updateDraft(row.id, 'resolution_evidence_url', event.target.value)}
                       placeholder="Evidence URL"
-                    />{' '}
-                    <input
+                    />
+                    {' '}
+                    <Input
                       value={draft.resolution_note}
                       onChange={(event) => updateDraft(row.id, 'resolution_note', event.target.value)}
                       placeholder="Resolution note"
-                    />{' '}
-                    <button className="btn" onClick={() => onResolve(row.id, draft)}>
+                    />
+                    {' '}
+                    <Button size="sm" onClick={() => onResolve(row.id, draft)}>
                       Resolve
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               );
@@ -86,6 +95,7 @@ export const DueResolutionTable = ({ rows, onResolve }: Props) => {
           )}
         </tbody>
       </table>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
