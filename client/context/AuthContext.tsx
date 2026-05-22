@@ -51,21 +51,22 @@ export function AuthProvider({children}:{children:React.ReactNode}) {
         setIsLoading(true);
         try{
             await clearAuth();
+        } catch (err) {
+            console.error('Logout error:', err);
         } finally {
             setIsLoading(false);
         }
     };
 
     const clearAuth = async() => {
-        setIsLoading(true)
         try{
             await SecureStore.deleteItemAsync('access_token');
             await SecureStore.deleteItemAsync('refresh_token');
             await SecureStore.deleteItemAsync('user');
             setUser(null);
             setToken(null);
-        } finally {
-            setIsLoading(false);
+        } catch (err) {
+            console.error('clearAuth error:', err);
         }
     };
 

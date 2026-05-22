@@ -34,9 +34,12 @@ export default function LoginScreen() {
             setLoading(true);
             const { ok, data } = await api.post('/auth/login', {email, password});
             if(ok){
-                // Alert.alert('success');
                 await login(data.user, data.session.access_token, data.session.refresh_token);
-                router.push('/tabs/home');
+                try {
+                    router.push('/tabs/home');
+                } catch (navErr) {
+                    console.error('Login navigation error:', navErr);
+                }
             } else {
                 Alert.alert('Failed to log in', data.error);
             }

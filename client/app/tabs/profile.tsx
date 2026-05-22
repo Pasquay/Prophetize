@@ -217,9 +217,12 @@ export default function ProfileScreen() {
 
   const handleConfirmLogout = useCallback(async () => {
     setShowLogoutModal(false);
-    await logout();
-    router.replace('/');
-  }, [logout, router]);
+    try {
+      await logout();
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  }, [logout]);
 
   const displayName = isOwnProfile
     ? (summary?.username || user?.username || 'You')

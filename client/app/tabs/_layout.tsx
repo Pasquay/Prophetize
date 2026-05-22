@@ -14,9 +14,7 @@ export default function TabsLayout(){
 
   useEffect(() => {
     if (isLoading) return;
-    if (!token) {
-            router.replace('/');
-    } else {
+    if (token) {
         fetchUserData();
     }
   }, [token, isLoading]);
