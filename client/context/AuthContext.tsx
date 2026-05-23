@@ -1,4 +1,4 @@
-import React, {useState, useEffect, createContext, useContext} from 'react';
+import React, {useState, useEffect, useRef, createContext, useContext} from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { registerClearAuth } from '../utils/api';
 
@@ -19,8 +19,11 @@ export function AuthProvider({children}:{children:React.ReactNode}) {
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    const clearAuthRef = useRef(clearAuth);
+    useEffect(() => { clearAuthRef.current = clearAuth; });
+
     useEffect(() => {
-        registerClearAuth(clearAuth);
+        registerClearAuth(() => clearAuthRef.current());
         const loadAuth = async () => {
             try{
                 const storedToken = await SecureStore.getItemAsync('access_token');

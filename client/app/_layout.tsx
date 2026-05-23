@@ -35,6 +35,7 @@ function RootLayout() {
 
   useEffect(() => {
     if(!rootNavState?.key) return;
+    if(isLoading) return;
     if(navigatingRef.current) return;
     const isPublicRoute = pathname === '/' || pathname === '/login' || pathname === '/signUp';
     if(!token && !isPublicRoute){
@@ -57,7 +58,7 @@ function RootLayout() {
         navTimer.current = null;
       }
     };
-  }, [token, pathname]);
+  }, [token, pathname, isLoading, rootNavState?.key]);
 
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_400Regular,

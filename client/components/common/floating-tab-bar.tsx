@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 5,
     bottom: 5,
-    borderRadius: 24,
+    borderRadius: 999,
     borderWidth: 0,
   },
   tab: {

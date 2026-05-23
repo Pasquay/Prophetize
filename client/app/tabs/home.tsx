@@ -194,9 +194,9 @@ export default function HomeScreen() {
                                 accessibilityLabel="Create market"
                                 accessibilityHint="Opens create market form"
                                 className="rounded-full self-center px-4 py-2"
-                                style={{ backgroundColor: UI_COLORS.surfaceSoft, borderWidth: 1, borderColor: UI_COLORS.borderSoft }}
+                                style={{ backgroundColor: UI_COLORS.accent, borderWidth: 0 }}
                             >
-                                <Text className="font-jetbrain-bold text-[12px]" style={{ color: ExploreTheme.secondaryText }}>
+                                <Text className="font-jetbrain-bold text-[12px]" style={{ color: '#FFFFFF' }}>
                                     Propose first market
                                 </Text>
                             </TouchableOpacity>
