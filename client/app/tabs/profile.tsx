@@ -381,30 +381,7 @@ export default function ProfileScreen() {
           </View>
         ) : null}
 
-        {isOwnProfile ? (
-          <View className="px-5 mt-4">
-            <Pressable
-              onPress={() => router.push('/portfolio-chart' as any)}
-              className="flex-row items-center justify-between rounded-2xl p-4"
-              style={{ backgroundColor: UI_COLORS.surface, borderWidth: 1, borderColor: UI_COLORS.border }}
-            >
-              <View className="flex-row items-center">
-                <MaterialIcons name="show-chart" size={22} color={UI_COLORS.accent} style={{ marginRight: 10 }} />
-                <View>
-                  <Text className="font-grotesk-bold text-base" style={{ color: UI_COLORS.textPrimary }}>
-                    Portfolio Chart
-                  </Text>
-                  <Text className="font-mono text-xs mt-0.5" style={{ color: UI_COLORS.textMuted }}>
-                    View your net worth over time
-                  </Text>
-                </View>
-              </View>
-              <Text style={{ color: UI_COLORS.textMuted, fontSize: 18 }}>→</Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        <View className="px-5 mt-5">
+        <View className="px-5 mt-4">
           <CreatedMarketsSection markets={createdMarkets} isOwnProfile={isOwnProfile} />
         </View>
 

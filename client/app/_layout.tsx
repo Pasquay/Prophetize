@@ -83,7 +83,6 @@ function RootLayout() {
         <Stack.Screen name="explore-details" options={{ title: 'Explore', headerShown: false, presentation: 'modal' }}/>
         <Stack.Screen name="categories" options={{ title: 'Categories', headerShown: false }}/>
         <Stack.Screen name="notifications" options={{ title: 'Notifications', headerShown: false }}/>
-        <Stack.Screen name="portfolio-chart" options={{ title: 'Portfolio Chart', headerShown: false }}/>
         <Stack.Screen name="tabs" options={{ title: 'tabs', headerShown: false }}/>
         <Stack.Screen name="settings/edit-profile" options={{ title: 'Edit Profile', headerShown: false }} />
         <Stack.Screen name="settings/notifications" options={{ title: 'Notifications', headerShown: false }} />
