@@ -1,5 +1,6 @@
 import { Redirect, Tabs, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { useUserStore } from "../../context/useUserStore";
 import { useTheme } from '@/context/ThemeContext';
@@ -23,7 +24,9 @@ export default function TabsLayout(){
         return <Redirect href="/" />;
     }
 
-    if (!token) return null;
+    if (!token) {
+        return <View className="flex-1" style={{ backgroundColor: '#0B0E11' }} />;
+    }
 
   return (
     <Tabs tabBar={(props) => <FloatingTabBar {...props} />}>

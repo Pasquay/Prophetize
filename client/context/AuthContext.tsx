@@ -34,13 +34,22 @@ export function AuthProvider({children}:{children:React.ReactNode}) {
         loadAuth();
     }, []); 
 
+    const pickUserFields = (u: any) => ({
+        id: u?.id ?? null,
+        email: u?.email ?? null,
+        username: u?.username ?? u?.user_metadata?.username ?? null,
+        avatar_url: u?.avatar_url ?? u?.user_metadata?.avatar_url ?? null,
+        created_at: u?.created_at ?? null,
+    });
+
     const login = async (userData:any, accessToken:string, refreshToken:string) => {
         setIsLoading(true);
         try{
             await SecureStore.setItemAsync('access_token', accessToken);
             await SecureStore.setItemAsync('refresh_token', refreshToken);
-            await SecureStore.setItemAsync('user', JSON.stringify(userData));
-            setUser(userData);
+            const slim = pickUserFields(userData);
+            await SecureStore.setItemAsync('user', JSON.stringify(slim));
+            setUser(slim);
             setToken(accessToken);
         } finally {
             setIsLoading(false);
@@ -74,7 +83,8 @@ export function AuthProvider({children}:{children:React.ReactNode}) {
         setUser((prev: any) => {
             if (!prev) return prev;
             const next = { ...prev, ...partial };
-            SecureStore.setItemAsync('user', JSON.stringify(next)).catch(() => {});
+            const slim = pickUserFields(next);
+            SecureStore.setItemAsync('user', JSON.stringify(slim)).catch(() => {});
             return next;
         });
     };

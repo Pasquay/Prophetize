@@ -10,7 +10,7 @@ const expoHost = expoHostUri?.split(':')[0];
 const inferredLanBackendUrl = expoHost ? `http://${expoHost}:3001` : null;
 const platformFallbackUrl = Platform.OS === 'android' ? 'http://10.0.2.2:3001' : 'http://127.0.0.1:3001';
 
-const backendUrl: string = envBackendUrl || inferredLanBackendUrl || platformFallbackUrl || RENDER_URL;
+const backendUrl: string = envBackendUrl || inferredLanBackendUrl || RENDER_URL || platformFallbackUrl;
 
 export type RealtimeEventName = 'market.updated' | 'portfolio.updated' | 'leaderboard.updated' | 'notification.new';
 

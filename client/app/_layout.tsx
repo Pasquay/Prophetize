@@ -31,18 +31,23 @@ function RootLayout() {
   const { token, isLoading } = useAuth();
   const { colorScheme } = useTheme();
   const navTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const navigatingRef = useRef(false);
 
   useEffect(() => {
-    if(isLoading) return;
     if(!rootNavState?.key) return;
+    if(navigatingRef.current) return;
     const isPublicRoute = pathname === '/' || pathname === '/login' || pathname === '/signUp';
     if(!token && !isPublicRoute){
+      navigatingRef.current = true;
+      setTimeout(() => { navigatingRef.current = false; }, 500);
       router.replace('/');
       return;
     }
     if(token && pathname === '/' && !navTimer.current){
       navTimer.current = setTimeout(() => {
         navTimer.current = null;
+        navigatingRef.current = true;
+        setTimeout(() => { navigatingRef.current = false; }, 500);
         router.replace('/tabs/home');
       }, 0);
     }
@@ -52,7 +57,7 @@ function RootLayout() {
         navTimer.current = null;
       }
     };
-  }, [token, isLoading, pathname]);
+  }, [token, pathname]);
 
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_400Regular,

@@ -10,7 +10,7 @@ const expoHost = expoHostUri?.split(':')[0];
 const inferredLanBackendUrl = expoHost ? `http://${expoHost}:3001` : null;
 const platformFallbackUrl = Platform.OS === 'android' ? 'http://10.0.2.2:3001' : 'http://127.0.0.1:3001';
 
-const baseUrl: string = envBackendUrl || inferredLanBackendUrl || platformFallbackUrl || RENDER_URL;
+const baseUrl: string = envBackendUrl || inferredLanBackendUrl || RENDER_URL || platformFallbackUrl;
 const FETCH_TIMEOUT_MS = 15000;
 const NETWORK_ERROR_MESSAGE = 'Network request failed. Check backend server and API URL.';
 
