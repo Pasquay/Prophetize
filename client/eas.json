@@ -8,7 +8,8 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_GOOGLECLIENT_ID": "894321238879-t3ml2ou4h6blmrrlrr8nna0h5qpljr8f.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLECLIENT_ID": "894321238879-t3ml2ou4h6blmrrlrr8nna0h5qpljr8f.apps.googleusercontent.com",
+        "EXPO_PUBLIC_BACKEND_URL": "https://prophetize.onrender.com"
       },
       "android": {
         "buildType": "apk" 
