@@ -58,7 +58,7 @@ function RootLayout() {
         navTimer.current = null;
       }
     };
-  }, [token, pathname, isLoading, rootNavState?.key]);
+  }, [token, pathname, isLoading]);
 
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_400Regular,

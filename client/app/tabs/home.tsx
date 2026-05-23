@@ -33,24 +33,6 @@ export default function HomeScreen() {
     const [activeCategory, setActiveCategory] = useState("trending"); 
     const [marketsLoading, setMarketsLoading] = useState(false);
     const [noMarket, setNoMarket] = useState(true);
-    const [connectionState, setConnectionState] = useState<'connected' | 'reconnecting' | 'stale' | 'disconnected'>('disconnected');
-
-    const realtimeStatus = useMemo(() => {
-        if (connectionState === 'connected') {
-            return { label: 'Live updates connected', color: UI_COLORS.success };
-        }
-
-        if (connectionState === 'reconnecting') {
-            return { label: 'Reconnecting live updates...', color: UI_COLORS.warning };
-        }
-
-        if (connectionState === 'stale') {
-            return { label: 'Live updates are stale. Retrying...', color: UI_COLORS.danger };
-        }
-
-        return { label: 'Live updates disconnected', color: ExploreTheme.secondaryText };
-    }, [connectionState]);
-
     const canClaimAllowance = useMemo(() => {
         if (!userData) return false;
         if (!userData.last_claim_date) return true;
@@ -113,7 +95,6 @@ export default function HomeScreen() {
                     void getMarketData(activeCategory);
                     void fetchUserData();
                 },
-                onConnectionState: setConnectionState,
             });
         } catch (err) {
             console.error('Failed to subscribe to realtime:', err);
@@ -156,9 +137,6 @@ export default function HomeScreen() {
                         unreadCount={unreadCount}
                         onNotificationPress={() => router.push('/notifications')}
                     />
-                    <Text className="font-jetbrain text-[11px] mt-2" style={{ color: realtimeStatus.color }}>
-                        {realtimeStatus.label}
-                    </Text>
                  </View>   
             </SafeAreaView>
 

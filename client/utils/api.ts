@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 const RENDER_URL = 'https://prophetize.onrender.com';
 
@@ -7,10 +8,10 @@ const envBackendUrl = process.env.EXPO_PUBLIC_BACKEND_URL?.trim();
 const expoHostUri = Constants.expoConfig?.hostUri;
 const expoHost = expoHostUri?.split(':')[0];
 const inferredLanBackendUrl = expoHost ? `http://${expoHost}:3001` : null;
-const isDev = __DEV__ && expoHostUri;
-const baseUrl: string = envBackendUrl
-  || (isDev ? inferredLanBackendUrl : null)
-  || RENDER_URL;
+const platformFallbackUrl = Platform.OS === 'android' ? 'http://10.0.2.2:3001' : 'http://127.0.0.1:3001';
+
+const isDev = typeof __DEV__ !== 'undefined' && __DEV__ && !!expoHostUri;
+const baseUrl: string = envBackendUrl || (isDev ? inferredLanBackendUrl : null) || RENDER_URL;
 const FETCH_TIMEOUT_MS = 15000;
 const NETWORK_ERROR_MESSAGE = 'Network request failed. Check backend server and API URL.';
 
@@ -55,6 +56,9 @@ const handleResponse = async (response: Response, retryFn?: ()=> Promise<Respons
                     if (data?.access_token) {
                         await SecureStore.setItemAsync('access_token', data.access_token);
                     }
+                    if (data?.refresh_token) {
+                        await SecureStore.setItemAsync('refresh_token', data.refresh_token);
+                    }
                     if(retryFn){
                         try {
                             const retried = await retryFn();
@@ -94,15 +98,17 @@ const fetchWithTimeout = (url: string, options: RequestInit, timeoutMs: number =
 };
 
 export const post = async(endpoint:string, body?:object) => {
-    const token = await getToken();
-    const doRequest = () => fetchWithTimeout(baseUrl+endpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type':'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify(body)
-    });
+    const doRequest = async () => {
+        const token = await getToken();
+        return fetchWithTimeout(baseUrl+endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type':'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify(body)
+        });
+    };
     try {
         const response = await doRequest();
         return handleResponse(response, doRequest);
@@ -113,14 +119,16 @@ export const post = async(endpoint:string, body?:object) => {
 }
 
 export const get = async(endpoint:string) => {
-    const token = await getToken();
-    const doRequest = () => fetchWithTimeout(baseUrl+endpoint, {
-        method: 'GET',
-        headers: {
-            'Content-Type':'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-    });
+    const doRequest = async () => {
+        const token = await getToken();
+        return fetchWithTimeout(baseUrl+endpoint, {
+            method: 'GET',
+            headers: {
+                'Content-Type':'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            }
+        });
+    };
     try {
         const response = await doRequest();
         return handleResponse(response, doRequest);
@@ -131,15 +139,17 @@ export const get = async(endpoint:string) => {
 }
 
 export const patch = async(endpoint:string, body?:object) => {
-    const token = await getToken();
-    const doRequest = () => fetch(baseUrl+endpoint, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type':'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify(body)
-    });
+    const doRequest = async () => {
+        const token = await getToken();
+        return fetchWithTimeout(baseUrl+endpoint, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type':'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify(body)
+        });
+    };
     try {
         const response = await doRequest();
         return handleResponse(response, doRequest);
@@ -834,15 +844,16 @@ export const getNotifications = async (): Promise<{
     ok: boolean;
     data: { items: NotificationInboxItem[]; source: NotificationInboxSource; message?: string } | { error: string };
 }> => {
-    const token = await getToken();
-
-    const doRequest = () => fetch(baseUrl + '/notifications', {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-    });
+    const doRequest = async () => {
+        const token = await getToken();
+        return fetchWithTimeout(baseUrl + '/notifications', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+        });
+    };
 
     try {
         const initial = await doRequest();
@@ -954,4 +965,3 @@ export const resolveNotificationTarget = (
 
     return null;
 };
-
