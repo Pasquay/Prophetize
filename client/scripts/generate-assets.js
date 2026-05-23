@@ -13,7 +13,7 @@ async function generateAssets() {
     return;
   }
 
-  const pCoin = path.join(APP_ICONS_DIR, 'p-coin.png');
+  const pCoin = path.join(APP_ICONS_DIR, 'logo_hint.png');
 
   // App icon: p-coin on white background, 1024x1024
   await sharp({
@@ -48,7 +48,7 @@ async function generateAssets() {
     .toFile(path.join(ASSETS_DIR, 'adaptive-icon-background.png'));
   console.log('Generated adaptive-icon-background.png');
 
-  console.log('All assets generated from p-coin.png!');
+  console.log('All assets generated from logo_hint.png!');
 }
 
 generateAssets().catch(console.error);

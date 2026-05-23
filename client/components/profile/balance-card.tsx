@@ -26,7 +26,7 @@ export function BalanceCard({ balance, showIcon = true, onPress }: BalanceCardPr
     >
       {showIcon && (
         <Image
-          source={require('../../assets/app-icons/p-coin.png')}
+          source={require('../../assets/app-icons/logo_hint.png')}
           style={{ width: 32, height: 32 }}
           resizeMode="contain"
         />

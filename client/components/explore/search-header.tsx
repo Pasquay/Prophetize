@@ -36,7 +36,7 @@ export default function SearchHeader({
             <View className="flex-row items-center pb-1 gap-2">
                 <View className="flex-row items-center gap-3 flex-1 inline-flex">
                     <Image
-                        source={require('../../assets/app-icons/p-coin.png')}
+                        source={require('../../assets/app-icons/logo_hint.png')}
                         style={{ width: 36, height: 36 }}
                         resizeMode="contain"
                     />

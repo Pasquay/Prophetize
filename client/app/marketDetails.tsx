@@ -1727,7 +1727,7 @@ export default function DetailsScreen() {
             </Text>
             <View className="flex-row items-center gap-2 mt-1">
               <Image
-                source={require('../assets/app-icons/p-coin.png')}
+                source={require('../assets/app-icons/logo_hint.png')}
                 style={{ width: 16, height: 16 }}
                 resizeMode="contain"
               />
@@ -1746,7 +1746,7 @@ export default function DetailsScreen() {
             </Text>
             <View className="flex-row items-center gap-2 mt-1">
               <Image
-                source={require('../assets/app-icons/p-coin.png')}
+                source={require('../assets/app-icons/logo_hint.png')}
                 style={{ width: 16, height: 16 }}
                 resizeMode="contain"
               />

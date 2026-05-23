@@ -36,7 +36,7 @@ export default function LoginScreen() {
             if(ok){
                 await login(data.user, data.session.access_token, data.session.refresh_token);
                 try {
-                    router.push('/tabs/home');
+                    router.replace('/tabs/home');
                 } catch (navErr) {
                     console.error('Login navigation error:', navErr);
                 }

@@ -57,10 +57,10 @@ export function PushNotificationProvider({ children }: { children: React.ReactNo
 
     return () => {
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
+        (Notifications as any).removeNotificationSubscription(notificationListener.current);
       }
       if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
+        (Notifications as any).removeNotificationSubscription(responseListener.current);
       }
     };
   }, []);

@@ -53,7 +53,7 @@ export default function LeaderboardPodium({ entries }: Props) {
                                     </View>
                                     <View className="flex-row items-center gap-1 px-1">
                                         <Image
-                                            source={require('../../assets/app-icons/p-coin.png')}
+                                            source={require('../../assets/app-icons/logo_hint.png')}
                                             style={{ width: 11, height: 11 }}
                                             resizeMode="contain"
                                         />

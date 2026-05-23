@@ -26,7 +26,7 @@ function formatCountdown(endDate: string): string {
 
 const PCoin = () => (
     <Image
-        source={require('../../assets/app-icons/p-coin.png')}
+        source={require('../../assets/app-icons/logo_hint.png')}
         style={{ width: 18, height: 18 }}
         resizeMode="contain"
     />

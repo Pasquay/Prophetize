@@ -156,7 +156,7 @@ const ensureSocket = () => {
     }
 
     socket = io(backendUrl, {
-        transports: ['websocket'],
+        transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionAttempts: Infinity,
         reconnectionDelay: 1000,

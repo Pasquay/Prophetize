@@ -84,33 +84,50 @@ export default function HomeScreen() {
 
     useFocusEffect(
         useCallback(() => {
-            void getMarketData(activeCategory);
+            try {
+                void getMarketData(activeCategory);
+            } catch (err) {
+                console.error('getMarketData on focus error:', err);
+            }
         }, [activeCategory, getMarketData])
     );
 
     useEffect(() => {
-        const unsubscribe = subscribeRealtime({
-            channels: ['market.updated', 'portfolio.updated'],
-            onEvent: (event, payload) => {
-                if (event === 'market.updated') {
-                    void getMarketData(activeCategory);
-                    return;
-                }
+        let unsubscribe: (() => void) | undefined;
+        try {
+            unsubscribe = subscribeRealtime({
+                channels: ['market.updated', 'portfolio.updated'],
+                onEvent: (event, payload) => {
+                    if (event === 'market.updated') {
+                        void getMarketData(activeCategory);
+                        return;
+                    }
 
-                const portfolioPayload = payload as PortfolioUpdatedPayload;
-                if (event === 'portfolio.updated' && portfolioPayload.userId === String(userData?.id ?? '')) {
-                    setBalanceFromSnapshot(portfolioPayload.balance);
+                    const portfolioPayload = payload as PortfolioUpdatedPayload;
+                    if (event === 'portfolio.updated' && portfolioPayload.userId === String(userData?.id ?? '')) {
+                        setBalanceFromSnapshot(portfolioPayload.balance);
+                        void getMarketData(activeCategory);
+                    }
+                },
+                onReconnect: () => {
                     void getMarketData(activeCategory);
-                }
-            },
-            onReconnect: () => {
-                void getMarketData(activeCategory);
-                void fetchUserData();
-            },
-            onConnectionState: setConnectionState,
-        });
+                    void fetchUserData();
+                },
+                onConnectionState: setConnectionState,
+            });
+        } catch (err) {
+            console.error('Failed to subscribe to realtime:', err);
+        }
 
-        return unsubscribe;
+        return () => {
+            if (unsubscribe) {
+                try {
+                    unsubscribe();
+                } catch (err) {
+                    console.error('Failed to unsubscribe:', err);
+                }
+            }
+        };
     }, [activeCategory, fetchUserData, getMarketData, setBalanceFromSnapshot, userData?.id]);
 
     const goMarketDetails = useCallback((id:number) => {

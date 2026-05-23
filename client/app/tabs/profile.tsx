@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, RefreshControl, Alert, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
@@ -388,7 +389,7 @@ export default function ProfileScreen() {
               style={{ backgroundColor: UI_COLORS.surface, borderWidth: 1, borderColor: UI_COLORS.border }}
             >
               <View className="flex-row items-center">
-                <Text style={{ color: UI_COLORS.accent, fontSize: 18, marginRight: 10 }}>📈</Text>
+                <MaterialIcons name="show-chart" size={22} color={UI_COLORS.accent} style={{ marginRight: 10 }} />
                 <View>
                   <Text className="font-grotesk-bold text-base" style={{ color: UI_COLORS.textPrimary }}>
                     Portfolio Chart

@@ -67,7 +67,7 @@ export default function HomeHeader({ balance, unreadCount = 0, onNotificationPre
         <View className="h-auto w-full flex-row items-center gap-2">
             <View className="flex-row items-center gap-3 flex-1 p-2 inline-flex">
                 <Image
-                    source={require('../../assets/app-icons/p-coin.png')}
+                    source={require('../../assets/app-icons/logo_hint.png')}
                     style={{ width: 44, height: 44 }}
                     resizeMode="contain"
                 />

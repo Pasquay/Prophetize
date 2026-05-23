@@ -22,7 +22,7 @@ export default function MarketDetailBalance({ balanceOverride = null }: MarketDe
             }}
         >
             <Image
-                source={require('../../assets/app-icons/p-coin.png')}
+                source={require('../../assets/app-icons/logo_hint.png')}
                 style={{ width: 22, height: 22 }}
                 resizeMode="contain"
             />
