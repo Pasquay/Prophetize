@@ -1,19 +1,8 @@
-import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import React, { createContext, useContext, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import { useAuth } from './AuthContext';
 import * as api from '../utils/api';
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
 
 type PushNotificationContextType = {
   expoPushToken: string | null;
@@ -26,71 +15,90 @@ const PushNotificationContext = createContext<PushNotificationContextType>({
 export function PushNotificationProvider({ children }: { children: React.ReactNode }) {
   const { token: authToken } = useAuth();
   const expoPushTokenRef = useRef<string | null>(null);
-  const notificationListener = useRef<Notifications.EventSubscription | undefined>(undefined);
-  const responseListener = useRef<Notifications.EventSubscription | undefined>(undefined);
+  const NRef = useRef<any>(null);
+  const [notificationsReady, setNotificationsReady] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
 
-    const setup = async () => {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'Default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-      });
-    };
-    setup();
-  }, []);
+    let notificationListener: any;
+    let responseListener: any;
 
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
+    (async () => {
+      try {
+        const N = await import('expo-notifications');
+        NRef.current = N;
 
-    notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
-      console.log('push received', notification.request.content.data);
-    });
+        N.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+            shouldShowBanner: true,
+            shouldShowList: true,
+          }),
+        });
 
-    responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data;
-      if (data?.targetPath && typeof data.targetPath === 'string') {
+        await N.setNotificationChannelAsync('default', {
+          name: 'Default',
+          importance: N.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+        });
+
+        notificationListener = N.addNotificationReceivedListener((notification: any) => {
+          console.log('push received', notification.request.content.data);
+        });
+
+        responseListener = N.addNotificationResponseReceivedListener((response: any) => {
+          const data = response.notification.request.content.data;
+          if (data?.targetPath && typeof data.targetPath === 'string') {
+          }
+        });
+
+        setNotificationsReady(true);
+      } catch {
+        // Notifications not available
       }
-    });
+    })();
 
     return () => {
-      if (notificationListener.current) {
-        (Notifications as any).removeNotificationSubscription(notificationListener.current);
+      const N = NRef.current;
+      if (notificationListener) {
+        N?.removeNotificationSubscription(notificationListener);
       }
-      if (responseListener.current) {
-        (Notifications as any).removeNotificationSubscription(responseListener.current);
+      if (responseListener) {
+        N?.removeNotificationSubscription(responseListener);
       }
     };
   }, []);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
+    const N = NRef.current;
 
-    if (authToken) {
-      const registerToken = async () => {
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-
-        if (existingStatus !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
-          finalStatus = status;
-        }
-
-        if (finalStatus !== 'granted') {
-          console.log('push permission not granted');
-          return;
-        }
-
+    if (authToken && notificationsReady && N) {
+      (async () => {
         try {
+          const { status: existingStatus } = await N.getPermissionsAsync();
+          let finalStatus = existingStatus;
+
+          if (existingStatus !== 'granted') {
+            const { status } = await N.requestPermissionsAsync();
+            finalStatus = status;
+          }
+
+          if (finalStatus !== 'granted') {
+            console.log('push permission not granted');
+            return;
+          }
+
           const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
           if (!projectId) {
             console.log('push: no projectId found');
             return;
           }
 
-          const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+          const tokenData = await N.getExpoPushTokenAsync({ projectId });
           const pushToken = tokenData.data;
           expoPushTokenRef.current = pushToken;
 
@@ -102,18 +110,14 @@ export function PushNotificationProvider({ children }: { children: React.ReactNo
         } catch (e) {
           console.log('push token registration failed', e);
         }
-      };
-
-      registerToken();
-    } else {
-      if (expoPushTokenRef.current) {
-        api.post('/notifications/unregister-push-token', {
-          token: expoPushTokenRef.current,
-        }).catch(() => {});
-        expoPushTokenRef.current = null;
-      }
+      })();
+    } else if (expoPushTokenRef.current) {
+      api.post('/notifications/unregister-push-token', {
+        token: expoPushTokenRef.current,
+      }).catch(() => {});
+      expoPushTokenRef.current = null;
     }
-  }, [authToken]);
+  }, [authToken, notificationsReady]);
 
   return (
     <PushNotificationContext.Provider value={{ expoPushToken: expoPushTokenRef.current }}>
